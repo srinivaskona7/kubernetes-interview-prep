@@ -1,0 +1,798 @@
+{
+  "number": 12,
+  "title": "Custom Resource Definitions and Operators",
+  "part": "Part 5 · Reliability, Monitoring, and Maintenance",
+  "tagline": "Extend the Kubernetes API with CRDs, then automate apps with Operators.",
+  "overview": "Kubernetes can learn new resource types through CRDs, and controllers turn those types into running behaviour. Operators package that pattern so complex, stateful applications are deployed and operated automatically. This chapter covers API groups, CRD anatomy, reconciliation, webhooks, building an Operator and well-known examples.",
+  "topics": [
+    {
+      "id": "ch12-extending-the-api",
+      "level": "junior",
+      "question": "How can the basic Kubernetes API be extended?",
+      "say_first": "You teach the API server new resource types with CustomResourceDefinitions, then add controllers and admission webhooks so those types actually do something and stay valid.",
+      "explain": [
+        "Think of the API server as a restaurant menu. Built-in items (Pods, Services, Deployments) are the standard dishes. A CRD lets you add your own dish to the menu without rebuilding the kitchen: the same ordering process (kubectl, RBAC, watches) works for it.",
+        "A new menu item alone only records an order. To cook it you need a chef, which is a controller that watches those objects and makes reality match them. Controller plus CRD, packaged with operational know-how, is an Operator.",
+        "Webhooks are the doorman and the editor: they can tweak or reject requests on the way in, so your custom types stay predictable."
+      ],
+      "key_points": [
+        "CRDs add new resource kinds to the existing API, no fork of Kubernetes needed.",
+        "Controllers give custom resources behaviour by reconciling them.",
+        "Operators bundle CRDs and controllers to run complex apps.",
+        "Admission and conversion webhooks customise request handling and versions.",
+        "All of it uses the normal API, so kubectl, RBAC and audit logs work unchanged."
+      ],
+      "table": {
+        "caption": "Extension building blocks at a glance",
+        "headers": [
+          "Mechanism",
+          "What it adds",
+          "Typical user"
+        ],
+        "rows": [
+          [
+            "CRD",
+            "A new resource kind stored in etcd",
+            "Anyone modelling their own objects"
+          ],
+          [
+            "Controller",
+            "Logic that reconciles those objects",
+            "Platform and app teams"
+          ],
+          [
+            "Operator",
+            "CRD plus controller plus app-specific operations",
+            "Teams running databases, queues, monitoring"
+          ],
+          [
+            "Admission webhook",
+            "Mutate or validate requests in flight",
+            "Policy and security tooling"
+          ],
+          [
+            "Conversion webhook",
+            "Translate objects between API versions",
+            "CRD authors with multiple versions"
+          ]
+        ]
+      },
+      "diagram": {
+        "file": "diagrams/ch12-crd-architecture.html",
+        "title": "CRD, API server and controller",
+        "ratio": "960/416"
+      },
+      "follow_ups": [
+        "Why not just fork Kubernetes?",
+        "What is the difference between a CRD and an aggregated API server?"
+      ],
+      "pitfalls": [
+        "Saying a CRD runs code. A CRD is only a schema and a registration; behaviour comes from a controller."
+      ]
+    },
+    {
+      "id": "ch12-api-groups-versions",
+      "level": "junior",
+      "question": "How does the Kubernetes API organise and separate different resources?",
+      "say_first": "Resources live in API groups, and each group has one or more versions, so the API can grow and change without breaking existing users.",
+      "explain": [
+        "A group is a folder of related kinds. The core group (no name, path /api/v1) holds Pods, Services and ConfigMaps. The apps group (/apis/apps/v1) holds Deployments and StatefulSets. A CRD introduces a brand new group of your choosing.",
+        "Versions such as v1alpha1, v1beta1 and v1 let a kind mature. An older version keeps working while a newer one is introduced, which is how upgrades avoid breaking running manifests.",
+        "That is why an apiVersion looks like group/version, for example apps/v1 or monitoring.coreos.com/v1, and why the core group is written as just v1."
+      ],
+      "key_points": [
+        "Group plus version plus kind identifies a resource type.",
+        "Core group is unnamed; others use /apis/<group>/<version>.",
+        "Alpha, beta and stable versions signal maturity and compatibility promises.",
+        "CRDs create new groups in the same namespace of types."
+      ],
+      "table": {
+        "caption": "Reading an apiVersion",
+        "headers": [
+          "apiVersion",
+          "Group",
+          "Example kinds"
+        ],
+        "rows": [
+          [
+            "v1",
+            "core (unnamed)",
+            "Pod, Service, ConfigMap"
+          ],
+          [
+            "apps/v1",
+            "apps",
+            "Deployment, StatefulSet"
+          ],
+          [
+            "batch/v1",
+            "batch",
+            "Job, CronJob"
+          ],
+          [
+            "monitoring.coreos.com/v1",
+            "monitoring.coreos.com (CRD)",
+            "Prometheus, Alertmanager"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl api-versions",
+          "note": "All group/version pairs the cluster serves"
+        },
+        {
+          "cmd": "kubectl get --raw /apis | head -c 600",
+          "note": "Raw discovery document for non-core groups"
+        }
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-api-groups-tree.html",
+        "title": "API groups, versions and kinds",
+        "ratio": "960/440"
+      },
+      "follow_ups": [
+        "What happens to objects when a version is deprecated?"
+      ],
+      "pitfalls": [
+        "Thinking the version is part of the stored object. The API server stores one version and converts on demand."
+      ]
+    },
+    {
+      "id": "ch12-list-api-resources",
+      "level": "junior",
+      "question": "How do you list the resource types and CRDs available in a cluster?",
+      "say_first": "Use kubectl api-resources to see every kind, filter by group with --api-group, and kubectl get crd to see only the custom ones.",
+      "explain": [
+        "api-resources reads the discovery API and prints name, short names, group/version, whether the kind is namespaced, and its Kind. It is the quickest way to answer whether a cluster supports a given object.",
+        "Filtering by group shows what a particular add-on, such as the Prometheus operator, installed. kubectl get crd lists the CRD objects themselves, which is a different list from the kinds they define."
+      ],
+      "key_points": [
+        "api-resources lists kinds; get crd lists the CRD objects.",
+        "--api-group narrows output to one group.",
+        "Use --namespaced=false to see cluster-scoped kinds.",
+        "kubectl explain shows the schema of any kind, custom ones included."
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl api-resources",
+          "note": "Every kind the API server serves"
+        },
+        {
+          "cmd": "kubectl api-resources --api-group=monitoring.coreos.com",
+          "note": "Only the kinds from one group"
+        },
+        {
+          "cmd": "kubectl get crd",
+          "note": "CRD objects installed in the cluster"
+        },
+        {
+          "cmd": "kubectl explain book.spec",
+          "note": "Show fields of a custom kind from its schema"
+        }
+      ],
+      "follow_ups": [
+        "How would you check if a CRD is namespaced?"
+      ],
+      "pitfalls": [
+        "Answering with a command that does not exist, such as kubectl crds. The real one is kubectl get crd."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-list-api-resources.html",
+        "title": "Listing kinds and CRDs",
+        "ratio": "960/360"
+      }
+    },
+    {
+      "id": "ch12-what-is-a-crd",
+      "level": "junior",
+      "question": "What is a CRD?",
+      "say_first": "A CustomResourceDefinition is a blueprint you register with the API server that defines a new resource kind, including its schema and scope.",
+      "explain": [
+        "Analogy: a CRD is a new form template. Once the template is filed, anyone can fill in copies (custom resources) and the API server stores and validates them just like built-in objects.",
+        "The CRD names the group, kind, plural name, scope (namespaced or cluster) and one or more versions with an OpenAPI v3 schema. After kubectl apply, the new kind appears in the API and works with get, describe, delete, RBAC and watches.",
+        "By itself a CRD only stores data. Pair it with a controller when you want the cluster to act on the objects."
+      ],
+      "key_points": [
+        "CRD is the definition; a custom resource (CR) is an instance.",
+        "The schema validates every CR before it is persisted.",
+        "Scope is either Namespaced or Cluster.",
+        "No API server restart or recompile is needed."
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl apply -f - <<'EOF'\napiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: books.example.com\nspec:\n  group: example.com\n  scope: Namespaced\n  names:\n    kind: Book\n    listKind: BookList\n    plural: books\n    singular: book\n  versions:\n  - name: v1\n    served: true\n    storage: true\n    schema:\n      openAPIV3Schema:\n        type: object\n        properties:\n          spec:\n            type: object\n            properties:\n              title: {type: string}\n              year: {type: integer}\n          status:\n            type: object\n            x-kubernetes-preserve-unknown-fields: true\nEOF",
+          "note": "Register a Book kind in group example.com"
+        },
+        {
+          "cmd": "kubectl apply -f - <<'EOF'\napiVersion: example.com/v1\nkind: Book\nmetadata:\n  name: k8s-interview-guide\nspec:\n  title: \"K8s interview guide\"\n  year: 2024\nEOF",
+          "note": "Create one Book object of that kind"
+        },
+        {
+          "cmd": "kubectl get books",
+          "note": "List instances like any native resource"
+        }
+      ],
+      "follow_ups": [
+        "What is the difference between a CRD and a custom resource?",
+        "Where are custom resources stored?"
+      ],
+      "pitfalls": [
+        "Forgetting the CRD name must be <plural>.<group>.",
+        "Expecting a CR to create Pods without any controller."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-what-is-a-crd.html",
+        "title": "A CRD adds a new kind",
+        "ratio": "960/336"
+      }
+    },
+    {
+      "id": "ch12-crd-anatomy",
+      "level": "mid",
+      "question": "Walk through the important fields of a CRD manifest.",
+      "say_first": "The key parts are group, names, scope, and a versions list where each version carries a schema plus served and storage flags.",
+      "explain": [
+        "metadata.name must equal plural.group, here books.example.com. spec.group is the API group, and spec.names gives kind, listKind, plural and singular forms that kubectl uses.",
+        "Each entry in versions has a name, an openAPIV3Schema describing spec and status, and two booleans: served (the version is available through the API) and storage (exactly one version is how objects are persisted).",
+        "scope decides whether instances belong to a namespace, which affects RBAC and naming. Add subresources such as status when a controller should write status separately from spec."
+      ],
+      "key_points": [
+        "Exactly one version has storage: true.",
+        "The schema is structural; unknown fields are pruned unless you opt out.",
+        "Use the status subresource so users cannot overwrite controller-owned status.",
+        "Add printer columns to make kubectl get output useful."
+      ],
+      "table": {
+        "caption": "Namespaced vs cluster scope",
+        "headers": [
+          "Aspect",
+          "Namespaced",
+          "Cluster"
+        ],
+        "rows": [
+          [
+            "Instance lives in",
+            "One namespace",
+            "The whole cluster"
+          ],
+          [
+            "Name uniqueness",
+            "Per namespace",
+            "Cluster-wide"
+          ],
+          [
+            "RBAC",
+            "Role and RoleBinding work",
+            "Needs ClusterRole"
+          ],
+          [
+            "Good for",
+            "Per-team app objects",
+            "Shared infrastructure settings"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl get crd books.example.com -o yaml",
+          "note": "Inspect a CRD as the API server sees it"
+        }
+      ],
+      "follow_ups": [
+        "How do you add a second version safely?"
+      ],
+      "pitfalls": [
+        "Omitting served and storage; the v1 CRD API requires them.",
+        "Marking two versions as storage."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-crd-anatomy.html",
+        "title": "Anatomy of a CRD manifest",
+        "ratio": "960/440"
+      }
+    },
+    {
+      "id": "ch12-crd-vs-cr-vs-operator",
+      "level": "junior",
+      "question": "What is the difference between a CRD, a custom resource, a controller and an Operator?",
+      "say_first": "The CRD defines the type, the custom resource is one instance, the controller acts on instances, and an Operator is a controller plus its CRDs packaged to run an application.",
+      "explain": [
+        "Use a pizza analogy: the CRD is the menu entry, the custom resource is one order, the controller is the cook, and the Operator is the whole kitchen with a chef who knows the recipe for running that specific app.",
+        "Interviewers like this question because candidates often blur the four. Keep each to one sentence and show how they connect."
+      ],
+      "key_points": [
+        "CRD: schema and registration only.",
+        "CR: desired state for one instance.",
+        "Controller: watch plus reconcile loop.",
+        "Operator: controller, CRDs, RBAC and domain knowledge as one deliverable."
+      ],
+      "table": {
+        "caption": "Four terms, four jobs",
+        "headers": [
+          "Term",
+          "Role",
+          "Analogy"
+        ],
+        "rows": [
+          [
+            "CRD",
+            "Defines a new kind",
+            "Menu entry"
+          ],
+          [
+            "Custom resource",
+            "One desired-state object",
+            "An order"
+          ],
+          [
+            "Controller",
+            "Makes reality match the object",
+            "The cook"
+          ],
+          [
+            "Operator",
+            "Controller plus CRDs plus app knowledge",
+            "The whole kitchen"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "Can you have a CRD without an Operator?",
+        "Can you have a controller without a CRD?"
+      ],
+      "pitfalls": [
+        "Saying an Operator replaces the CRD. It depends on it."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-crd-vs-cr-vs-operator.html",
+        "title": "CRD, CR, controller, Operator",
+        "ratio": "960/328"
+      }
+    },
+    {
+      "id": "ch12-what-is-an-operator",
+      "level": "mid",
+      "question": "What is a Kubernetes Operator and why was the pattern created?",
+      "say_first": "An Operator is a custom controller that uses CRDs to manage an application's whole lifecycle, encoding what a human operator would do into software.",
+      "explain": [
+        "Stateless web servers are easy: a Deployment restarts or scales them. Stateful systems such as databases need ordered upgrades, backups, restores, failover and careful scaling. A generic Deployment knows none of that.",
+        "An Operator turns those runbooks into code. You declare a Database object, and the controller creates the StatefulSet, Services and ConfigMaps, takes backups, performs rolling upgrades and heals failures.",
+        "The result is consistent, repeatable operations and far less manual effort."
+      ],
+      "key_points": [
+        "Created to manage stateful, complex software.",
+        "Extends the API with CRDs and acts through controllers.",
+        "Automates deploy, scale, heal, upgrade and backup.",
+        "Declarative: you edit the CR and the Operator does the work."
+      ],
+      "follow_ups": [
+        "When would a plain Deployment be enough?",
+        "Who decides the upgrade order in an Operator?"
+      ],
+      "pitfalls": [
+        "Describing an Operator as only an installer. It keeps running and reconciling."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-what-is-an-operator.html",
+        "title": "What an Operator does",
+        "ratio": "960/328"
+      }
+    },
+    {
+      "id": "ch12-operator-examples",
+      "level": "mid",
+      "question": "Which Operators have you used or can you name, and what do they do?",
+      "say_first": "Common ones are the Prometheus Operator, Strimzi for Kafka, Elastic Cloud on Kubernetes, and database operators for MySQL and MongoDB.",
+      "explain": [
+        "Naming real operators shows you have worked beyond theory. For each, say what CRDs it adds and which pain it removes.",
+        "A good answer links the operator to its stateful or configuration-heavy workload: monitoring stacks, brokers, search clusters and databases."
+      ],
+      "key_points": [
+        "Each ships its own CRDs such as Prometheus, Kafka, Elasticsearch or MongoDBCommunity.",
+        "They automate upgrades, scaling and secure wiring between components.",
+        "Many store credentials in Kubernetes Secrets.",
+        "Prefer well-maintained community or vendor operators over writing your own."
+      ],
+      "table": {
+        "caption": "Well-known Operators",
+        "headers": [
+          "Operator",
+          "Manages",
+          "Highlights"
+        ],
+        "rows": [
+          [
+            "Prometheus Operator",
+            "Prometheus, Alertmanager and rules",
+            "CRDs for instances, rules and monitors"
+          ],
+          [
+            "ECK",
+            "Elasticsearch, Kibana",
+            "Upgrades, scaling, TLS between components"
+          ],
+          [
+            "Strimzi",
+            "Apache Kafka",
+            "Topics and users as CRs, rolling updates"
+          ],
+          [
+            "MySQL Operator",
+            "InnoDB clusters",
+            "Automatic failover and recovery"
+          ],
+          [
+            "MongoDB Community Operator",
+            "Replica sets and sharded clusters",
+            "Scaling, credentials via Secrets"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl get crd | grep -i monitoring.coreos.com",
+          "note": "See CRDs added by the Prometheus Operator"
+        }
+      ],
+      "follow_ups": [
+        "How do you upgrade an Operator itself safely?"
+      ],
+      "pitfalls": [
+        "Listing tools without explaining what the Operator automates."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-operator-examples.html",
+        "title": "Well-known Operators",
+        "ratio": "960/416"
+      }
+    },
+    {
+      "id": "ch12-operator-components",
+      "level": "mid",
+      "question": "What are the main components of an Operator?",
+      "say_first": "CRDs and custom resources, a controller with a reconcile loop, event handlers, Kubernetes client libraries, and optionally the Operator Lifecycle Manager.",
+      "explain": [
+        "The controller is the brain: it watches CRs and drives the real world toward the declared state. Event handlers are its ears, reacting to create, update and delete events and queuing reconciliation work.",
+        "Client libraries such as client-go let the controller list, watch and modify objects. OLM is an optional manager that installs, upgrades and tracks Operators in a cluster.",
+        "The reconcile loop is a pattern, not a separate component. Operators also lean on RBAC, Jobs and other native features, and the developer decides how."
+      ],
+      "key_points": [
+        "Controller holds the lifecycle logic.",
+        "Event handlers trigger reconciliation from watch events.",
+        "client-go (or similar) talks to the API.",
+        "OLM handles packaging and upgrade of the Operator itself.",
+        "RBAC must grant the Operator only what it needs."
+      ],
+      "table": {
+        "caption": "Operator parts",
+        "headers": [
+          "Part",
+          "Responsibility",
+          "Required?"
+        ],
+        "rows": [
+          [
+            "CRD and CR",
+            "Define and hold desired state",
+            "Yes"
+          ],
+          [
+            "Controller",
+            "Reconcile actual to desired",
+            "Yes"
+          ],
+          [
+            "Event handlers",
+            "Turn watch events into work",
+            "Yes (usually via framework)"
+          ],
+          [
+            "Client libraries",
+            "API access",
+            "Yes"
+          ],
+          [
+            "OLM",
+            "Install and upgrade Operators",
+            "Optional"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "What RBAC would an Operator need?"
+      ],
+      "pitfalls": [
+        "Listing the reconcile loop as a deployable component."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-operator-components.html",
+        "title": "Components of an Operator",
+        "ratio": "960/352"
+      }
+    },
+    {
+      "id": "ch12-reconciliation-loop",
+      "level": "mid",
+      "question": "Explain the reconciliation loop an Operator runs.",
+      "say_first": "The controller repeatedly compares the spec in the custom resource with what actually exists, makes whatever changes close the gap, and records the result in status.",
+      "explain": [
+        "Picture a thermostat: it reads the target temperature, measures the room, and heats or cools until they match, then keeps watching. The Operator does the same with Deployments, Services and ConfigMaps.",
+        "A watch event wakes the controller. It reads the spec, observes the current state, and if they differ it creates, patches or deletes child objects. It then updates status so users can see progress, and waits for the next event.",
+        "Good reconcilers are idempotent: running them twice causes no extra change. They are level-based, reacting to the state they find, not to the particular event that arrived."
+      ],
+      "key_points": [
+        "Triggered by watch events and periodic resyncs.",
+        "Must be idempotent and safe to retry.",
+        "Writes status separately from spec.",
+        "Child objects carry an owner reference so deleting the CR cleans them up.",
+        "Errors requeue the work with backoff."
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl get book k8s-interview-guide -o jsonpath='{.status}'",
+          "note": "Read the status the controller wrote"
+        },
+        {
+          "cmd": "kubectl get deploy -l app.kubernetes.io/managed-by=my-operator",
+          "note": "List objects an Operator created, if it sets the label"
+        }
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-reconcile-loop.html",
+        "title": "The reconcile loop",
+        "ratio": "960/440"
+      },
+      "follow_ups": [
+        "Why must reconcile be idempotent?",
+        "What are finalizers for?"
+      ],
+      "pitfalls": [
+        "Writing edge-triggered logic that breaks if an event is missed.",
+        "Updating spec instead of status from the controller."
+      ]
+    },
+    {
+      "id": "ch12-webhooks",
+      "level": "mid",
+      "question": "What are Kubernetes webhooks and which types exist?",
+      "say_first": "Webhooks are HTTP callbacks the API server calls during request handling so external services can mutate, validate or convert objects.",
+      "explain": [
+        "Mutating admission webhooks run first and may edit an object, for example injecting a sidecar or default values. Validating webhooks run after and can only accept or reject, such as requiring resource limits. Conversion webhooks translate a CR between API versions.",
+        "The API server sends an AdmissionReview to the service and acts on the response. Both admission types fire before the object is stored in etcd.",
+        "Webhooks extend Kubernetes without touching its code, and are how many Operators keep their CRs predictable."
+      ],
+      "key_points": [
+        "Order: mutating, then validating, then persist.",
+        "Failure policy decides whether a down webhook blocks requests.",
+        "Webhooks need TLS and a registered CA bundle.",
+        "Scope them with namespace and object selectors to avoid blocking the cluster."
+      ],
+      "table": {
+        "caption": "Webhook types",
+        "headers": [
+          "",
+          "Mutating admission",
+          "Validating admission",
+          "Conversion"
+        ],
+        "rows": [
+          [
+            "Purpose",
+            "Modify objects before storage",
+            "Accept or reject before storage",
+            "Convert CRs between versions"
+          ],
+          [
+            "Use case",
+            "Inject defaults or sidecars",
+            "Enforce policy and limits",
+            "Handle v1alpha1 to v1beta1 upgrades"
+          ],
+          [
+            "Example",
+            "Auto-add a sidecar to Pods",
+            "Require resource limits on Pods",
+            "Rename a field between versions"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl get mutatingwebhookconfigurations",
+          "note": "Mutating hooks registered in the cluster"
+        },
+        {
+          "cmd": "kubectl get validatingwebhookconfigurations",
+          "note": "Validating hooks registered in the cluster"
+        }
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-webhook-sequence.html",
+        "title": "Admission webhooks on a request",
+        "ratio": "1000/540"
+      },
+      "follow_ups": [
+        "What if the webhook service is down?",
+        "Why does mutation run before validation?"
+      ],
+      "pitfalls": [
+        "A webhook that selects kube-system and then breaks cluster recovery.",
+        "Forgetting that conversion webhooks apply only to CRDs with multiple versions."
+      ]
+    },
+    {
+      "id": "ch12-schema-vs-webhook-validation",
+      "level": "senior",
+      "question": "How can you validate a custom resource: schema, CEL rules or a webhook?",
+      "say_first": "Start with the OpenAPI schema in the CRD, add CEL validation rules for cross-field logic, and use a validating webhook only when you need external data or code.",
+      "explain": [
+        "The schema checks types, enums, ranges and required fields with no extra service to run. CEL rules (x-kubernetes-validations) are evaluated inside the API server and can compare fields, such as replicas not exceeding a maximum.",
+        "A validating webhook is the heaviest tool: a service you must run, secure and keep available. Reach for it when the check needs another system, such as a quota database."
+      ],
+      "key_points": [
+        "Prefer in-API validation; fewer moving parts.",
+        "Schema errors return immediately with clear messages.",
+        "Webhooks add latency and an availability dependency.",
+        "Use defaults in the schema before writing a mutating webhook."
+      ],
+      "table": {
+        "caption": "Choosing a validation mechanism",
+        "headers": [
+          "Mechanism",
+          "Runs where",
+          "Best for",
+          "Cost"
+        ],
+        "rows": [
+          [
+            "OpenAPI schema",
+            "Inside API server",
+            "Types, ranges, required fields",
+            "Lowest"
+          ],
+          [
+            "CEL rules",
+            "Inside API server",
+            "Cross-field and transition rules",
+            "Low"
+          ],
+          [
+            "Validating webhook",
+            "Your own service",
+            "External lookups, complex code",
+            "Highest: service, TLS, uptime"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "How do defaults get applied without a webhook?"
+      ],
+      "pitfalls": [
+        "Writing a webhook for a check a schema pattern or CEL rule could do."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-schema-vs-webhook-validation.html",
+        "title": "Validation from light to heavy",
+        "ratio": "960/328"
+      }
+    },
+    {
+      "id": "ch12-develop-an-operator",
+      "level": "senior",
+      "question": "How would you develop an Operator from scratch?",
+      "say_first": "Define requirements and the custom resource, scaffold a project with a framework such as the Operator SDK, implement the reconcile logic, then test and package it.",
+      "explain": [
+        "1. Design: list functional needs (create and update Deployments, Services and ConfigMaps from the CR, report status) and non-functional ones (handle many CRs, recover from failures).",
+        "2. Define the custom resource and its CRD schema. 3. Pick a framework and set up the toolchain; Go with the Operator SDK or Kubebuilder is the common route.",
+        "4. Scaffold the project. 5. Write the controller and reconcile logic. 6. Use client libraries to create, update and delete child objects from CR state.",
+        "7. Build, test, generate manifests and ship, often as a container image plus a Helm chart or OLM bundle."
+      ],
+      "key_points": [
+        "Operator SDK and Kubebuilder generate scaffolding and CRD manifests.",
+        "Test with envtest or a kind cluster before shipping.",
+        "Minimise RBAC to what the controller touches.",
+        "Package for distribution with Helm or OLM."
+      ],
+      "commands": [
+        {
+          "cmd": "operator-sdk init --domain example.com --repo github.com/example/book-operator",
+          "note": "Scaffold a Go operator project"
+        },
+        {
+          "cmd": "operator-sdk create api --group library --version v1 --kind Book --resource --controller",
+          "note": "Generate the CRD types and controller stub"
+        },
+        {
+          "cmd": "make manifests install run",
+          "note": "Generate CRDs, install them, run the controller locally"
+        }
+      ],
+      "follow_ups": [
+        "How do you test an Operator?",
+        "Go or another language?"
+      ],
+      "pitfalls": [
+        "Skipping status updates, which leaves users blind to progress.",
+        "Giving the Operator cluster-admin."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-develop-an-operator.html",
+        "title": "Developing an Operator",
+        "ratio": "960/328"
+      }
+    },
+    {
+      "id": "ch12-operator-vs-helm",
+      "level": "senior",
+      "question": "When should you use an Operator instead of Helm or a plain Deployment?",
+      "say_first": "Use an Operator when the app needs ongoing, application-aware operations such as failover, backup and ordered upgrades; Helm or a Deployment suffices for simple install-and-run workloads.",
+      "explain": [
+        "Helm renders templates once at install or upgrade time. It does not keep watching or react to a database primary failing at 3 a.m. An Operator keeps a loop running and reacts continuously.",
+        "The price is complexity: a CRD, a controller to maintain and extra RBAC. Do not build an Operator for a stateless service that a Deployment already handles."
+      ],
+      "key_points": [
+        "Helm: templating and release management.",
+        "Operator: continuous reconciliation and domain logic.",
+        "They combine well: Helm installs the Operator, the Operator manages the app.",
+        "Prefer an existing mature Operator over writing one."
+      ],
+      "table": {
+        "caption": "Deployment vs Helm vs Operator",
+        "headers": [
+          "Option",
+          "Handles day-2 tasks?",
+          "Complexity",
+          "Best for"
+        ],
+        "rows": [
+          [
+            "Plain Deployment",
+            "Restarts and scaling only",
+            "Low",
+            "Stateless services"
+          ],
+          [
+            "Helm chart",
+            "No, acts at install and upgrade",
+            "Low to medium",
+            "Packaging and repeatable installs"
+          ],
+          [
+            "Operator",
+            "Yes, continuous and app-aware",
+            "High",
+            "Databases, brokers, complex stateful systems"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "Can Helm and an Operator be used together?"
+      ],
+      "pitfalls": [
+        "Claiming Operators replace Helm. They solve different problems."
+      ],
+      "diagram": {
+        "file": "diagrams/ch12-operator-vs-helm.html",
+        "title": "Helm versus an Operator",
+        "ratio": "960/408"
+      }
+    }
+  ],
+  "diagrams": [
+    "diagrams/ch12-crd-architecture.html",
+    "diagrams/ch12-api-groups-tree.html",
+    "diagrams/ch12-reconcile-loop.html",
+    "diagrams/ch12-webhook-sequence.html",
+    "diagrams/ch12-list-api-resources.html",
+    "diagrams/ch12-what-is-a-crd.html",
+    "diagrams/ch12-crd-anatomy.html",
+    "diagrams/ch12-crd-vs-cr-vs-operator.html",
+    "diagrams/ch12-what-is-an-operator.html",
+    "diagrams/ch12-operator-examples.html",
+    "diagrams/ch12-operator-components.html",
+    "diagrams/ch12-schema-vs-webhook-validation.html",
+    "diagrams/ch12-develop-an-operator.html",
+    "diagrams/ch12-operator-vs-helm.html"
+  ]
+}

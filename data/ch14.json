@@ -1,0 +1,849 @@
+{
+ "number": 14,
+ "title": "Monitoring Best Practices",
+ "part": "Part 5 · Reliability, Monitoring and Maintenance",
+ "tagline": "Metrics, logs, traces and alerts that tell you before users do",
+ "overview": "This chapter explains why a constantly changing cluster needs constant visibility, and how metrics, logs and traces fit together as observability. It walks through the standard open source toolbox (Metrics Server, Prometheus, Grafana, Loki, OpenSearch, OpenTelemetry), the four golden signals, what to watch in a cluster, and how to design alerts that people actually act on.",
+ "topics": [
+  {
+   "id": "ch14-why-monitor-kubernetes",
+   "level": "junior",
+   "question": "Why is monitoring so important in a Kubernetes environment?",
+   "say_first": "Kubernetes constantly moves, restarts and rescales workloads, so without monitoring you cannot tell whether the cluster and the apps on it are healthy, slow or about to run out of resources.",
+   "explain": [
+    "Picture an airport control tower. Planes (Pods) land, take off and change gates all day. Nobody could run the airport by walking the runway; they need a live radar screen. Monitoring is that screen for your cluster.",
+    "In a static server world you could log in and look around. In Kubernetes a Pod that misbehaved five minutes ago may already be gone and replaced, so you need data that was recorded automatically while it happened.",
+    "Good monitoring also pays for itself: it shows which workloads are over-provisioned, which are starved, and what the normal pattern looks like so that an abnormal one stands out."
+   ],
+   "key_points": [
+    "Detect problems before users notice them.",
+    "Track resource use (CPU, memory, network, disk) for Pods and nodes.",
+    "Guide right-sizing of requests and limits, and so control cost.",
+    "Provide the history needed for troubleshooting and post-incident reviews.",
+    "Feed autoscaling decisions with live numbers."
+   ],
+   "follow_ups": [
+    "What would you look at first if users say the site is slow?",
+    "What is the difference between monitoring and observability?"
+   ],
+   "pitfalls": [
+    "Answering only with tool names instead of explaining what problem monitoring solves.",
+    "Treating monitoring as something you add after go-live."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-why-monitor.html",
+    "title": "Why monitor Kubernetes",
+    "ratio": "936/420"
+   }
+  },
+  {
+   "id": "ch14-whitebox-vs-blackbox",
+   "level": "junior",
+   "question": "What is a metric, and what is the difference between whitebox and blackbox monitoring?",
+   "say_first": "A metric is a number sampled at regular intervals. Whitebox monitoring reads numbers the system reports about itself; blackbox monitoring pokes the system from outside, like a user, and checks whether it answers correctly.",
+   "explain": [
+    "A metric is a named number with a timestamp, such as CPU seconds used, requests served, or Pods running. Collected over time it becomes a line on a graph, which is what makes trends and spikes visible.",
+    "Whitebox is like a doctor reading your heart rate and blood pressure from instruments attached to you. It tells you why something is wrong: queue depth, error counters, request latency inside the app.",
+    "Blackbox is like a friend phoning you to ask if you are alright. It cannot see inside, but it answers the only question the customer cares about: does it work from where I stand?",
+    "You need both. Blackbox catches total outages, including ones where the app is too broken to report its own metrics. Whitebox explains the cause."
+   ],
+   "key_points": [
+    "Metrics are cheap, numeric and great for alerting and trends.",
+    "Whitebox: CPU, memory, latency histograms, error counters, internal state.",
+    "Blackbox: HTTP checks, TCP checks, ping, synthetic transactions, usually from outside the cluster.",
+    "Blackbox Exporter is the usual Prometheus tool for probing endpoints."
+   ],
+   "table": {
+    "caption": "Whitebox versus blackbox monitoring",
+    "headers": [
+     "Aspect",
+     "Whitebox",
+     "Blackbox"
+    ],
+    "rows": [
+     [
+      "Point of view",
+      "Inside the system",
+      "Outside, as a user"
+     ],
+     [
+      "Data source",
+      "Metrics the app and nodes expose",
+      "Probes: HTTP, TCP, ICMP, scripted journeys"
+     ],
+     [
+      "Best at",
+      "Finding the cause and spotting trends early",
+      "Confirming the service is really reachable and correct"
+     ],
+     [
+      "Blind spot",
+      "Can look fine while the network path to users is broken",
+      "Says something is wrong but not why"
+     ],
+     [
+      "Typical Kubernetes tool",
+      "Prometheus scraping /metrics",
+      "Blackbox Exporter, external synthetic checks"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch14-whitebox-blackbox.html",
+    "title": "Whitebox versus blackbox monitoring",
+    "ratio": "936/424"
+   },
+   "follow_ups": [
+    "Give an example of an outage only blackbox monitoring would catch.",
+    "How would you probe an internal Service from inside the cluster?"
+   ],
+   "pitfalls": [
+    "Claiming one of the two is enough.",
+    "Running blackbox probes only from inside the cluster, so a broken ingress or DNS record goes unnoticed."
+   ]
+  },
+  {
+   "id": "ch14-monitoring-vs-observability",
+   "level": "mid",
+   "question": "What is observability, and how does it differ from monitoring?",
+   "say_first": "Monitoring watches for problems you already know to look for; observability means the system emits enough metrics, logs and traces that you can investigate problems you did not predict.",
+   "explain": [
+    "Monitoring is a smoke alarm: you decided in advance what counts as a fire and it tells you when that happens.",
+    "Observability is having cameras in every room plus a logbook. When something strange occurs, you can replay what happened and work out why, even if nobody wrote a rule for it.",
+    "The three signal types, often called the three pillars, answer different questions. Metrics tell you that something is wrong and how big it is. Traces show where in a request path the time or error occurred. Logs give the detailed story at that place.",
+    "In practice you move between them: an alert from a metric, a trace to find the slow service, then that service's logs for the exact error."
+   ],
+   "key_points": [
+    "Monitoring is about known questions; observability supports unknown ones.",
+    "Metrics, logs and traces complement each other; none replaces the rest.",
+    "Shared labels or trace IDs let you jump between the three signals.",
+    "OpenTelemetry is the common standard for producing all three."
+   ],
+   "table": {
+    "caption": "The three signal types",
+    "headers": [
+     "Signal",
+     "What it is",
+     "Best question it answers",
+     "Relative cost"
+    ],
+    "rows": [
+     [
+      "Metrics",
+      "Numbers sampled over time",
+      "Is something wrong, and how badly?",
+      "Low"
+     ],
+     [
+      "Logs",
+      "Timestamped event records",
+      "What exactly happened in this component?",
+      "High at volume"
+     ],
+     [
+      "Traces",
+      "One request's path across services",
+      "Where did this request spend its time or fail?",
+      "Medium; usually sampled"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "How do you correlate a log line with a trace?",
+    "Which signal would you alert on and why?"
+   ],
+   "pitfalls": [
+    "Saying observability is just a fancier word for monitoring.",
+    "Collecting all three signals but with no shared identifiers to link them."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-monitoring-vs-observability.html",
+    "title": "Monitoring versus observability",
+    "ratio": "936/448"
+   }
+  },
+  {
+   "id": "ch14-metrics-server",
+   "level": "junior",
+   "question": "What is the Metrics Server, and why do we need it?",
+   "say_first": "Metrics Server is a lightweight cluster add-on that collects current CPU and memory usage from every kubelet and serves it through the Kubernetes API, which powers kubectl top and the Horizontal Pod Autoscaler.",
+   "explain": [
+    "Think of it as the cluster's live dashboard gauge: it only knows what is happening right now, not what happened an hour ago.",
+    "It queries each node's kubelet, keeps the latest values in memory, and exposes them through the metrics.k8s.io API. The HPA reads this API to decide how many replicas to run.",
+    "Because it stores no history, it is not a monitoring system. For graphs, trends and alerting you still need something like Prometheus."
+   ],
+   "key_points": [
+    "Provides CPU and memory only, for nodes and Pods.",
+    "Required for kubectl top and for HPA on CPU or memory.",
+    "No history, no alerting, no custom metrics.",
+    "Many managed clusters ship it; on others you install it yourself, often from the official manifest or Helm chart.",
+    "If HPA shows unknown targets, check that Metrics Server is running and that Pods have resource requests."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl top nodes",
+     "note": "Current CPU and memory per node"
+    },
+    {
+     "cmd": "kubectl top pods -A --sort-by=memory",
+     "note": "Which Pods use the most memory right now"
+    },
+    {
+     "cmd": "kubectl get apiservices v1beta1.metrics.k8s.io",
+     "note": "Shows whether the metrics API is registered and Available"
+    },
+    {
+     "cmd": "kubectl -n kube-system get deploy metrics-server",
+     "note": "Checks that the add-on itself is running"
+    }
+   ],
+   "follow_ups": [
+    "Why does HPA show <unknown> for its target?",
+    "How is Metrics Server different from Prometheus?"
+   ],
+   "pitfalls": [
+    "Treating Metrics Server as a replacement for a monitoring stack.",
+    "Expecting kubectl top to show history or disk and network figures."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-metrics-server-flow.html",
+    "title": "Metrics Server flow",
+    "ratio": "936/420"
+   }
+  },
+  {
+   "id": "ch14-prometheus-basics",
+   "level": "mid",
+   "question": "How does Prometheus work, and what is an exporter?",
+   "say_first": "Prometheus periodically pulls (scrapes) metrics from HTTP endpoints, stores them as labelled time series, lets you query them with PromQL, and evaluates alert rules; exporters are small adapters that expose metrics for things that do not speak the Prometheus format themselves.",
+   "explain": [
+    "The pull model is like a teacher doing roll call: Prometheus visits each target on a schedule and asks for its current numbers. If a target does not answer, that silence is itself a signal (the built-in up metric becomes 0).",
+    "Every data point is identified by a metric name plus labels, for example http_requests_total{service=\"cart\", status=\"500\"}. Labels are what let you slice by Pod, namespace or version.",
+    "Targets are found through Kubernetes service discovery, so new Pods are picked up automatically. In practice teams install the kube-prometheus-stack Helm chart or the Prometheus Operator and declare targets with ServiceMonitor or PodMonitor objects.",
+    "An exporter translates. node-exporter reports machine-level numbers, kube-state-metrics turns Kubernetes object state (Deployments, Pod phases) into metrics, and others cover databases or message brokers. If nothing exists for your software, you can write one."
+   ],
+   "key_points": [
+    "Time series identified by name plus key-value labels.",
+    "PromQL for queries; recording rules precompute expensive ones.",
+    "Alert rules fire to Alertmanager, which handles routing and notifications.",
+    "Common building blocks: node-exporter, kube-state-metrics, cAdvisor (built into the kubelet).",
+    "Short-lived batch jobs use a Pushgateway because they may finish before being scraped."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-metrics-alerting.html",
+    "title": "How Prometheus works",
+    "ratio": "936/420"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get servicemonitors -A",
+     "note": "Lists scrape targets declared through the Prometheus Operator"
+    },
+    {
+     "cmd": "kubectl -n monitoring port-forward svc/prometheus-operated 9090",
+     "note": "Open the Prometheus UI locally to try PromQL"
+    }
+   ],
+   "follow_ups": [
+    "Push versus pull: what are the trade-offs?",
+    "How does Prometheus discover new Pods?"
+   ],
+   "pitfalls": [
+    "Using labels with unbounded values such as user IDs, which explodes memory (high cardinality).",
+    "Thinking Prometheus is meant for long-term storage by default; local storage is short-retention."
+   ]
+  },
+  {
+   "id": "ch14-prometheus-scale-and-alternatives",
+   "level": "senior",
+   "question": "A single Prometheus will not do for production. How do you make it highly available and keep data long term, and what alternatives exist?",
+   "say_first": "Run two identical Prometheus replicas scraping the same targets for availability, and add a long-term layer such as Thanos, Grafana Mimir or VictoriaMetrics for global queries and retention; or use a managed SaaS platform if budget allows.",
+   "explain": [
+    "A lone Prometheus is a single point of failure and keeps data only on its local disk for a limited time. Two replicas doing the same scraping give you redundancy, but they are separate databases, so something must merge or deduplicate them.",
+    "Thanos adds a sidecar that uploads blocks to object storage and a query layer that deduplicates replicas and answers across clusters. Mimir and VictoriaMetrics take the approach of receiving data through remote write into a scalable backend.",
+    "VictoriaMetrics is compatible with PromQL-style querying, compresses well and can run as a single node or a cluster. It is popular when Prometheus memory or storage cost starts to hurt.",
+    "Paid platforms trade money for less operational work and bundle metrics, logs and traces in one place. Older general-purpose tools such as Nagios or Zabbix are less common for Kubernetes."
+   ],
+   "key_points": [
+    "HA = replicas plus deduplication at query time.",
+    "Long term = object storage (Thanos) or remote write to a scalable store.",
+    "Shard or federate when one server cannot hold all series.",
+    "Choose by team size, data volume and budget, not fashion."
+   ],
+   "table": {
+    "caption": "Scaling and alternative options",
+    "headers": [
+     "Option",
+     "Type",
+     "Strength",
+     "Watch out for"
+    ],
+    "rows": [
+     [
+      "Prometheus (plain)",
+      "Open source",
+      "Simple, Kubernetes-native, huge ecosystem",
+      "Single node, limited retention"
+     ],
+     [
+      "Thanos",
+      "Open source add-on",
+      "Global view, object-storage retention, deduplication",
+      "More components to run"
+     ],
+     [
+      "Grafana Mimir",
+      "Open source backend",
+      "Horizontally scalable, multi-tenant",
+      "Operational weight at small scale"
+     ],
+     [
+      "VictoriaMetrics",
+      "Open source backend",
+      "Efficient storage and queries, simple to deploy",
+      "Smaller community than Prometheus itself"
+     ],
+     [
+      "Datadog or New Relic",
+      "Paid SaaS",
+      "Unified metrics, logs, traces, little upkeep",
+      "Cost grows with hosts and data; vendor lock-in"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "How does deduplication work with two replicas?",
+    "When is a SaaS platform the right call?"
+   ],
+   "pitfalls": [
+    "Load balancing a user-facing URL across two Prometheus replicas without deduplication, giving jagged graphs.",
+    "Keeping months of raw data on local disk."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-prometheus-ha-longterm.html",
+    "title": "Prometheus HA and long-term storage",
+    "ratio": "936/420"
+   }
+  },
+  {
+   "id": "ch14-grafana-dashboards",
+   "level": "mid",
+   "question": "How do you present metrics so the whole company can understand them?",
+   "say_first": "Use Grafana to build dashboards from your data sources, with different views for different audiences: a simple service-health page for business and product, and detailed panels for engineers.",
+   "explain": [
+    "A dashboard is the car dashboard of your system: a few clear gauges for the driver, and the detailed engine diagnostics kept for the mechanic.",
+    "Grafana connects to many data sources (Prometheus, Loki, OpenSearch, cloud services) and shows them as panels: time graphs, single numbers, tables, heat maps.",
+    "Template variables let one dashboard serve many namespaces or clusters by choosing from a drop-down instead of copying the dashboard. Annotations mark events such as deployments on the graph, so you can see what changed when a line jumped.",
+    "Treat dashboards as code: store the JSON in Git and provision it, so a rebuilt cluster gets the same views back. Grafana can also raise alerts, but many teams keep rules in Prometheus so they live with the metrics."
+   ],
+   "key_points": [
+    "One top-level overview per service, built around the golden signals.",
+    "Drill-down dashboards for nodes, Pods and dependencies.",
+    "Use variables and annotations instead of dashboard sprawl.",
+    "Provision dashboards from Git rather than clicking them together.",
+    "Write a title and a one-line purpose on every panel."
+   ],
+   "follow_ups": [
+    "What makes a dashboard bad?",
+    "Where should alert rules live: Grafana or Prometheus?"
+   ],
+   "pitfalls": [
+    "Dashboards with dozens of unlabeled graphs that nobody can read in an incident.",
+    "Hand-edited dashboards that vanish with the Grafana pod."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-grafana-audiences.html",
+    "title": "Grafana dashboards for every audience",
+    "ratio": "936/400"
+   }
+  },
+  {
+   "id": "ch14-log-aggregation",
+   "level": "mid",
+   "question": "What is log aggregation, and how does it work in Kubernetes?",
+   "say_first": "Log aggregation copies logs from every container and system component into one searchable place, using a small agent on each node, a central store, and a query and dashboard layer.",
+   "explain": [
+    "Pods are disposable. When one is deleted or its node disappears, its local logs go with it. Aggregation ships them out first, like a courier collecting post from every mailbox before the building is demolished.",
+    "Step one, collection: containers write to stdout and stderr, and the container runtime stores them under /var/log/containers on the node. A DaemonSet agent (Fluent Bit, Fluentd, Filebeat, Logstash, or Grafana Alloy) tails those files and adds Kubernetes metadata such as namespace, Pod name and labels.",
+    "Step two, centralization: the agent forwards logs to a store like Loki, OpenSearch or Splunk. Here you can parse, drop sensitive fields and standardise formats.",
+    "Step three, analysis: people search, filter by time or level, build dashboards and set alerts on log patterns through Grafana, OpenSearch Dashboards or the vendor UI."
+   ],
+   "key_points": [
+    "Applications should log to stdout and stderr, in structured (JSON) form where possible.",
+    "Agents run as a DaemonSet, one per node.",
+    "Enrich with Kubernetes labels so you can filter by workload.",
+    "Mask secrets and personal data before storage.",
+    "Set retention; log storage is usually the costliest part."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-logging-pipeline.html",
+    "title": "Centralized logging pipeline",
+    "ratio": "936/420"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl logs deploy/web --tail=50",
+     "note": "Quick look at recent logs without any aggregation"
+    },
+    {
+     "cmd": "kubectl logs web-7d9f --previous",
+     "note": "Logs from the crashed previous container instance"
+    },
+    {
+     "cmd": "kubectl -n logging get daemonset",
+     "note": "Confirms the log agent runs on every node"
+    }
+   ],
+   "follow_ups": [
+    "Why not just use kubectl logs?",
+    "What is the sidecar logging pattern and when is it needed?"
+   ],
+   "pitfalls": [
+    "Writing logs to a file inside the container, where the node agent never sees them.",
+    "Logging secrets or full request bodies."
+   ]
+  },
+  {
+   "id": "ch14-log-stack-choice",
+   "level": "mid",
+   "question": "Which log aggregation solutions would you consider, and how do you choose?",
+   "say_first": "The common choices are an OpenSearch or Elasticsearch stack for powerful full-text search, Loki for a cheaper label-based approach that pairs with Grafana, and Splunk or a SaaS platform for enterprise features and support.",
+   "explain": [
+    "The ELK family stores every word in an inverted index, like the index at the back of a book. Searching is very flexible and fast, but the index itself takes a lot of disk and memory.",
+    "Loki indexes only the labels (namespace, app, Pod) and stores the log text compressed in chunks. It is like filing boxes by label and reading inside only the boxes you pick. It is cheaper and simpler, but free-text searches across huge time ranges are slower.",
+    "Splunk and SaaS products offer polished analytics, machine-learning features and vendor support, at a licence or usage cost.",
+    "Note that one popular log shipper, Promtail, has been superseded by Grafana Alloy, so new Loki setups should look at Alloy or Fluent Bit."
+   ],
+   "key_points": [
+    "Decision drivers: search needs, data volume, budget, team skills.",
+    "ELK/OpenSearch: strong search, heavier to run.",
+    "Loki: low cost, Grafana-native, LogQL queries.",
+    "Fluent Bit is lighter than Fluentd and is a common node agent."
+   ],
+   "table": {
+    "caption": "Log platform comparison",
+    "headers": [
+     "Platform",
+     "How it indexes",
+     "Strength",
+     "Cost profile"
+    ],
+    "rows": [
+     [
+      "Elasticsearch or OpenSearch (ELK)",
+      "Full-text inverted index",
+      "Rich search and analytics",
+      "Heavy storage and memory"
+     ],
+     [
+      "Loki",
+      "Labels only; compressed chunks",
+      "Cheap, simple, integrates with Grafana",
+      "Low; scales on object storage"
+     ],
+     [
+      "Splunk",
+      "Proprietary indexing",
+      "Enterprise analytics, compliance, support",
+      "Licence based on volume"
+     ],
+     [
+      "Datadog or New Relic logs",
+      "Managed SaaS",
+      "One platform for all signals",
+      "Usage based; grows quickly"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "What would make you move from Loki to OpenSearch?",
+    "How do you control log volume and cost?"
+   ],
+   "pitfalls": [
+    "Picking a tool before measuring daily log volume.",
+    "Using high-cardinality labels in Loki, which hurts its performance."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-log-stack-options.html",
+    "title": "Choosing a log stack",
+    "ratio": "936/420"
+   }
+  },
+  {
+   "id": "ch14-tracing-basics",
+   "level": "mid",
+   "question": "What is distributed tracing, and how does it help in a microservices cluster?",
+   "say_first": "Tracing records the path of one request as it travels through many services, as a tree of timed steps called spans that share a trace ID, so you can see exactly where it was slow or failed.",
+   "explain": [
+    "Imagine tracking a parcel with a tracking number. Each depot scans it and records the time. Lay all the scans in order and you see which leg took three days.",
+    "A span is one unit of work (for example, call the payment service) with a start time, duration and tags. Spans nest: a parent span can have child spans. A trace is the full set of spans for one request.",
+    "Context propagation is the trick that makes it work: each service passes the trace ID and parent span ID to the next one, usually in an HTTP header (the W3C traceparent header). Without it, spans cannot be joined.",
+    "Tracing finds problems that metrics only hint at and logs hide in noise: a slow database call three hops deep, a retry storm, or an unexpected dependency."
+   ],
+   "key_points": [
+    "Span = one operation; trace = all spans of one request.",
+    "Trace context must be forwarded by every service.",
+    "Sampling (keep a fraction of traces) keeps cost under control.",
+    "Great for latency hunting, dependency maps and finding the failing hop."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-tracing-flow.html",
+    "title": "How a distributed trace is built",
+    "ratio": "936/420"
+   },
+   "follow_ups": [
+    "What happens if one service does not propagate the trace header?",
+    "What is head-based versus tail-based sampling?"
+   ],
+   "pitfalls": [
+    "Tracing every single request at high traffic without sampling.",
+    "Assuming a service mesh gives full tracing with no application changes; apps still need to forward headers."
+   ]
+  },
+  {
+   "id": "ch14-tracing-tools",
+   "level": "senior",
+   "question": "Which tools would you use to implement tracing for Kubernetes apps?",
+   "say_first": "Instrument applications with OpenTelemetry, send the data to an OpenTelemetry Collector, and store it in a backend such as Jaeger or Grafana Tempo; paid APM tools offer the same as a managed service.",
+   "explain": [
+    "OpenTelemetry (OTel) is the vendor-neutral standard, formed by merging the earlier OpenTracing and OpenCensus projects. It defines APIs, SDKs and a wire protocol for traces, metrics and logs.",
+    "The Collector is a separate process (often a DaemonSet or Deployment) that receives telemetry, batches, samples and filters it, and forwards it to one or more backends. Keeping it between apps and backend lets you change vendors without touching application code.",
+    "Jaeger is a mature open source tracing system with its own UI. Tempo stores traces cheaply in object storage and is queried from Grafana, so traces sit next to metrics and logs.",
+    "Zipkin and cloud services such as AWS X-Ray are other options, and Datadog or New Relic include tracing in their platforms."
+   ],
+   "key_points": [
+    "Instrument once with OTel; choose or change the backend later.",
+    "Use the Collector for batching, sampling and routing.",
+    "Backends differ in storage model, cost and UI.",
+    "Auto-instrumentation agents can add tracing to many languages without code changes."
+   ],
+   "table": {
+    "caption": "Tracing tools and their roles",
+    "headers": [
+     "Tool",
+     "Role",
+     "Storage",
+     "Notes"
+    ],
+    "rows": [
+     [
+      "OpenTelemetry SDK and Collector",
+      "Instrumentation and pipeline",
+      "None (forwards)",
+      "Vendor neutral; covers traces, metrics, logs"
+     ],
+     [
+      "Jaeger",
+      "Backend and UI",
+      "Elasticsearch/OpenSearch, Cassandra, Kafka",
+      "Mature, standalone UI"
+     ],
+     [
+      "Grafana Tempo",
+      "Backend",
+      "Object storage (S3, GCS)",
+      "Cheap retention, pairs with Grafana"
+     ],
+     [
+      "Zipkin",
+      "Backend and UI",
+      "Various",
+      "Older, simpler alternative"
+     ],
+     [
+      "Datadog or New Relic APM",
+      "Managed platform",
+      "Vendor hosted",
+      "Everything integrated; paid"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Why put a Collector between the app and the backend?",
+    "How do you link a trace to the related logs?"
+   ],
+   "pitfalls": [
+    "Locking application code to one vendor SDK.",
+    "Forgetting that traces need retention and sampling budgets like any other data."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-tracing-toolchain.html",
+    "title": "Tracing toolchain",
+    "ratio": "936/420"
+   }
+  },
+  {
+   "id": "ch14-golden-signals",
+   "level": "mid",
+   "question": "What are the four golden signals, and how would you measure them?",
+   "say_first": "Latency, traffic, errors and saturation: how long requests take, how much demand there is, how many requests fail, and how full the resources are. If you can only watch four things on a service, watch these.",
+   "explain": [
+    "The set comes from Google's site reliability engineering practice and suits request-driven services. A restaurant analogy: how long until food arrives (latency), how many customers come in (traffic), how many orders go wrong (errors), and how crowded the kitchen is (saturation).",
+    "Measure latency as percentiles (p95, p99), not averages; averages hide the slow tail that real users feel. Separate successful and failed request latency, since a fast error can look like good performance.",
+    "Saturation is about how close you are to a limit, such as CPU throttling, memory near its limit, a full connection pool or disk filling up. It often warns you before latency and errors rise.",
+    "Each signal should drive a dashboard panel and at least one alert tied to user impact."
+   ],
+   "key_points": [
+    "Latency: time to serve a request, as percentiles.",
+    "Traffic: requests per second, or bytes and transactions.",
+    "Errors: failed requests, 5xx, timeouts, wrong results.",
+    "Saturation: utilisation of the scarcest resource.",
+    "Related methods: RED (rate, errors, duration) for services, USE (utilisation, saturation, errors) for resources."
+   ],
+   "table": {
+    "caption": "Golden signals with example PromQL",
+    "headers": [
+     "Signal",
+     "Meaning",
+     "Example query"
+    ],
+    "rows": [
+     [
+      "Latency",
+      "Time per request (p95)",
+      "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))"
+     ],
+     [
+      "Traffic",
+      "Requests per second",
+      "sum(rate(http_requests_total[5m]))"
+     ],
+     [
+      "Errors",
+      "Share of failed requests",
+      "sum(rate(http_requests_total{code=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))"
+     ],
+     [
+      "Saturation",
+      "CPU throttling or memory near limit",
+      "sum(rate(container_cpu_cfs_throttled_periods_total[5m])) / sum(rate(container_cpu_cfs_periods_total[5m]))"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Why percentiles rather than averages?",
+    "How do the golden signals relate to SLOs?"
+   ],
+   "pitfalls": [
+    "Alerting on CPU percentage alone and ignoring user-facing symptoms.",
+    "Using averages for latency."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-golden-signals-measure.html",
+    "title": "The four golden signals and how to measure them",
+    "ratio": "936/480"
+   }
+  },
+  {
+   "id": "ch14-what-to-monitor",
+   "level": "mid",
+   "question": "What should you monitor in a Kubernetes cluster?",
+   "say_first": "Monitor in layers: nodes, Pods and workloads, the cluster control plane, your applications' own metrics, network traffic, and security signals such as audit logs and policy violations.",
+   "explain": [
+    "Prometheus can collect thousands of metrics, so you need a plan. Think of a hospital: vital signs for each patient (Pods), the state of the building (nodes), how the admin office runs (control plane), and the security desk (audit).",
+    "Node signals warn about exhaustion before Pods get evicted. Pod signals, especially restart counts and Pods stuck in Pending or CrashLoopBackOff, show application trouble.",
+    "Control plane metrics such as API server request latency and scheduler queue time show whether the cluster itself is slow. Comparing requests, limits and actual usage reveals waste or risk.",
+    "Application and edge metrics cover what users experience. Security metrics include API audit logs and violations reported by policy engines such as Kyverno or OPA Gatekeeper."
+   ],
+   "key_points": [
+    "Start with the golden signals for your own services.",
+    "Alert on symptoms (users affected), use cause metrics for diagnosis.",
+    "Watch persistent volume usage for stateful workloads.",
+    "Track certificate expiry and etcd health too; both can take a cluster down."
+   ],
+   "table": {
+    "caption": "Layers to monitor",
+    "headers": [
+     "Layer",
+     "Examples",
+     "Why it matters"
+    ],
+    "rows": [
+     [
+      "Nodes",
+      "CPU, memory, disk I/O, network, disk space",
+      "Early warning before eviction and instability"
+     ],
+     [
+      "Pods and workloads",
+      "Restarts, Pending Pods, CPU/memory versus limits, PVC usage",
+      "Shows crashes, misconfiguration and waste"
+     ],
+     [
+      "Control plane",
+      "API server latency and errors, scheduler attempts, etcd latency",
+      "The cluster cannot schedule or change state if these are unhealthy"
+     ],
+     [
+      "Applications",
+      "Request rate, latency, error rate, business counters",
+      "What users actually feel"
+     ],
+     [
+      "Ingress and network",
+      "Ingress request rates, error codes, egress volume",
+      "Traffic health and anomalies"
+     ],
+     [
+      "Security",
+      "API audit logs, policy violations",
+      "Compliance and intrusion signals"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get pods -A --field-selector=status.phase!=Running",
+     "note": "Quick manual check for unhealthy Pods"
+    },
+    {
+     "cmd": "kubectl get --raw /metrics | head",
+     "note": "Peek at the API server's own Prometheus metrics (needs RBAC)"
+    },
+    {
+     "cmd": "kubectl get events -A --sort-by=.lastTimestamp",
+     "note": "Recent cluster events, often the first clue"
+    }
+   ],
+   "follow_ups": [
+    "Which three alerts would you create first on a new cluster?",
+    "How do you monitor etcd?"
+   ],
+   "pitfalls": [
+    "Monitoring only nodes and ignoring the application layer.",
+    "Collecting everything and alerting on nothing meaningful."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-monitoring-layers.html",
+    "title": "What to monitor in a cluster",
+    "ratio": "936/480"
+   }
+  },
+  {
+   "id": "ch14-alerting-best-practices",
+   "level": "senior",
+   "question": "How do you set up alerting for Kubernetes workloads so it is useful rather than noisy?",
+   "say_first": "Alert on symptoms that need a human, give every alert a severity and an owner, group related alerts, and build escalation paths that include at least two people, so critical issues are never missed and noise does not train people to ignore the pager.",
+   "explain": [
+    "Alert fatigue is the boy who cried wolf: if the pager fires for everything, people stop reacting to the one that matters. Every page should be urgent, actionable and clearly owned.",
+    "In the Prometheus world, alert rules are written as PrometheusRule objects and Alertmanager handles grouping, deduplication, silences and routing. Grafana has its own alerting as well.",
+    "Use severity levels. Critical alerts page someone immediately; warnings go to a team channel or ticket queue and are reviewed during working hours. Do not send everything to one place.",
+    "Add a for: duration so short blips do not fire, group alerts by service or cluster so one outage produces one notification, and link a runbook in every alert. Escalation policies should name at least two people or a group, with a fallback if the first does not acknowledge."
+   ],
+   "key_points": [
+    "Alert on user-facing symptoms, not every internal cause.",
+    "Severity decides the channel: page, chat, or ticket.",
+    "Group, deduplicate and use silences during planned maintenance.",
+    "Every alert links to a runbook and has an owner.",
+    "Review noisy alerts regularly and delete or tune them."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get prometheusrules -A",
+     "note": "Lists alert rules managed by the Prometheus Operator"
+    },
+    {
+     "cmd": "kubectl -n monitoring port-forward svc/alertmanager-operated 9093",
+     "note": "Open Alertmanager to see active alerts and silences"
+    }
+   ],
+   "follow_ups": [
+    "What is an SLO burn-rate alert?",
+    "How do you silence alerts safely during a maintenance window?"
+   ],
+   "pitfalls": [
+    "Paging on CPU spikes that never affect users.",
+    "A single on-call person with no escalation path.",
+    "Alerts without a runbook, leaving the responder to guess."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-alert-routing.html",
+    "title": "Alert routing",
+    "ratio": "936/480"
+   }
+  },
+  {
+   "id": "ch14-logs-vs-metrics-cost",
+   "level": "senior",
+   "question": "Should you derive application metrics from logs? What are the trade-offs?",
+   "say_first": "Prefer emitting real metrics from application code. Deriving numbers from logs means storing and parsing every full log line for one number, which is much more expensive and slower than a counter.",
+   "explain": [
+    "Counting events by searching logs is like weighing a truck by unloading every box and counting them, when a scale at the gate would do. A counter in the app costs a few bytes per scrape; a log line costs its full text, indexed and retained.",
+    "Metrics are also pre-aggregated, so dashboards and alerts stay fast and cheap no matter how much traffic there is. Log queries scan far more data.",
+    "Logs still matter for detail: the error message, the stack trace, the request context. The right split is counters and histograms for what and how much, logs for why.",
+    "If you must extract numbers from existing logs (for a legacy app you cannot change), use a log pipeline feature to convert them to metrics at ingest instead of querying raw text repeatedly."
+   ],
+   "key_points": [
+    "Instrument code with client libraries (Prometheus or OpenTelemetry).",
+    "Use structured logs so fields are easy to filter.",
+    "Log-based metrics cost many times more than native ones in storage and query effort.",
+    "Keep log retention short and metric retention longer."
+   ],
+   "table": {
+    "caption": "Native metrics versus metrics parsed from logs",
+    "headers": [
+     "Aspect",
+     "Native metrics",
+     "Metrics from logs"
+    ],
+    "rows": [
+     [
+      "Storage per data point",
+      "A few bytes",
+      "Whole log line"
+     ],
+     [
+      "Query speed",
+      "Fast, pre-aggregated",
+      "Slower, scans text"
+     ],
+     [
+      "Alert reliability",
+      "High",
+      "Depends on log format staying stable"
+     ],
+     [
+      "Code change needed",
+      "Yes, once",
+      "No, but fragile"
+     ],
+     [
+      "Best use",
+      "Rates, latency, counts",
+      "Legacy apps, rare detail"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "How would you cut a runaway log bill?",
+    "What is a histogram metric and why use it for latency?"
+   ],
+   "pitfalls": [
+    "Counting errors by grepping logs in a dashboard query.",
+    "Leaving debug logging on in production."
+   ],
+   "diagram": {
+    "file": "diagrams/ch14-native-vs-log-metrics.html",
+    "title": "Native metrics versus log-derived metrics",
+    "ratio": "936/440"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch14-whitebox-blackbox.html",
+  "diagrams/ch14-metrics-alerting.html",
+  "diagrams/ch14-logging-pipeline.html",
+  "diagrams/ch14-tracing-flow.html",
+  "diagrams/ch14-why-monitor.html",
+  "diagrams/ch14-monitoring-vs-observability.html",
+  "diagrams/ch14-metrics-server-flow.html",
+  "diagrams/ch14-prometheus-ha-longterm.html",
+  "diagrams/ch14-grafana-audiences.html",
+  "diagrams/ch14-log-stack-options.html",
+  "diagrams/ch14-tracing-toolchain.html",
+  "diagrams/ch14-golden-signals-measure.html",
+  "diagrams/ch14-monitoring-layers.html",
+  "diagrams/ch14-alert-routing.html",
+  "diagrams/ch14-native-vs-log-metrics.html"
+ ]
+}

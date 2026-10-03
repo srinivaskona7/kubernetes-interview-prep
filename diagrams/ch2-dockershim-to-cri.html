@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dockershim versus CRI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Comparison</p>
+    <h1>Dockershim path versus CRI</h1>
+    <svg viewBox="0 0 940 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch2-cri-title ch2-cri-desc">
+      <title id="ch2-cri-title">Dockershim versus CRI</title>
+      <desc id="ch2-cri-desc">Two rows comparing the old kubelet to Dockershim to Docker to containerd chain with the modern kubelet to containerd path over CRI.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<text x="40" y="84" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">BEFORE: DOCKERSHIM PATH</text><text x="40" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">NOW: DIRECT CRI PATH</text>
+<path d="M180,128 H220" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M360,128 H400" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M540,128 H580" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M720,128 H760" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M180,288 H580" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="348" y="268" width="64" height="12" rx="2" fill="#f5f5f5"/><text x="380" y="277" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CRI GRPC</text>
+<path d="M720,288 H760" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="40" y="96" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="96" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="110" y="128" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kubelet</text>
+<text x="110" y="144" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">node agent</text>
+<rect x="220" y="96" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="220" y="96" width="140" height="64" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="290" y="128" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Dockershim</text>
+<text x="290" y="144" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">translator</text>
+<rect x="400" y="96" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="400" y="96" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="470" y="128" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Docker Engine</text>
+<text x="470" y="144" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">dockerd</text>
+<rect x="580" y="96" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="580" y="96" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="650" y="128" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">containerd</text>
+<text x="650" y="144" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">runtime</text>
+<rect x="760" y="96" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="760" y="96" width="140" height="64" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="830" y="128" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">runc</text>
+<text x="830" y="144" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">low-level</text>
+<rect x="40" y="256" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="256" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="110" y="288" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kubelet</text>
+<text x="110" y="304" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">node agent</text>
+<rect x="580" y="256" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="580" y="256" width="140" height="64" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="650" y="288" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">containerd</text>
+<text x="650" y="304" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CRI built in</text>
+<rect x="760" y="256" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="760" y="256" width="140" height="64" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="830" y="288" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">runc</text>
+<text x="830" y="304" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">low-level</text>
+<line x1="30" y1="364" x2="910" y2="364" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="380" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="372" width="12" height="12" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="140" y="381" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">FOCAL COMPONENT</text>
+<rect x="310" y="372" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="330" y="381" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">COMPONENT</text>
+<rect x="500" y="372" width="12" height="12" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="1"/><text x="520" y="381" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">REMOVED SHIM</text>
+
+    </svg>
+  </div>
+</body>
+</html>

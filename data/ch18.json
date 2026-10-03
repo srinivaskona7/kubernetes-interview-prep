@@ -1,0 +1,502 @@
+{
+  "number": 18,
+  "title": "Interview Strategy",
+  "part": "Part 6 · Troubleshooting and Best Practices",
+  "tagline": "How to structure answers, handle the unknown and prepare in four weeks",
+  "overview": "This chapter turns knowledge into performance. It covers how to structure a technical answer, what to do with unusual or unknown questions, how to run a live debugging or design round, how to prepare behavioural stories, and what to ask at the end, plus a four-week plan.",
+  "topics": [
+    {
+      "id": "ch18-clarify-first",
+      "level": "junior",
+      "question": "You get an odd or very broad question. What do you do in the first ten seconds?",
+      "say_first": "I slow down, restate the question in my own words, and ask one or two clarifying questions before I answer.",
+      "explain": [
+        "Broad or strange questions are usually testing how you break a problem down, not whether you know a single fact. A short pause and a clarifying question shows you think before you act.",
+        "Good clarifiers narrow the scope: is this about one cluster or many, about data or compute, about design or about failure? Two questions is plenty; ten feels like stalling.",
+        "If a question sounds silly, a brief smile is fine, then move straight to the real concept underneath it."
+      ],
+      "key_points": [
+        "Restate the question before answering",
+        "Ask at most two scoping questions",
+        "Name the real concept hiding under an odd question",
+        "Stay calm; tone matters as much as content"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-answer-structure.html",
+        "title": "How to structure an answer",
+        "ratio": "880/300"
+      },
+      "follow_ups": [
+        "How do you clarify without sounding unsure?",
+        "What if the interviewer refuses to narrow it?"
+      ],
+      "pitfalls": [
+        "Saying 'that is impossible' and stopping",
+        "Joking the question away without an answer"
+      ]
+    },
+    {
+      "id": "ch18-three-beat-answer",
+      "level": "junior",
+      "question": "How should you structure a technical answer so it is easy to follow?",
+      "say_first": "I use three beats: define the thing, explain how it works, then say where it stops working or what the trade-offs are.",
+      "explain": [
+        "Define: one plain sentence a newcomer could follow. How: the mechanism in a few steps. Limits: the honest edge, such as quotas, failure modes or cost.",
+        "Ending on limits is what separates a textbook answer from an experienced one. It shows you have seen the thing hit a wall.",
+        "Finish with a one-line summary and a check-in such as 'should I go deeper on any part?' so the interviewer steers the depth."
+      ],
+      "key_points": [
+        "Define, how it works, limits",
+        "Short sentences, plain words",
+        "End with a summary and a check-in",
+        "Use an example from real work when you have one"
+      ],
+      "table": {
+        "caption": "Weak versus strong answers",
+        "headers": [
+          "Situation",
+          "Weak answer",
+          "Strong answer"
+        ],
+        "rows": [
+          [
+            "Odd hypothetical",
+            "'That cannot happen.'",
+            "Clarify, name the limits involved, explain what actually happens"
+          ],
+          [
+            "Troubleshooting",
+            "'I would redeploy it.'",
+            "Check the cause first: events, node state, requests and limits"
+          ],
+          [
+            "Review this file",
+            "'It looks fine.'",
+            "Still suggest size, caching and security improvements"
+          ],
+          [
+            "Unknown topic",
+            "Silence or a bluff",
+            "State what you know, reason to a guess, say how you would verify"
+          ],
+          [
+            "Teamwork story",
+            "'We fixed it.'",
+            "Say what you did, the decision you made and the measured result"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "Can you apply that to a Service?",
+        "How long should an answer be?"
+      ],
+      "pitfalls": [
+        "Only reciting the definition",
+        "Listing features with no trade-offs"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-three-beat-answer.html",
+        "title": "Three-beat answer",
+        "ratio": "880/140"
+      }
+    },
+    {
+      "id": "ch18-dont-know",
+      "level": "mid",
+      "question": "What do you do when you are asked something you do not know?",
+      "say_first": "I say so plainly, share the nearby facts I do know, reason out loud to a best guess, and explain how I would confirm it.",
+      "explain": [
+        "Bluffing is the fastest way to lose trust, because follow-up questions expose it. Honesty followed by reasoning usually scores better than a lucky guess.",
+        "Anchor on neighbours: 'I have not used that tool, but it sounds like it solves the same problem as X, so I would expect Y.' That shows transferable thinking.",
+        "Close by naming how you would check: the docs, a test cluster, or asking a teammate who owns it."
+      ],
+      "key_points": [
+        "Admit the gap in one sentence",
+        "Reason from related concepts",
+        "Make a labelled guess",
+        "Say how you would verify"
+      ],
+      "follow_ups": [
+        "What if you freeze completely?",
+        "How do you recover from a wrong answer?"
+      ],
+      "pitfalls": [
+        "Bluffing with made-up detail",
+        "Apologising repeatedly"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-dont-know.html",
+        "title": "When you do not know",
+        "ratio": "880/264"
+      }
+    },
+    {
+      "id": "ch18-hypotheticals",
+      "level": "mid",
+      "question": "How do you answer a hypothetical such as 'what happens if the cluster gets unlimited Pods'?",
+      "say_first": "I explain that real limits exist, then walk through which one bites first: quotas, scheduler capacity, autoscaler ceilings, and node pressure.",
+      "explain": [
+        "Treat it as a request to walk the resource chain. Every Pod needs CPU, memory and a node, so the request is bounded long before infinity.",
+        "Quotas cap a namespace. Beyond available capacity the scheduler leaves extra Pods Pending. Autoscalers can add Pods or nodes, but only up to configured and infrastructure limits.",
+        "Push past that and nodes come under pressure, which triggers evictions and slows the control plane. Close with the practical answer: spread across namespaces or clusters and set sensible limits."
+      ],
+      "key_points": [
+        "Acknowledge it is hypothetical",
+        "Walk the chain: quota, scheduler, autoscaler, node",
+        "Mention the failure mode at the edge",
+        "Finish with how real systems avoid it"
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl describe resourcequota -n <namespace>",
+          "note": "shows used versus allowed quota in a namespace"
+        },
+        {
+          "cmd": "kubectl get pods -A --field-selector=status.phase=Pending",
+          "note": "lists Pods the scheduler could not place"
+        }
+      ],
+      "follow_ups": [
+        "Which limit would you hit first?",
+        "How would you partition a very large system?"
+      ],
+      "pitfalls": [
+        "Answering only 'it would crash'"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-hypotheticals.html",
+        "title": "Answering a hypothetical",
+        "ratio": "880/208"
+      }
+    },
+    {
+      "id": "ch18-round-types",
+      "level": "junior",
+      "question": "What kinds of interview rounds should you expect, and what is each testing?",
+      "say_first": "Expect a screen, a technical Q&A, a live debugging round, a design or whiteboard round, a behavioural round, and time for your own questions.",
+      "explain": [
+        "Each round tests a different skill, so prepare differently. Concept rounds test depth and clarity; live rounds test method and calm; behavioural rounds test judgement and teamwork.",
+        "Formats vary a lot between teams, so ask the recruiter what to expect. Knowing the format removes a big source of stress."
+      ],
+      "key_points": [
+        "Match preparation to the round",
+        "Ask the recruiter for the format",
+        "Different rounds can have different interviewers",
+        "Consistency across rounds matters"
+      ],
+      "table": {
+        "caption": "Round types and what they test",
+        "headers": [
+          "Round",
+          "What it tests",
+          "How to prepare"
+        ],
+        "rows": [
+          [
+            "Recruiter screen",
+            "Fit, motivation, basics",
+            "Short pitch; know the role"
+          ],
+          [
+            "Technical Q&A",
+            "Concept depth and clear speech",
+            "Explain each core concept in 30 seconds"
+          ],
+          [
+            "Live debugging",
+            "Method, calm, command fluency",
+            "Drill a diagnosis order daily"
+          ],
+          [
+            "Design or whiteboard",
+            "Trade-offs and scaling thinking",
+            "Practise drawing and narrating"
+          ],
+          [
+            "Behavioural",
+            "Judgement, ownership, teamwork",
+            "Prepare four STAR stories"
+          ],
+          [
+            "Your questions",
+            "Curiosity and seriousness",
+            "Write five questions beforehand"
+          ]
+        ]
+      },
+      "diagram": {
+        "file": "diagrams/ch18-interview-loop.html",
+        "title": "A typical interview loop",
+        "ratio": "920/320"
+      },
+      "follow_ups": [
+        "Which round do candidates most often underprepare?",
+        "How do you pace a long loop?"
+      ],
+      "pitfalls": [
+        "Preparing only for trivia-style questions"
+      ]
+    },
+    {
+      "id": "ch18-live-debug",
+      "level": "mid",
+      "question": "How do you approach a live debugging round where you share a terminal?",
+      "say_first": "I narrate a fixed order: state the symptom, look at events and status first, form a hypothesis, test it, then fix and verify.",
+      "explain": [
+        "Interviewers care more about your method than speed. Say what you are checking and why, so they can follow and help if you drift.",
+        "Start wide and cheap: Pod status and events. Then narrow: logs, node conditions, requests and limits, networking path. Change one thing at a time.",
+        "For a repeated eviction, redeploying treats a symptom. Check node pressure and the Pod's requests and limits before changing anything, and say so.",
+        "If you get stuck, say what you have ruled out and what you would check next. That still earns credit."
+      ],
+      "key_points": [
+        "Narrate as you work",
+        "Events and status before logs",
+        "One change at a time",
+        "Verify the fix, then name a prevention"
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl describe pod <pod>",
+          "note": "status, events and resource settings in one view"
+        },
+        {
+          "cmd": "kubectl describe node <node>",
+          "note": "conditions such as MemoryPressure and DiskPressure"
+        },
+        {
+          "cmd": "kubectl get events --sort-by=.lastTimestamp",
+          "note": "recent cluster events, newest last"
+        },
+        {
+          "cmd": "kubectl top pod -n <namespace>",
+          "note": "current CPU and memory usage"
+        }
+      ],
+      "follow_ups": [
+        "What is your first command for a Pending Pod?",
+        "How do you debug when you lack access?"
+      ],
+      "pitfalls": [
+        "Typing silently",
+        "Redeploying without finding the cause"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-live-debug.html",
+        "title": "Live debugging method",
+        "ratio": "880/228"
+      }
+    },
+    {
+      "id": "ch18-whiteboard",
+      "level": "senior",
+      "question": "How do you handle a whiteboard or system design round?",
+      "say_first": "I clarify requirements first, sketch the simplest design, then stress it with scale and failure questions and discuss trade-offs.",
+      "explain": [
+        "Start by asking about users, load, data and availability goals. A design without requirements is a guess.",
+        "Draw the smallest working version, then grow it: where would it break, and what would you add? Talk through each box as you draw.",
+        "Name trade-offs explicitly: cost against resilience, simplicity against flexibility. There is rarely one right design, so show you can choose and defend."
+      ],
+      "key_points": [
+        "Requirements before boxes",
+        "Simple first, then scale",
+        "Say the trade-offs out loud",
+        "Invite feedback mid-way"
+      ],
+      "follow_ups": [
+        "How would you split this across clusters?",
+        "What would you monitor?"
+      ],
+      "pitfalls": [
+        "Jumping straight to a complex diagram",
+        "Defending a design without hearing feedback"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-whiteboard.html",
+        "title": "Whiteboard round",
+        "ratio": "880/228"
+      }
+    },
+    {
+      "id": "ch18-review-question",
+      "level": "mid",
+      "question": "You are shown a file or config and asked 'what is wrong with this?' and it looks fine. What now?",
+      "say_first": "I say it works, then review it for improvements: size, build speed, security and maintainability.",
+      "explain": [
+        "These questions test attention to detail and best practice. 'Nothing is wrong' is rarely the full answer.",
+        "For a container build file, think: a multi-stage build to shrink the image, fewer layers, stable instructions first for caching, a non-root user, and a minimal, regularly updated base image.",
+        "Rank your findings. Lead with the highest impact, usually security, then cost and speed."
+      ],
+      "key_points": [
+        "Confirm it works, then improve it",
+        "Use a checklist: size, cache, security, clarity",
+        "Rank by impact",
+        "Explain why, not just what"
+      ],
+      "table": {
+        "caption": "Quick review checklist",
+        "headers": [
+          "Area",
+          "Look for"
+        ],
+        "rows": [
+          [
+            "Size",
+            "Multi-stage build, minimal base image"
+          ],
+          [
+            "Speed",
+            "Instruction order that uses the build cache"
+          ],
+          [
+            "Security",
+            "Non-root user, no secrets, updated base"
+          ],
+          [
+            "Clarity",
+            "Pinned versions, comments, small layers"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "Which change gives the biggest size win?",
+        "How do you scan images in CI?"
+      ],
+      "pitfalls": [
+        "Saying 'it looks fine' and stopping",
+        "Listing nitpicks with no priority"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-review-question.html",
+        "title": "Reviewing a config",
+        "ratio": "880/204"
+      }
+    },
+    {
+      "id": "ch18-behavioural",
+      "level": "mid",
+      "question": "How do you prepare for behavioural questions?",
+      "say_first": "I prepare four short stories in the situation, task, action, result shape, each with a measurable outcome and a lesson.",
+      "explain": [
+        "Pick stories that cover an outage, a disagreement, an automation win and something that went wrong. One story can often answer several questions.",
+        "Spend most of the time on your action and the result. Use 'I' for your own decisions and 'we' for team outcomes.",
+        "Keep stories anonymous and about the problem, not about blaming people. End with what you would do differently."
+      ],
+      "key_points": [
+        "Four reusable stories",
+        "Most time on action and result",
+        "Numbers where possible",
+        "Include one honest failure"
+      ],
+      "follow_ups": [
+        "Tell me about a disagreement with a teammate.",
+        "What did you learn from an outage?"
+      ],
+      "pitfalls": [
+        "Rambling setup with no result",
+        "Blaming colleagues"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-behavioural.html",
+        "title": "Behavioural stories",
+        "ratio": "880/204"
+      }
+    },
+    {
+      "id": "ch18-questions-to-ask",
+      "level": "junior",
+      "question": "What questions should you ask the interviewer at the end?",
+      "say_first": "I ask about the team's day-to-day, how they handle incidents and change, and what success looks like in the first months.",
+      "explain": [
+        "Good questions show you are evaluating the job too. They also reveal whether the team is a place you can grow.",
+        "Ask about on-call load, deployment process, cluster size and ownership, how learning is supported, and what the hardest current problem is.",
+        "Avoid questions whose answers are on the careers page, and avoid opening with pay or leave unless invited."
+      ],
+      "key_points": [
+        "Prepare five, ask two or three",
+        "Tie questions to what you heard",
+        "Ask about problems, not only perks",
+        "Take a note of the answers"
+      ],
+      "table": {
+        "caption": "Useful questions by theme",
+        "headers": [
+          "Theme",
+          "Example question"
+        ],
+        "rows": [
+          [
+            "Daily work",
+            "What does a normal week look like?"
+          ],
+          [
+            "Reliability",
+            "How do you run incidents and reviews?"
+          ],
+          [
+            "Growth",
+            "How do people learn new areas here?"
+          ],
+          [
+            "Success",
+            "What would a good first quarter look like?"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "What would you ask a manager versus an engineer?"
+      ],
+      "pitfalls": [
+        "Saying 'no questions'",
+        "Asking only about benefits"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-questions-to-ask.html",
+        "title": "Questions to ask",
+        "ratio": "880/268"
+      }
+    },
+    {
+      "id": "ch18-prep-plan",
+      "level": "mid",
+      "question": "What does a sensible four-week preparation plan look like?",
+      "say_first": "Week one core concepts, week two troubleshooting drills, week three mock rounds with feedback, week four stories, questions and polish.",
+      "explain": [
+        "Week 1: revisit Pods, Services, storage, scheduling and limits, and practise explaining each in thirty seconds.",
+        "Week 2: drill one failure symptom a day, such as Pending, crash loops and evictions, with the exact commands you would run.",
+        "Week 3: do mock live-debug and whiteboard rounds with a friend, record yourself, and fix the gaps.",
+        "Week 4: finalise four stories, write your questions, and keep the last two days light."
+      ],
+      "key_points": [
+        "Practise speaking, not only reading",
+        "Spaced daily drills beat cramming",
+        "Mock rounds are the highest-value week",
+        "Protect sleep before the day"
+      ],
+      "diagram": {
+        "file": "diagrams/ch18-prep-roadmap.html",
+        "title": "Four-week prep roadmap",
+        "ratio": "920/300"
+      },
+      "follow_ups": [
+        "How do you prepare with no cluster at work?",
+        "How many mock rounds are enough?"
+      ],
+      "pitfalls": [
+        "Reading notes passively until the night before"
+      ]
+    }
+  ],
+  "diagrams": [
+    "diagrams/ch18-answer-structure.html",
+    "diagrams/ch18-interview-loop.html",
+    "diagrams/ch18-prep-roadmap.html",
+    "diagrams/ch18-three-beat-answer.html",
+    "diagrams/ch18-dont-know.html",
+    "diagrams/ch18-hypotheticals.html",
+    "diagrams/ch18-live-debug.html",
+    "diagrams/ch18-whiteboard.html",
+    "diagrams/ch18-review-question.html",
+    "diagrams/ch18-behavioural.html",
+    "diagrams/ch18-questions-to-ask.html"
+  ]
+}

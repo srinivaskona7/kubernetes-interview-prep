@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pod Security Admission: level and mode</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Workload security</p>
+    <h1>Pod Security Admission: level and mode</h1>
+
+    <svg viewBox="0 0 1000 464" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch9-pod-security-admission-title ch9-pod-security-admission-desc">
+      <title id="ch9-pod-security-admission-title">Pod Security Admission: level and mode</title>
+      <desc id="ch9-pod-security-admission-desc">When a Pod is created the admission controller reads the namespace labels and checks the Pod against the chosen level, then enforces, audits or warns.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M240 132 L320 132" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="256.5" y="114" width="47" height="12" rx="2" fill="#f5f5f5"/><text x="280" y="123" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CREATE</text><path d="M240 268 L320 268" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="259.5" y="250" width="41" height="12" rx="2" fill="#f5f5f5"/><text x="280" y="259" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LEVEL</text><path d="M560 132 L680 132" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="602.5" y="114" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="620" y="123" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MODE</text><path d="M560 200 L680 200" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="602.5" y="182" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="620" y="191" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MODE</text><path d="M560 268 L680 268" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="602.5" y="250" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="620" y="259" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MODE</text><rect x="40" y="100" width="200" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="100" width="200" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="108" width="47" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="71.5" y="117" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">REQUEST</text><text x="140" y="133" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Create or update Pod</text><text x="140" y="149" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">sent to the API server</text><rect x="40" y="236" width="200" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="236" width="200" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="244" width="58" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="77" y="253" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">NAMESPACE</text><text x="140" y="269" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod security labels</text><text x="140" y="285" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">level + mode per namespace</text><rect x="320" y="100" width="240" height="200" rx="6" fill="#f5f5f5"/><rect x="320" y="100" width="240" height="200" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="328" y="108" width="58" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="357" y="117" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ADMISSION</text><text x="440" y="180" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod Security Admission</text><text x="440" y="196" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">checks the Pod against</text><text x="440" y="209" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">privileged, baseline or</text><text x="440" y="222" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">restricted</text><rect x="680" y="104" width="280" height="56" rx="6" fill="#f5f5f5"/><rect x="680" y="104" width="280" height="56" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="688" y="112" width="47" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="711.5" y="121" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ENFORCE</text><text x="820" y="128" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Reject</text><text x="820" y="144" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Pod is refused</text><rect x="680" y="172" width="280" height="56" rx="6" fill="#f5f5f5"/><rect x="680" y="172" width="280" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="688" y="180" width="36" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="706" y="189" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">AUDIT</text><text x="820" y="196" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Record</text><text x="820" y="212" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">event in the audit log</text><rect x="680" y="240" width="280" height="56" rx="6" fill="#f5f5f5"/><rect x="680" y="240" width="280" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="688" y="248" width="31" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="703.5" y="257" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WARN</text><text x="820" y="264" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Warn</text><text x="820" y="280" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Pod still admitted, user warned</text><rect x="40" y="340" width="920" height="56" rx="6" fill="#f5f5f5"/><rect x="40" y="340" width="920" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="48" y="348" width="47" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.4" stroke-width="0.8"/><text x="71.5" y="357" fill="#8d99ae" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ROLLOUT</text><text x="500" y="364" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Start with warn and audit, then enforce</text><text x="500" y="380" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">replaced PodSecurityPolicy, removed in 1.25</text><line x1="30" y1="428" x2="970" y2="428" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="444" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="440" x2="148" y2="440" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="443" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">admission flow</text><rect x="266" y="434" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="302" y="443" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">checker and strict mode</text>
+    </svg>
+  </div>
+</body>
+</html>

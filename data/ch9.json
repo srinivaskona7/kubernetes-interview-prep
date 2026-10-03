@@ -1,0 +1,897 @@
+{
+ "number": 9,
+ "title": "Security Best Practices in Kubernetes and RBAC",
+ "part": "Part 3 · Security",
+ "tagline": "Lock down the API, nodes, network and workloads with least privilege.",
+ "overview": "Security in Kubernetes is layered: protect the control plane and API, grant access through RBAC, restrict network traffic, harden nodes, and constrain workloads. This chapter covers each layer with the commands and manifests interviewers expect.",
+ "topics": [
+  {
+   "id": "ch9-security-layers",
+   "level": "junior",
+   "question": "How would you approach securing a Kubernetes cluster as a whole?",
+   "say_first": "I treat it as defense in depth: secure the control plane, the identity and access layer, the network, the nodes and the workloads, plus the images they run, and keep all of it patched and audited.",
+   "explain": [
+    "Think of a building. A fence, a locked door, a badge reader and a safe each stop a different kind of intruder. If one fails, the next still holds. A cluster works the same way, with several independent layers.",
+    "The main areas are: access control (RBAC), authentication with certificates and service accounts, network policies, container image security, API server hardening, logging and monitoring, and regular updates.",
+    "In an interview, ask which layer the interviewer cares about first. The topic is wide, and a focused answer beats a recited list."
+   ],
+   "key_points": [
+    "No single control is enough; layers compensate for each other",
+    "Least privilege is the theme that repeats at every layer",
+    "Detection (audit logs, runtime alerts) matters as much as prevention",
+    "Patching Kubernetes and its dependencies closes known holes"
+   ],
+   "table": {
+    "caption": "Security areas and the main control for each",
+    "headers": [
+     "Area",
+     "Main control",
+     "What it protects against"
+    ],
+    "rows": [
+     [
+      "Access",
+      "RBAC, least privilege",
+      "Users or apps doing more than they should"
+     ],
+     [
+      "Identity",
+      "TLS client certs, tokens, service accounts",
+      "Unknown callers reaching the API"
+     ],
+     [
+      "Network",
+      "NetworkPolicy, mTLS",
+      "Lateral movement and sniffing"
+     ],
+     [
+      "Images",
+      "Scanning and signing",
+      "Vulnerable or tampered software"
+     ],
+     [
+      "Observability",
+      "Audit logs, runtime detection",
+      "Undetected incidents"
+     ],
+     [
+      "Lifecycle",
+      "Regular updates and patches",
+      "Known CVEs"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch9-security-layers.html",
+    "title": "Six layers of cluster defense",
+    "ratio": "1000/460"
+   },
+   "follow_ups": [
+    "Which layer would you harden first on a brand new cluster?",
+    "What is the first thing an attacker with one compromised Pod tries?"
+   ],
+   "pitfalls": [
+    "Answering with only one tool, such as RBAC or a firewall",
+    "Treating security as a one-time setup instead of continuous work"
+   ]
+  },
+  {
+   "id": "ch9-secure-control-plane",
+   "level": "mid",
+   "question": "Why is the control plane the most sensitive part of a cluster, and how do you secure it?",
+   "say_first": "Whoever controls the API server, etcd and the scheduler controls every workload, so I lock down API access, encrypt all component traffic with TLS, protect etcd, enable auditing and isolate the control plane network.",
+   "explain": [
+    "The control plane is the cluster's brain and its filing cabinet. The API server is the front desk, etcd is the cabinet holding every record (including Secrets), and the scheduler and controllers act on what the records say. Steal the cabinet key and you own everything.",
+    "Practical steps: require strong authentication (client certificates, bearer tokens or an external identity provider through OIDC or LDAP) and RBAC authorization; use TLS between the API server, etcd and kubelets with rotated certificates; restrict and encrypt etcd and back it up; run control plane nodes on a segmented network behind firewall rules; turn on audit logging and review it; keep versions patched.",
+    "Harden the nodes that host control plane components too, applying security contexts and least privilege to them."
+   ],
+   "key_points": [
+    "API server is the single entry point, so it gets the strictest access rules",
+    "etcd holds all cluster state, so protect it with access controls, encryption at rest and backups",
+    "Rotate certificates and store keys safely",
+    "Audit logs give accountability after the fact"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get --raw '/livez?verbose'",
+     "note": "Check API server health endpoints (read-only)"
+    },
+    {
+     "cmd": "kubectl -n kube-system get pods -l tier=control-plane",
+     "note": "List control plane pods on a kubeadm cluster"
+    }
+   ],
+   "follow_ups": [
+    "How do you encrypt Secrets stored in etcd?",
+    "What would you expose publicly, if anything, about the API server?"
+   ],
+   "pitfalls": [
+    "Believing managed clusters make this irrelevant; you still own access policy",
+    "Leaving etcd reachable from the general pod network"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-secure-control-plane.html",
+    "title": "Control plane: one guarded front door",
+    "ratio": "1000/440"
+   }
+  },
+  {
+   "id": "ch9-api-request-gates",
+   "level": "mid",
+   "question": "What happens to a request when it reaches the API server?",
+   "say_first": "It passes three gates in order: authentication (who are you), authorization (are you allowed, usually RBAC) and admission (is the object acceptable). Only then is it stored in etcd.",
+   "explain": [
+    "Picture airport security. Passport check proves who you are, the boarding pass check proves you may enter this gate, and the baggage scan checks what you are carrying. Failing any step stops you.",
+    "Authentication answers with 401 if the caller is unknown. Authorization answers 403 when no rule allows the action. Admission controllers (including Pod Security Admission) can reject or modify the object even if the caller is permitted.",
+    "TLS wraps the whole conversation, so credentials and cluster configuration are not readable on the wire. That is why securing the API server is such a standard interview question."
+   ],
+   "key_points": [
+    "Order matters: authn, then authz, then admission, then persistence",
+    "401 means identity unknown, 403 means identity known but not allowed",
+    "Admission can still reject an authorized user's bad Pod",
+    "TLS protects tokens and configuration in transit"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl auth whoami",
+     "note": "Show the identity the API server sees for you"
+    },
+    {
+     "cmd": "kubectl auth can-i delete pods -n dev",
+     "note": "Ask the authorizer whether an action is allowed"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-api-request-gates.html",
+    "title": "Three gates before a change is saved",
+    "ratio": "1000/380"
+   },
+   "follow_ups": [
+    "Where would a validating webhook plug in?",
+    "How do you see who was denied?"
+   ],
+   "pitfalls": [
+    "Mixing up 401 and 403",
+    "Thinking RBAC checks the content of the object; that is admission's job"
+   ]
+  },
+  {
+   "id": "ch9-rbac-roles-bindings",
+   "level": "junior",
+   "question": "Explain RBAC: Roles, RoleBindings and their cluster-wide versions.",
+   "say_first": "RBAC defines permissions in a Role (verbs on resources) and attaches them to users, groups or service accounts with a RoleBinding. ClusterRole and ClusterRoleBinding do the same cluster-wide.",
+   "explain": [
+    "Think of a job description and a name badge. The Role is the job description (what the job may do); the RoleBinding hands that description to a particular person or app.",
+    "A Role lives in one namespace and lists apiGroups, resources and verbs. A RoleBinding in that namespace attaches it to subjects. A ClusterRole is not namespaced and can also cover cluster-scoped resources such as nodes. A ClusterRoleBinding grants it everywhere.",
+    "RBAC is additive: there are no deny rules. If no rule allows an action, it is denied."
+   ],
+   "key_points": [
+    "Roles define what, bindings define who",
+    "Subjects can be users, groups or service accounts",
+    "Permissions are only ever added, never subtracted",
+    "Use custom, narrow roles instead of broad built-in ones"
+   ],
+   "table": {
+    "caption": "Namespaced versus cluster-wide RBAC objects",
+    "headers": [
+     "Object",
+     "Scope",
+     "Purpose"
+    ],
+    "rows": [
+     [
+      "Role",
+      "One namespace",
+      "Lists allowed verbs on resources"
+     ],
+     [
+      "RoleBinding",
+      "One namespace",
+      "Gives a Role (or ClusterRole) to subjects in that namespace"
+     ],
+     [
+      "ClusterRole",
+      "Whole cluster",
+      "Permissions incl. nodes, PVs, or reusable across namespaces"
+     ],
+     [
+      "ClusterRoleBinding",
+      "Whole cluster",
+      "Gives a ClusterRole to subjects everywhere"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl create role pod-reader --verb=get,list,watch --resource=pods -n dev",
+     "note": "Create the pod-reader Role"
+    },
+    {
+     "cmd": "kubectl create rolebinding read-pods-binding --role=pod-reader --user=jane.doe@example.com -n dev",
+     "note": "Bind it to a user"
+    },
+    {
+     "cmd": "kubectl get rolebindings,clusterrolebindings -A",
+     "note": "Review who has what"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-rbac-chain.html",
+    "title": "How RBAC connects who to what",
+    "ratio": "1000/380"
+   },
+   "follow_ups": [
+    "Can a RoleBinding reference a ClusterRole?",
+    "How do you let one team manage only its own namespace?"
+   ],
+   "pitfalls": [
+    "Granting cluster-admin to fix a permission error",
+    "Expecting a deny rule to exist"
+   ]
+  },
+  {
+   "id": "ch9-rbac-yaml",
+   "level": "mid",
+   "question": "Show a namespaced Role and RoleBinding in YAML and explain each part.",
+   "say_first": "A Role lists apiGroups, resources and verbs; a RoleBinding names the subjects and points at the Role through roleRef.",
+   "explain": [
+    "The Role below lets someone read Pods in the dev namespace. An empty string in apiGroups means the core API group, where Pods live.",
+    "The RoleBinding then names the subject (here a user) and the roleRef (which Role). The roleRef cannot be changed after creation; you delete and recreate the binding instead.",
+    "Verify with kubectl auth can-i using impersonation rather than guessing."
+   ],
+   "key_points": [
+    "apiGroups: [\"\"] is the core group (pods, services, configmaps)",
+    "Verbs are get, list, watch, create, update, patch, delete",
+    "roleRef is immutable",
+    "Test permissions with --as"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: rbac.authorization.k8s.io/v1\nkind: Role\nmetadata:\n  namespace: dev\n  name: pod-reader\nrules:\n- apiGroups: [\"\"]\n  resources: [\"pods\"]\n  verbs: [\"get\", \"list\", \"watch\"]\n---\napiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata:\n  name: read-pods-binding\n  namespace: dev\nsubjects:\n- kind: User\n  name: jane.doe@example.com\n  apiGroup: rbac.authorization.k8s.io\nroleRef:\n  kind: Role\n  name: pod-reader\n  apiGroup: rbac.authorization.k8s.io\nEOF",
+     "note": "Create Role and RoleBinding"
+    },
+    {
+     "cmd": "kubectl auth can-i list pods -n dev --as jane.doe@example.com",
+     "note": "Expect yes"
+    },
+    {
+     "cmd": "kubectl auth can-i delete pods -n dev --as jane.doe@example.com",
+     "note": "Expect no"
+    }
+   ],
+   "follow_ups": [
+    "How do you grant access to a whole group?",
+    "What does resourceNames do?"
+   ],
+   "pitfalls": [
+    "Forgetting the namespace on the binding so it lands in default"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-rbac-yaml.html",
+    "title": "Role and RoleBinding: who may do what",
+    "ratio": "1000/384"
+   }
+  },
+  {
+   "id": "ch9-least-privilege-audit",
+   "level": "mid",
+   "question": "What is least privilege and how do you audit access in Kubernetes?",
+   "say_first": "Least privilege means giving each user or workload only the permissions its task needs. I enforce it with narrow roles and review it by auditing bindings and turning on API server audit logs.",
+   "explain": [
+    "If a monitoring app only reads Pod status, it should not be able to delete Pods. A hotel key card that opens only your room is the model, not a master key.",
+    "Auditing has two parts: static review (list bindings, look for cluster-admin and wildcards) and a dynamic record (the API server audit log). Configure kube-apiserver with --audit-log-path and --audit-policy-file, then write a policy that logs RBAC object changes and authorization activity at Metadata level, and drops noise.",
+    "ABAC exists as an older file-based alternative for attribute rules, but it needs an API server restart to change, so RBAC is the practical choice."
+   ],
+   "key_points": [
+    "Audit both who can do things and who did things",
+    "Audit policy levels: None, Metadata, Request, RequestResponse",
+    "Store audit logs securely and review them",
+    "Prefer RBAC over ABAC"
+   ],
+   "commands": [
+    {
+     "cmd": "kube-apiserver --audit-log-path=/var/log/kubernetes/audit.log --audit-policy-file=/etc/kubernetes/audit-policy.yaml",
+     "note": "API server flags that enable auditing (static pod manifest)"
+    },
+    {
+     "cmd": "kubectl get clusterrolebindings -o wide | grep cluster-admin",
+     "note": "Find who holds cluster-admin"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between Metadata and RequestResponse audit levels?",
+    "How would you find every subject bound to cluster-admin?"
+   ],
+   "pitfalls": [
+    "Logging everything at RequestResponse, which exposes Secrets and floods storage"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-least-privilege-audit.html",
+    "title": "Audit access two ways: who can, who did",
+    "ratio": "1000/368"
+   }
+  },
+  {
+   "id": "ch9-service-accounts",
+   "level": "mid",
+   "question": "What is a service account and why use dedicated ones?",
+   "say_first": "A service account is the identity a Pod uses to authenticate to the API server. I create one per application and bind only the roles it needs, instead of relying on the namespace default.",
+   "explain": [
+    "Users are people; service accounts are for software. A Pod running as a service account presents its token to the API server and is then checked by RBAC like anyone else.",
+    "Every namespace has a default service account that Pods use if you do not say otherwise. Sharing it means unrelated apps share permissions, so a bug in one gives rights to all. Dedicated accounts keep blast radius small.",
+    "Set serviceAccountName in the Pod spec. If a Pod never needs the API, disable token auto-mount with automountServiceAccountToken: false."
+   ],
+   "key_points": [
+    "Identity for Pods, authorization from RBAC",
+    "One service account per app",
+    "Tokens are generated and rotated by Kubernetes (bound, short-lived)",
+    "Disable token mounting when the API is not needed"
+   ],
+   "table": {
+    "caption": "Users versus service accounts",
+    "headers": [
+     "",
+     "User",
+     "Service account"
+    ],
+    "rows": [
+     [
+      "Represents",
+      "A human or external identity",
+      "A Pod or application"
+     ],
+     [
+      "Managed by",
+      "External identity provider or certs",
+      "A Kubernetes object"
+     ],
+     [
+      "Scope",
+      "Cluster-wide identity",
+      "Namespaced"
+     ],
+     [
+      "Credential",
+      "Certificate, OIDC token",
+      "Bearer token for the account"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl create serviceaccount app-service-account -n dev",
+     "note": "Create a dedicated account"
+    },
+    {
+     "cmd": "kubectl create rolebinding app-read-pods --role=pod-reader --serviceaccount=dev:app-service-account -n dev",
+     "note": "Give it read-only Pod access"
+    },
+    {
+     "cmd": "kubectl auth can-i list pods -n dev --as system:serviceaccount:dev:app-service-account",
+     "note": "Verify it"
+    }
+   ],
+   "follow_ups": [
+    "How does a Pod actually get its token?",
+    "What happens if you delete the service account a Pod uses?"
+   ],
+   "pitfalls": [
+    "Granting permissions to the default service account"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-service-accounts.html",
+    "title": "Service accounts: the identity a Pod uses",
+    "ratio": "1000/368"
+   }
+  },
+  {
+   "id": "ch9-node-hardening",
+   "level": "mid",
+   "question": "How do you secure worker nodes?",
+   "say_first": "Harden the OS, secure the container runtime, scan and sign images, authenticate nodes with TLS, isolate them on a private network, encrypt control-plane traffic and monitor activity.",
+   "explain": [
+    "Nodes are the machines that actually run your containers, so a compromised node exposes everything on it. Start from the operating system: apply patches, disable services you do not need, and firewall the host. The CIS Kubernetes Benchmark is a standard checklist.",
+    "For the runtime (for example containerd), use mandatory access control such as AppArmor or SELinux. Scan images with a tool like Trivy and sign them with Cosign so tampered images are rejected.",
+    "Nodes should prove who they are before joining (TLS certificates, bootstrap tokens with kubeadm join), live in a private subnet or VPC, and be watched with audit logs and a runtime detector such as Falco."
+   ],
+   "key_points": [
+    "Patch regularly and remove unneeded services",
+    "MAC profiles (AppArmor, SELinux) limit what a container process can do",
+    "Verify images before deployment",
+    "Node auth plus network isolation limits who can join and reach nodes",
+    "Monitor continuously"
+   ],
+   "table": {
+    "caption": "Node hardening checklist",
+    "headers": [
+     "Area",
+     "Action",
+     "Example tool"
+    ],
+    "rows": [
+     [
+      "OS",
+      "Patch, disable services, firewall",
+      "apt, systemctl, ufw"
+     ],
+     [
+      "Runtime",
+      "Mandatory access control",
+      "AppArmor, SELinux"
+     ],
+     [
+      "Images",
+      "Scan and sign",
+      "Trivy, Cosign"
+     ],
+     [
+      "Join trust",
+      "TLS and tokens",
+      "kubeadm join"
+     ],
+     [
+      "Detection",
+      "Runtime rules and audit",
+      "Falco, audit logs"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "trivy image nginx:latest",
+     "note": "Scan an image for known vulnerabilities"
+    },
+    {
+     "cmd": "cosign verify --key cosign.pub myregistry/myimage:latest",
+     "note": "Verify an image signature"
+    },
+    {
+     "cmd": "kubeadm join <control-plane-ip>:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash>",
+     "note": "Join a node with token and CA pinning"
+    }
+   ],
+   "follow_ups": [
+    "What stops a rogue machine from joining the cluster?",
+    "How would you detect a shell spawned inside a container?"
+   ],
+   "pitfalls": [
+    "Opening the API port or kubelet port to the whole internet"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-node-hardening.html",
+    "title": "Hardening a worker node, outside in",
+    "ratio": "1000/496"
+   }
+  },
+  {
+   "id": "ch9-in-transit-encryption",
+   "level": "mid",
+   "question": "How is traffic encrypted inside Kubernetes, and what is mTLS?",
+   "say_first": "Control plane components already talk over TLS. For Pod-to-Pod traffic you add encryption through a service mesh or CNI, and mutual TLS makes both sides prove their identity with certificates.",
+   "explain": [
+    "Ordinary TLS is like a website: only the server shows ID. Mutual TLS is like two spies who both show credentials before speaking, which blocks impersonation and man-in-the-middle attacks.",
+    "In a mesh such as Istio, a certificate authority issues certificates to each workload. A sidecar proxy (Envoy) next to each app container terminates and originates the encrypted connection, so the app code does not change. Calico and some CNI setups can also encrypt Pod traffic, while Flannel does so only with extra backends.",
+    "For traffic from outside, use an ingress controller with TLS termination. HTTPS is the default expectation today."
+   ],
+   "key_points": [
+    "API server, etcd, kubelet, scheduler already use TLS",
+    "mTLS authenticates both client and server with X.509 certificates",
+    "Meshes inject sidecars so apps need no code change",
+    "Ingress TLS secures the edge, mesh or CNI secures the inside"
+   ],
+   "table": {
+    "caption": "Where encryption applies",
+    "headers": [
+     "Segment",
+     "Mechanism",
+     "Out of the box?"
+    ],
+    "rows": [
+     [
+      "Component to API server / etcd",
+      "TLS certificates",
+      "Yes"
+     ],
+     [
+      "Pod to Pod",
+      "Service mesh mTLS or CNI encryption",
+      "No, add it"
+     ],
+     [
+      "Client to service",
+      "Ingress TLS termination",
+      "Needs configuration"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "What does the sidecar cost you in resources?",
+    "Where does TLS terminate at an ingress?"
+   ],
+   "pitfalls": [
+    "Assuming Pod traffic is encrypted by default; it is not"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-in-transit-encryption.html",
+    "title": "Mutual TLS between Pods via sidecars",
+    "ratio": "1000/472"
+   }
+  },
+  {
+   "id": "ch9-network-policy-basics",
+   "level": "mid",
+   "question": "What is a NetworkPolicy and how does it improve security?",
+   "say_first": "A NetworkPolicy is a Kubernetes resource that says which Pods may talk to which endpoints, selected by labels, namespaces, IP ranges and ports. The CNI plugin enforces it.",
+   "explain": [
+    "By default every Pod can reach every other Pod. A NetworkPolicy turns that open office into rooms with locked doors. Once a policy selects a Pod for a direction (ingress or egress), only traffic that a rule allows is permitted in that direction.",
+    "The policy object is only a declaration. Without a CNI that supports it (Calico, Cilium and others), creating one does nothing, so always confirm support.",
+    "The recommended pattern is zero trust: start with a default deny policy in each namespace, then add narrow allow rules."
+   ],
+   "key_points": [
+    "Selectors pick Pods by label; rules use podSelector, namespaceSelector or ipBlock",
+    "Separate ingress and egress rules",
+    "Enforcement depends on the CNI",
+    "Default deny first, then allow what is needed"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: default-deny-all\n  namespace: dev\nspec:\n  podSelector: {}\n  policyTypes:\n  - Ingress\n  - Egress\nEOF",
+     "note": "Deny all traffic for every Pod in dev"
+    },
+    {
+     "cmd": "kubectl get networkpolicy -A",
+     "note": "List policies"
+    }
+   ],
+   "follow_ups": [
+    "How do you write a default deny for a namespace?",
+    "Do policies affect traffic from the node itself?"
+   ],
+   "pitfalls": [
+    "Assuming a policy works on a CNI that ignores NetworkPolicy"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-network-policy-basics.html",
+    "title": "NetworkPolicy: allow listed traffic only",
+    "ratio": "1000/476"
+   }
+  },
+  {
+   "id": "ch9-egress-policy-dns",
+   "level": "senior",
+   "question": "You applied an egress policy allowing only GitHub on port 443, and the Pod now fails with a DNS timeout. Why, and how do you fix it?",
+   "say_first": "Egress is now deny-by-default, so the DNS lookup to kube-dns is blocked too. I add an egress rule that allows UDP 53 to the kube-dns Pods in kube-system.",
+   "explain": [
+    "The Pod needs two things to reach github.com: a name lookup and then a connection. The policy allowed only the connection to the IP, so the lookup died, giving a resolving timeout.",
+    "The fix is a second egress block selecting kube-system by its automatic namespace label and the k8s-app: kube-dns Pods, on UDP 53. Many clusters also need TCP 53 for large responses.",
+    "Pinning an IP is fragile because GitHub's addresses change. Plain NetworkPolicy cannot match domain names, which leads to CNI-specific policies."
+   ],
+   "key_points": [
+    "Selecting a Pod for egress flips it to deny-by-default for outgoing traffic",
+    "Always allow DNS when restricting egress",
+    "Use kubernetes.io/metadata.name to select a namespace",
+    "Test by reading the Pod logs"
+   ],
+   "table": {
+    "caption": "Symptom to cause",
+    "headers": [
+     "Symptom",
+     "Likely cause",
+     "Fix"
+    ],
+    "rows": [
+     [
+      "curl: (28) Resolving timed out",
+      "DNS egress blocked",
+      "Allow UDP/TCP 53 to kube-dns"
+     ],
+     [
+      "Connection timed out after resolving",
+      "IP or port not in allow list",
+      "Fix ipBlock or port"
+     ],
+     [
+      "Works for one Pod only",
+      "Label mismatch with podSelector",
+      "Check labels"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: test-github-deny\n  namespace: test-github\nspec:\n  podSelector:\n    matchLabels:\n      component: github\n  policyTypes:\n  - Egress\n  egress:\n  - to:\n    - ipBlock:\n        cidr: 140.82.121.4/32\n    ports:\n    - protocol: TCP\n      port: 443\n  - to:\n    - namespaceSelector:\n        matchLabels:\n          kubernetes.io/metadata.name: kube-system\n      podSelector:\n        matchLabels:\n          k8s-app: kube-dns\n    ports:\n    - protocol: UDP\n      port: 53\nEOF",
+     "note": "Allow GitHub on 443 plus DNS"
+    },
+    {
+     "cmd": "kubectl logs -l component=github -n test-github",
+     "note": "Confirm the Pod now reaches GitHub"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-egress-policy.html",
+    "title": "Egress policy: allow list only",
+    "ratio": "1000/460"
+   },
+   "follow_ups": [
+    "How would you allow by domain name instead of IP?",
+    "Why might you also add TCP 53?"
+   ],
+   "pitfalls": [
+    "Hard-coding an IP that later changes",
+    "Forgetting DNS when writing deny-by-default"
+   ]
+  },
+  {
+   "id": "ch9-cilium-advanced-policy",
+   "level": "senior",
+   "question": "When is the built-in NetworkPolicy not enough, and what do CNI-specific policies add?",
+   "say_first": "The standard NetworkPolicy works at IPs, ports and labels. A CNI such as Cilium adds custom resources that match domain names and even HTTP methods and paths.",
+   "explain": [
+    "Standard policies are portable across CNIs but basic. They cannot say 'allow github.com', only an IP block that may change.",
+    "Cilium's CiliumNetworkPolicy supports toFQDNs for domain-based egress and layer-7 rules, for example allowing only POST requests to /test on a service. Layer-7 inspection works for plain HTTP. With HTTPS, traffic is encrypted, so the proxy only sees the host name, not methods or paths.",
+    "The tradeoff is portability: these policies work only on that CNI."
+   ],
+   "key_points": [
+    "Domain-based egress removes brittle IP lists",
+    "Layer-7 rules need visibility into the traffic",
+    "Encrypted HTTPS hides paths and methods",
+    "Vendor CRDs reduce portability"
+   ],
+   "table": {
+    "caption": "Standard versus CNI-specific policy",
+    "headers": [
+     "Capability",
+     "NetworkPolicy",
+     "CiliumNetworkPolicy"
+    ],
+    "rows": [
+     [
+      "Match by labels and namespaces",
+      "Yes",
+      "Yes"
+     ],
+     [
+      "Match by IP block and port",
+      "Yes",
+      "Yes"
+     ],
+     [
+      "Match by DNS name",
+      "No",
+      "Yes (toFQDNs)"
+     ],
+     [
+      "Match HTTP method and path",
+      "No",
+      "Yes (plain HTTP)"
+     ],
+     [
+      "Portable across CNIs",
+      "Yes",
+      "No"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: cilium.io/v2\nkind: CiliumNetworkPolicy\nmetadata:\n  name: test-github-deny\n  namespace: test-github\nspec:\n  endpointSelector:\n    matchLabels:\n      component: github\n  egress:\n  - toFQDNs:\n    - matchName: github.com\n  - toEndpoints:\n    - matchLabels:\n        k8s:io.kubernetes.pod.namespace: kube-system\n        k8s:k8s-app: kube-dns\n    toPorts:\n    - ports:\n      - port: \"53\"\n        protocol: ANY\n      rules:\n        dns:\n        - matchPattern: \"*\"\nEOF",
+     "note": "Allow github.com by name plus DNS lookups (Cilium)"
+    }
+   ],
+   "follow_ups": [
+    "How do you still allow DNS with an FQDN policy?",
+    "Would you choose Cilium only for policy features?"
+   ],
+   "pitfalls": [
+    "Writing HTTP path rules for TLS traffic and expecting them to match"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-cilium-advanced-policy.html",
+    "title": "Standard policy vs Cilium policy",
+    "ratio": "1000/408"
+   }
+  },
+  {
+   "id": "ch9-security-context",
+   "level": "mid",
+   "question": "What is a security context and which settings matter most?",
+   "say_first": "A securityContext sets privilege and access controls on a Pod or container. The key settings are runAsNonRoot, runAsUser, readOnlyRootFilesystem, dropped capabilities and no privilege escalation.",
+   "explain": [
+    "It is the safety harness for a container: it decides who the process runs as, what Linux powers it keeps and whether it can write to its own filesystem.",
+    "Some fields exist at Pod level (runAsUser, fsGroup, sysctls) and apply to all containers; container-level fields override them for that container. Avoid privileged: true and host namespaces (hostNetwork, hostPID, hostIPC) unless truly necessary.",
+    "AppArmor or SELinux profiles add mandatory access control on top."
+   ],
+   "key_points": [
+    "Run as non-root with a numeric UID",
+    "Drop all capabilities and add back only what is needed",
+    "Read-only root filesystem blocks tampering",
+    "fsGroup sets volume group ownership",
+    "Container settings take precedence over Pod settings"
+   ],
+   "table": {
+    "caption": "Common securityContext fields",
+    "headers": [
+     "Field",
+     "Level",
+     "Effect"
+    ],
+    "rows": [
+     [
+      "runAsNonRoot",
+      "Pod/container",
+      "Refuse to start as UID 0"
+     ],
+     [
+      "runAsUser / runAsGroup",
+      "Pod/container",
+      "Set UID and GID"
+     ],
+     [
+      "capabilities.drop",
+      "Container",
+      "Remove Linux capabilities"
+     ],
+     [
+      "readOnlyRootFilesystem",
+      "Container",
+      "Immutable container filesystem"
+     ],
+     [
+      "privileged",
+      "Container",
+      "All host-level power; avoid"
+     ],
+     [
+      "fsGroup",
+      "Pod",
+      "Group ownership for volumes"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: v1\nkind: Pod\nmetadata:\n  name: hardened\nspec:\n  securityContext:\n    runAsNonRoot: true\n    runAsUser: 10001\n  containers:\n  - name: app\n    image: nginxinc/nginx-unprivileged\n    securityContext:\n      allowPrivilegeEscalation: false\n      readOnlyRootFilesystem: true\n      capabilities:\n        drop: [\"ALL\"]\nEOF",
+     "note": "A hardened Pod example"
+    }
+   ],
+   "follow_ups": [
+    "What does allowPrivilegeEscalation: false stop?",
+    "When is a privileged container justified?"
+   ],
+   "pitfalls": [
+    "Running as root because the image defaults to it",
+    "Setting only Pod-level fields and assuming containers can not override"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-security-context.html",
+    "title": "securityContext: pod level, then container level",
+    "ratio": "1000/412"
+   }
+  },
+  {
+   "id": "ch9-pod-security-admission",
+   "level": "senior",
+   "question": "What is Pod Security Admission and what are the three standards?",
+   "say_first": "Pod Security Admission is a built-in admission controller that checks Pods against the Pod Security Standards (privileged, baseline, restricted) when they are created or updated. It replaced PodSecurityPolicy.",
+   "explain": [
+    "Think of a building inspector who checks plans before construction starts. Pods that break the standard are rejected, warned about or just logged, depending on the mode.",
+    "You configure it per namespace with labels: enforce rejects, audit records and warn shows a warning. The privileged level allows everything, baseline blocks known escalations, restricted follows current hardening practice such as non-root and dropped capabilities.",
+    "PodSecurityPolicy was removed in Kubernetes 1.25; PSA is the replacement. Policy engines like Kyverno or Gatekeeper handle custom rules."
+   ],
+   "key_points": [
+    "Applied by namespace labels, no CRDs needed",
+    "Three modes: enforce, audit, warn",
+    "Three levels: privileged, baseline, restricted",
+    "Start with warn and audit before enforcing"
+   ],
+   "table": {
+    "caption": "Pod Security Standards",
+    "headers": [
+     "Level",
+     "Intent",
+     "Typical use"
+    ],
+    "rows": [
+     [
+      "privileged",
+      "No restrictions",
+      "Trusted system components"
+     ],
+     [
+      "baseline",
+      "Blocks known privilege escalations",
+      "General applications"
+     ],
+     [
+      "restricted",
+      "Hardened best practice",
+      "Sensitive and regulated workloads"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl label namespace restricted-ns pod-security.kubernetes.io/enforce=restricted",
+     "note": "Enforce the restricted standard"
+    },
+    {
+     "cmd": "kubectl label --dry-run=server --overwrite namespace dev pod-security.kubernetes.io/enforce=restricted",
+     "note": "Preview what would be rejected"
+    }
+   ],
+   "follow_ups": [
+    "How would you roll out restricted to an existing namespace?",
+    "What do you use for rules PSA cannot express?"
+   ],
+   "pitfalls": [
+    "Calling it PodSecurityPolicy",
+    "Enforcing restricted without checking existing workloads"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-pod-security-admission.html",
+    "title": "Pod Security Admission: level and mode",
+    "ratio": "1000/464"
+   }
+  },
+  {
+   "id": "ch9-secure-supply-chain",
+   "level": "senior",
+   "question": "How do you keep vulnerable or tampered images out of the cluster?",
+   "say_first": "Scan images for vulnerabilities, rebuild from updated base images, sign images and verify signatures at deploy time, and pull only from access-controlled registries.",
+   "explain": [
+    "Images are the ingredients. Scanning checks ingredients for known contamination, and signing is a tamper-evident seal that you check before cooking.",
+    "Trivy scans an image for known CVEs. Cosign signs an image with a private key and verifies it with the public key, protecting against tampering and impersonation. Enforce verification with an admission policy so unsigned images cannot run.",
+    "Pair this with runtime detection (Falco) and regular patching."
+   ],
+   "key_points": [
+    "Scan in CI and continuously in the registry",
+    "Sign at build, verify at admission",
+    "Use trusted, minimal base images",
+    "Private registries with access control"
+   ],
+   "commands": [
+    {
+     "cmd": "trivy image nginx:latest",
+     "note": "Scan for vulnerabilities"
+    },
+    {
+     "cmd": "cosign sign --key cosign.key myregistry/myimage:latest",
+     "note": "Sign"
+    },
+    {
+     "cmd": "cosign verify --key cosign.pub myregistry/myimage:latest",
+     "note": "Verify"
+    }
+   ],
+   "follow_ups": [
+    "Where would you enforce signature checks?",
+    "Why is the latest tag risky?"
+   ],
+   "pitfalls": [
+    "Scanning once and never rescanning as new CVEs appear"
+   ],
+   "diagram": {
+    "file": "diagrams/ch9-secure-supply-chain.html",
+    "title": "Scan, sign, verify: keeping bad images out",
+    "ratio": "1000/368"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch9-security-layers.html",
+  "diagrams/ch9-api-request-gates.html",
+  "diagrams/ch9-rbac-chain.html",
+  "diagrams/ch9-egress-policy.html",
+  "diagrams/ch9-secure-control-plane.html",
+  "diagrams/ch9-rbac-yaml.html",
+  "diagrams/ch9-least-privilege-audit.html",
+  "diagrams/ch9-service-accounts.html",
+  "diagrams/ch9-node-hardening.html",
+  "diagrams/ch9-in-transit-encryption.html",
+  "diagrams/ch9-network-policy-basics.html",
+  "diagrams/ch9-cilium-advanced-policy.html",
+  "diagrams/ch9-security-context.html",
+  "diagrams/ch9-pod-security-admission.html",
+  "diagrams/ch9-secure-supply-chain.html"
+ ]
+}

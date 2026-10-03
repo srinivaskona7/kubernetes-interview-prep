@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Role and RoleBinding: who may do what</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">RBAC</p>
+    <h1>Role and RoleBinding: who may do what</h1>
+
+    <svg viewBox="0 0 1000 384" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch9-rbac-yaml-title ch9-rbac-yaml-desc">
+      <title id="ch9-rbac-yaml-title">Role and RoleBinding: who may do what</title>
+      <desc id="ch9-rbac-yaml-desc">A RoleBinding links a user to a Role through roleRef, and the Role allows get, list and watch on Pods in the dev namespace.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M220 148 L300 148" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="231" y="130" width="58" height="12" rx="2" fill="#f5f5f5"/><text x="260" y="139" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SUBJECTS</text><path d="M480 148 L560 148" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="493.5" y="130" width="53" height="12" rx="2" fill="#f5f5f5"/><text x="520" y="139" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ROLEREF</text><path d="M740 148 L820 148" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="756.5" y="130" width="47" height="12" rx="2" fill="#f5f5f5"/><text x="780" y="139" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ALLOWS</text><path d="M650 196 L650 260" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="658" y="222" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="675.5" y="231" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TEST</text><rect x="40" y="100" width="180" height="96" rx="6" fill="#f5f5f5"/><rect x="40" y="100" width="180" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="108" width="47" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="71.5" y="117" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SUBJECT</text><text x="130" y="136" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">User jane</text><text x="130" y="152" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">kind: User</text><text x="130" y="165" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">who gets access</text><rect x="300" y="100" width="180" height="96" rx="6" fill="#f5f5f5"/><rect x="300" y="100" width="180" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="308" y="108" width="47" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="331.5" y="117" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BINDING</text><text x="390" y="136" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">RoleBinding</text><text x="390" y="152" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">names the subject</text><text x="390" y="165" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">roleRef is immutable</text><rect x="560" y="100" width="180" height="96" rx="6" fill="#f5f5f5"/><rect x="560" y="100" width="180" height="96" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="568" y="108" width="31" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="583.5" y="117" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ROLE</text><text x="650" y="128" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Role in dev</text><text x="650" y="144" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">apiGroups: [""]</text><text x="650" y="157" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">resources: pods</text><text x="650" y="170" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">verbs: get, list, watch</text><rect x="820" y="100" width="140" height="96" rx="6" fill="#f5f5f5"/><rect x="820" y="100" width="140" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="828" y="108" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="849" y="117" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TARGET</text><text x="890" y="136" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pods</text><text x="890" y="152" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">namespace dev</text><text x="890" y="165" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">core API group</text><rect x="300" y="260" width="440" height="56" rx="6" fill="#f5f5f5"/><rect x="300" y="260" width="440" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="308" y="268" width="42" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.4" stroke-width="0.8"/><text x="329" y="277" fill="#8d99ae" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">VERIFY</text><text x="520" y="284" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">kubectl auth can-i</text><text x="520" y="300" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">kubectl auth can-i get pods --as jane -n dev</text><line x1="30" y1="348" x2="970" y2="348" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="364" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="360" x2="148" y2="360" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="363" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">binding or grant</text><rect x="276" y="354" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="312" y="363" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">the Role: rules live here</text>
+    </svg>
+  </div>
+</body>
+</html>

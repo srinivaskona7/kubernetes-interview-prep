@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keeping etcd healthy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Control plane</p>
+    <h1>Keeping etcd healthy</h1>
+
+    <svg viewBox="0 0 1000 388" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch17-etcd-at-scale-title ch17-etcd-at-scale-desc">
+      <title id="ch17-etcd-at-scale-title">Keeping etcd healthy</title>
+      <desc id="ch17-etcd-at-scale-desc">Clients reach the API server, whose watch cache absorbs most reads; writes go to an odd-sized etcd quorum that must fsync to a fast local disk, kept small by compaction and defragmentation and watched by alerts.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      
+      <rect x="40" y="56" width="176" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="56" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="52" y="82" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Clients</text><text x="52" y="98" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">kubectl, controllers,</text><text x="52" y="112" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">list and watch</text>
+<rect x="296" y="56" width="232" height="84" rx="6" fill="#f5f5f5"/><rect x="296" y="56" width="232" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="308" y="66" width="57" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="337" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">READ LOAD</text><text x="308" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">API server</text><text x="308" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">watch cache answers reads</text><text x="308" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">so etcd sees fewer lists</text>
+<rect x="608" y="56" width="352" height="84" rx="6" fill="#f5f5f5"/><rect x="608" y="56" width="352" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="620" y="66" width="62" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="651" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WRITE PATH</text><text x="620" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">etcd: 3 or 5 members</text><text x="620" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">every write hits the WAL first</text><text x="620" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">odd quorum, one leader</text>
+<rect x="608" y="224" width="152" height="84" rx="6" fill="#f5f5f5"/><rect x="608" y="224" width="152" height="84" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="620" y="234" width="72" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="656" y="243" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BIGGEST RISK</text><text x="620" y="262" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Fast local disk</text><text x="620" y="278" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">no shared network disk</text><text x="620" y="292" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">fsync p99 near 10 ms</text>
+<rect x="792" y="224" width="168" height="84" rx="6" fill="#f5f5f5"/><rect x="792" y="224" width="168" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="804" y="234" width="76" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="842" y="243" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">KEEP IT SMALL</text><text x="804" y="262" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Housekeeping</text><text x="804" y="278" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">auto-compaction on</text><text x="804" y="292" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">defrag one at a time</text>
+<rect x="296" y="224" width="216" height="84" rx="6" fill="#f5f5f5"/><rect x="296" y="224" width="216" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="308" y="234" width="38" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="327" y="243" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WATCH</text><text x="308" y="262" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Alerts</text><text x="308" y="278" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">fsync time, DB size</text><text x="308" y="292" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">leader changes</text>
+      <path d="M216,92 L296,92" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="256" y="84" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQUESTS</text>
+<path d="M528,84 L608,84" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="568" y="76" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WRITES</text>
+<path d="M684,140 L684,224" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="692" y="188" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">FSYNC EVERY WRITE</text>
+<path d="M876,224 L876,140" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="884" y="188" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">COMPACT</text>
+<path d="M512,262 L544,262 Q552,262 552,254 L552,132 Q552,124 560,124 L608,124" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="580" y="116" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WATCH</text>
+<text x="40" y="336" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">Defrag briefly blocks that member. Database quota defaults to 2 GiB: raise it deliberately.</text>
+      <line x1="32" y1="360" x2="968" y2="360" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="376" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="372" x2="148" y2="372" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="375" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="212" y="368" width="12" height="8" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="232" y="375" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">biggest risk</text>
+    </svg>
+  </div>
+</body>
+</html>

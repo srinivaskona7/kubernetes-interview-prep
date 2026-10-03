@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mutual TLS between Pods via sidecars</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Encryption in transit</p>
+    <h1>Mutual TLS between Pods via sidecars</h1>
+
+    <svg viewBox="0 0 1000 472" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch9-in-transit-encryption-title ch9-in-transit-encryption-desc">
+      <title id="ch9-in-transit-encryption-title">Mutual TLS between Pods via sidecars</title>
+      <desc id="ch9-in-transit-encryption-desc">A mesh certificate authority gives each sidecar a certificate, and the two sidecars authenticate each other over mutual TLS while the apps talk plainly to their own proxy.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M180 240 L260 240" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="199.5" y="222" width="41" height="12" rx="2" fill="#f5f5f5"/><text x="220" y="231" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PLAIN</text><path d="M420 240 L580 240" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="453.5" y="222" width="93" height="12" rx="2" fill="#f5f5f5"/><text x="500" y="231" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MTLS BOTH WAYS</text><path d="M740 240 L820 240" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="759.5" y="222" width="41" height="12" rx="2" fill="#f5f5f5"/><text x="780" y="231" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PLAIN</text><path d="M340 132 L340 200" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="348" y="160" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="365.5" y="169" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CERT</text><path d="M660 132 L660 200" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="668" y="160" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="685.5" y="169" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CERT</text><rect x="300" y="52" width="400" height="80" rx="6" fill="#f5f5f5"/><rect x="300" y="52" width="400" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="308" y="60" width="47" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="331.5" y="69" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">MESH CA</text><text x="500" y="80" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Certificate authority</text><text x="500" y="96" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">issues X.509 certs</text><text x="500" y="109" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">one per workload</text><rect x="40" y="200" width="140" height="80" rx="6" fill="#f5f5f5"/><rect x="40" y="200" width="140" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="208" width="26" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="61" y="217" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text><text x="110" y="236" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Client Pod</text><text x="110" y="252" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">code unchanged</text><rect x="260" y="200" width="160" height="80" rx="6" fill="#f5f5f5"/><rect x="260" y="200" width="160" height="80" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="268" y="208" width="47" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="291.5" y="217" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SIDECAR</text><text x="340" y="236" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Envoy proxy</text><text x="340" y="252" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">originates TLS</text><rect x="580" y="200" width="160" height="80" rx="6" fill="#f5f5f5"/><rect x="580" y="200" width="160" height="80" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="588" y="208" width="47" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="611.5" y="217" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SIDECAR</text><text x="660" y="236" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Envoy proxy</text><text x="660" y="252" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">terminates TLS</text><rect x="820" y="200" width="140" height="80" rx="6" fill="#f5f5f5"/><rect x="820" y="200" width="140" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="828" y="208" width="26" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="841" y="217" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text><text x="890" y="236" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Server Pod</text><text x="890" y="252" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">code unchanged</text><rect x="300" y="340" width="400" height="64" rx="6" fill="#f5f5f5"/><rect x="300" y="340" width="400" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="308" y="348" width="31" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.4" stroke-width="0.8"/><text x="323.5" y="357" fill="#8d99ae" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EDGE</text><text x="500" y="368" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Ingress controller</text><text x="500" y="384" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">TLS termination for outside traffic</text><line x1="30" y1="436" x2="970" y2="436" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="452" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="448" x2="148" y2="448" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="451" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">request path</text><rect x="256" y="442" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="292" y="451" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">sidecar proxy</text>
+    </svg>
+  </div>
+</body>
+</html>

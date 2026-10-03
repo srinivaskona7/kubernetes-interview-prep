@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scan, sign, verify: keeping bad images out</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Supply chain</p>
+    <h1>Scan, sign, verify: keeping bad images out</h1>
+
+    <svg viewBox="0 0 1000 368" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch9-secure-supply-chain-title ch9-secure-supply-chain-desc">
+      <title id="ch9-secure-supply-chain-title">Scan, sign, verify: keeping bad images out</title>
+      <desc id="ch9-secure-supply-chain-desc">An image is built, scanned, signed and pushed to a private registry, then its signature is verified by admission policy before Pods run.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M310 100 L380 100" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="333" y="82" width="24" height="12" rx="2" fill="#f5f5f5"/><text x="345" y="91" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CI</text><path d="M620 100 L690 100" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="637.5" y="82" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="655" y="91" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PASS</text><path d="M810 140 L810 220" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="818" y="174" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="835.5" y="183" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PUSH</text><path d="M690 260 L620 260" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="631.5" y="242" width="47" height="12" rx="2" fill="#f5f5f5"/><text x="655" y="251" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DEPLOY</text><path d="M380 260 L310 260" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="324.5" y="242" width="41" height="12" rx="2" fill="#f5f5f5"/><text x="345" y="251" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ADMIT</text><rect x="70" y="60" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="70" y="60" width="240" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="78" y="68" width="36" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="96" y="77" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BUILD</text><text x="190" y="96" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Build image</text><text x="190" y="112" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">minimal trusted base image</text><rect x="380" y="60" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="380" y="60" width="240" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="388" y="68" width="31" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="403.5" y="77" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SCAN</text><text x="500" y="96" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Scan for CVEs</text><text x="500" y="112" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Trivy in CI and registry</text><rect x="690" y="60" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="690" y="60" width="240" height="80" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="698" y="68" width="31" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="713.5" y="77" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SIGN</text><text x="810" y="96" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sign image</text><text x="810" y="112" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Cosign with a private key</text><rect x="690" y="220" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="690" y="220" width="240" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="698" y="228" width="52" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="724" y="237" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">REGISTRY</text><text x="810" y="256" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Private registry</text><text x="810" y="272" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">access controlled</text><rect x="380" y="220" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="380" y="220" width="240" height="80" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="388" y="228" width="58" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="417" y="237" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ADMISSION</text><text x="500" y="248" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Verify signature</text><text x="500" y="264" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">public key check</text><text x="500" y="277" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">unsigned image rejected</text><rect x="70" y="220" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="70" y="220" width="240" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="78" y="228" width="47" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="101.5" y="237" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CLUSTER</text><text x="190" y="256" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pods run</text><text x="190" y="272" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Falco watches at runtime</text><line x1="30" y1="332" x2="970" y2="332" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="348" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="344" x2="148" y2="344" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="347" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">pipeline step</text><rect x="261" y="338" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="297" y="347" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">sign and verify</text>
+    </svg>
+  </div>
+</body>
+</html>

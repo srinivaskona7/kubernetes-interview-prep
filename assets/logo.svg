@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56" fill="none">
+  <!-- Rounded Hexagon Container / Badge -->
+  <path d="M28 4 L48 15.5 L48 38.5 L28 50 L8 38.5 L8 15.5 Z" fill="#EEF4FE" stroke="#326CE5" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Seven Spoke Helm Wheel Center Hub -->
+  <circle cx="28" cy="27" r="5" fill="#326CE5" />
+  <circle cx="28" cy="27" r="11" stroke="#326CE5" stroke-width="2.5" fill="none"/>
+  <!-- 7 Spokes radiating at 360/7 = 51.43 deg intervals -->
+  <!-- Spoke 1 (Top / Tangerine accent) -->
+  <line x1="28" y1="16" x2="28" y2="8" stroke="#eb6c36" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="28" cy="7" r="2" fill="#eb6c36"/>
+  <!-- Spoke 2 (~51.4 deg) -->
+  <line x1="36.5" y1="20.1" x2="43.5" y2="14.5" stroke="#326CE5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Spoke 3 (~102.8 deg) -->
+  <line x1="38.7" y1="29.4" x2="46.7" y2="31.2" stroke="#326CE5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Spoke 4 (~154.3 deg) -->
+  <line x1="32.8" y1="36.9" x2="36.8" y2="44.8" stroke="#326CE5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Spoke 5 (~205.7 deg) -->
+  <line x1="23.2" y1="36.9" x2="19.2" y2="44.8" stroke="#326CE5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Spoke 6 (~257.1 deg) -->
+  <line x1="17.3" y1="29.4" x2="9.3" y2="31.2" stroke="#326CE5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Spoke 7 (~308.6 deg) -->
+  <line x1="19.5" y1="20.1" x2="12.5" y2="14.5" stroke="#326CE5" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Wordmark KubePrep -->
+  <text x="64" y="35" font-family="'Space Grotesk', system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#2d3142" letter-spacing="-0.5">Kube<tspan fill="#326CE5">Prep</tspan></text>
+</svg>

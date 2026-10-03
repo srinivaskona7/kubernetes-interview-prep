@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How a LoadBalancer Service gets its address</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75; --color-accent:#eb6c36;
+      --font-sans:'Geist', system-ui, sans-serif; --font-serif:'Instrument Serif', serif; --font-mono:'Geist Mono', ui-monospace, monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1200px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:0.66rem; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:0.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight:400; letter-spacing:-0.02em; line-height:1.15; margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flow</p>
+    <h1>How a LoadBalancer Service gets its address</h1>
+    <svg viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch7-loadbalancer-provisioning-title ch7-loadbalancer-provisioning-desc">
+      <title id="ch7-loadbalancer-provisioning-title">How a LoadBalancer Service gets its address</title>
+      <desc id="ch7-loadbalancer-provisioning-desc">The cloud controller manager sees a LoadBalancer Service, asks the cloud API for a load balancer, and traffic then flows from the load balancer through node ports and the ClusterIP to pods.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M240,80 H380" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M580,80 H720" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M820,108 V148 Q820,156 812,156 H383 Q375,156 375,164 V204" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="538" y="133" width="118" height="12" rx="2" fill="#f5f5f5"/><text x="597" y="142" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">address written back</text><path d="M210,232 H290" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M460,232 H540" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M710,232 H790" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="40" y="52" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="40" y="52" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="140" y="78" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">LoadBalancer Service</text><text x="140" y="92" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">type: LoadBalancer</text><rect x="380" y="52" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="380" y="52" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="480" y="78" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cloud controller</text><text x="480" y="92" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">watches Services</text><rect x="720" y="52" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="720" y="52" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="820" y="78" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cloud API</text><text x="820" y="92" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">creates the load balancer</text><rect x="40" y="204" width="170" height="56" rx="6" fill="#f5f5f5"/><rect x="40" y="204" width="170" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="125" y="230" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Client</text><text x="125" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">public traffic</text><rect x="290" y="204" width="170" height="56" rx="6" fill="#f5f5f5"/><rect x="290" y="204" width="170" height="56" rx="6" fill="#fdeee6" stroke="#eb6c36" stroke-width="1"/><text x="375" y="230" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">External LB</text><text x="375" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">EXTERNAL-IP</text><rect x="540" y="204" width="170" height="56" rx="6" fill="#f5f5f5"/><rect x="540" y="204" width="170" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="625" y="230" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">NodePort</text><text x="625" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">80:30287/TCP</text><rect x="790" y="204" width="130" height="56" rx="6" fill="#f5f5f5"/><rect x="790" y="204" width="130" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="855" y="236" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">ClusterIP + pods</text><line x1="32" y1="304" x2="928" y2="304" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="324" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text><rect x="112" y="316" width="16" height="12" rx="2" fill="#fdeee6" stroke="#eb6c36" stroke-width="1"/><text x="136" y="325" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.08em">FOCAL</text><rect x="224" y="316" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="248" y="325" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.08em">STEP</text>
+    </svg>
+  </div>
+</body>
+</html>

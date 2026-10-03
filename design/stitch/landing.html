@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KubePrep — Visual Kubernetes Interview Study Guide</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-error-container": "#6e0a12",
+            "secondary": "#595f72",
+            "surface": "#f9f9f9",
+            "error": "#a83836",
+            "on-secondary-container": "#4b5164",
+            "on-error": "#fff7f6",
+            "primary-dim": "#41527f",
+            "primary": "#326CE5",
+            "k8s-blue": "#326CE5",
+            "on-secondary-fixed": "#393f51",
+            "inverse-primary": "#b4c5f9",
+            "tertiary-fixed": "#fe7a43",
+            "surface-container-highest": "#dfe3e4",
+            "on-secondary-fixed-variant": "#555b6e",
+            "on-tertiary": "#fff7f5",
+            "on-surface-variant": "#5b6061",
+            "error-dim": "#67040d",
+            "surface-bright": "#f9f9f9",
+            "surface-variant": "#dfe3e4",
+            "tertiary-container": "#fe7a43",
+            "on-secondary": "#f9f8ff",
+            "tertiary-dim": "#943300",
+            "outline": "#777b7c",
+            "on-tertiary-fixed-variant": "#531900",
+            "inverse-surface": "#0c0f0f",
+            "primary-container": "#b4c5f9",
+            "on-background": "#2f3334",
+            "error-container": "#fa746f",
+            "on-primary": "#f9f8ff",
+            "on-tertiary-fixed": "#000000",
+            "tertiary-fixed-dim": "#ed6d37",
+            "outline-variant": "#cbd5e1",
+            "background": "#f5f5f5",
+            "on-tertiary-container": "#431200",
+            "primary-fixed-dim": "#a7b8eb",
+            "primary-fixed": "#b4c5f9",
+            "surface-container-lowest": "#ffffff",
+            "surface-container": "#eceeee",
+            "on-primary-container": "#2e3f6a",
+            "surface-container-high": "#e6e9e9",
+            "tertiary": "#eb6c36",
+            "on-surface": "#2d3142",
+            "on-primary-fixed": "#182a55",
+            "surface-container-low": "#f2f4f4",
+            "on-primary-fixed-variant": "#374874",
+            "secondary-fixed": "#dce2f9",
+            "surface-dim": "#d7dbdb",
+            "secondary-fixed-dim": "#ced4eb",
+            "secondary-dim": "#4d5366",
+            "inverse-on-surface": "#9c9d9d",
+            "secondary-container": "#dce2f9",
+            "surface-tint": "#4d5e8b"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+    .material-symbols-outlined.fill {
+      font-variation-settings: 'FILL' 1;
+    }
+    /* Blueprint dot background */
+    .blueprint-grid {
+      background-image: radial-gradient(rgba(45, 49, 66, 0.08) 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body antialiased selection:bg-primary selection:text-white min-h-screen flex flex-col">
+<!-- ================= TOP NAVIGATION BAR ================= -->
+<header class="sticky top-0 z-50 bg-surface/95 backdrop-blur border-b border-outline-variant">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+<!-- Brand Logo -->
+<a class="flex items-center gap-2 hover:opacity-90 transition-opacity" href="#">
+<img alt="KubePrep Logo" class="h-9 w-auto" src="https://lh3.googleusercontent.com/aida/AEtjO1WLRacXvO8BQcNi9Sihs10J0EZBVnubtSzpqjKR2q7SN8gc56p1rDBJw1Vlafzf2DZutCtgI1_6FupyQCTTyIkGAlXKmqzlN5IVUUxFvrkriAGBiEEnw9CeJ98KWkklsCUVlpb5lT2QEsgFSwocOBclck0EikXIf3qbBOxhmXZ5bE2hnYDcKWYVrDu9UoXw5HHPRGq-NXPzGHvpeUPLjhOZRuM2LbQkk09IEP2J41tjHzDVf-RC2NB-C4k"/>
+</a>
+<!-- Center Links (Desktop) -->
+<nav class="hidden md:flex items-center gap-1 font-label text-sm font-semibold text-secondary">
+<a class="px-3 py-2 rounded-lg text-primary bg-primary/10 transition-colors" href="#curriculum">Chapters</a>
+<a class="px-3 py-2 rounded-lg hover:text-on-surface hover:bg-surface-container-high transition-colors" href="#flashcards">Flashcards</a>
+<a class="px-3 py-2 rounded-lg hover:text-on-surface hover:bg-surface-container-high transition-colors" href="#mock-interview">Mock Interview</a>
+<a class="px-3 py-2 rounded-lg hover:text-on-surface hover:bg-surface-container-high transition-colors" href="#quick-compare">Cheat Sheets</a>
+</nav>
+<!-- Right Area: Search + Readiness Ring + CTA -->
+<div class="flex items-center gap-3">
+<!-- Search bar -->
+<div class="relative hidden lg:block w-64">
+<div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</div>
+<input class="w-full pl-8 pr-12 py-1.5 text-xs font-mono bg-surface-container-lowest border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-on-surface-variant/60" placeholder="Search concepts, flags, scenarios..." type="text"/>
+<kbd class="absolute right-2 top-2 px-1.5 py-0.5 text-[10px] font-mono text-on-surface-variant bg-surface-container-high border border-outline-variant rounded">⌘K</kbd>
+</div>
+<!-- Progress ring indicator -->
+<div class="hidden sm:flex items-center gap-2 pl-2 border-l border-outline-variant" title="Prep Progress: 34% completed, 6 of 18 chapters mastered">
+<div class="relative w-8 h-8 flex items-center justify-center">
+<svg class="w-8 h-8 transform -rotate-90">
+<circle class="text-surface-container-highest" cx="16" cy="16" fill="transparent" r="13" stroke="currentColor" stroke-width="2.5"></circle>
+<circle class="text-primary" cx="16" cy="16" fill="transparent" r="13" stroke="currentColor" stroke-dasharray="81.68" stroke-dashoffset="53.9" stroke-linecap="round" stroke-width="2.5"></circle>
+</svg>
+<span class="absolute text-[9px] font-mono font-bold text-on-surface">34%</span>
+</div>
+<div class="text-left hidden xl:block">
+<div class="text-[11px] font-mono leading-tight font-semibold text-on-surface">6/18 Mastered</div>
+<div class="text-[10px] text-on-surface-variant leading-tight">Prep Progress</div>
+</div>
+</div>
+<!-- Primary CTA -->
+<a class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-dim text-white text-xs font-headline font-bold rounded-lg transition-colors shadow-none" href="#curriculum">
+<span>Start Learning</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</header>
+<!-- ================= MAIN CONTENT ================= -->
+<main class="flex-grow">
+<!-- ================= HERO SECTION ================= -->
+<section class="border-b border-outline-variant bg-surface relative overflow-hidden">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+<!-- Hero Copy (Left) -->
+<div class="lg:col-span-6 space-y-6">
+<div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-tertiary/30 bg-tertiary/5 text-tertiary text-xs font-mono font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+              Curriculum Updated for Kubernetes v1.30+
+            </div>
+<h1 class="font-headline font-bold text-3xl sm:text-4xl lg:text-5xl text-on-surface tracking-tight leading-[1.12]">
+              Crack the Kubernetes interview, <span class="text-primary underline decoration-primary/30 decoration-2 underline-offset-4">one diagram at a time</span>
+</h1>
+<p class="font-body text-base sm:text-lg text-secondary leading-relaxed max-w-xl">
+              A comprehensive, visual-first study guide dissecting cluster architecture, scheduling mechanics, networking internals, and high-frequency production interview scenarios.
+            </p>
+<!-- CTA Group -->
+<div class="flex flex-wrap items-center gap-3 pt-2">
+<a class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-[#2857be] text-white font-headline font-semibold text-sm rounded-lg transition-all" href="#curriculum">
+<span>Start learning</span>
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</a>
+<a class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-on-surface font-headline font-semibold text-sm rounded-lg transition-all" href="#mock-interview">
+<span class="material-symbols-outlined text-[18px] text-tertiary">quiz</span>
+<span>Take a mock interview</span>
+</a>
+</div>
+<!-- Trust micro-stats -->
+<div class="pt-4 flex items-center gap-3 text-xs font-mono text-on-surface-variant border-t border-outline-variant/60">
+<span class="font-medium text-on-surface">18 Chapters</span>
+<span class="text-outline-variant">•</span>
+<span class="font-medium text-on-surface">140+ Visual Diagrams</span>
+<span class="text-outline-variant">•</span>
+<span class="font-medium text-on-surface">45 Real-world Incident Scenarios</span>
+</div>
+</div>
+<!-- Hero Architectural Diagram (Right) -->
+<div class="lg:col-span-6">
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 sm:p-5 relative shadow-sm blueprint-grid">
+<!-- Diagram Header -->
+<div class="flex items-center justify-between pb-3 mb-4 border-b border-outline-variant text-xs font-mono text-on-surface-variant">
+<div class="flex items-center gap-2 font-semibold text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary">hub</span>
+<span>Kubernetes Cluster Architecture Internals</span>
+</div>
+<div class="flex items-center gap-1.5 text-[11px] bg-surface-container px-2 py-0.5 rounded border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span>mTLS v1.30</span>
+</div>
+</div>
+<!-- Architecture Canvas -->
+<div class="space-y-4">
+<!-- Control Plane Box -->
+<div class="border border-primary/40 bg-primary/5 rounded-lg p-3 relative">
+<div class="flex items-center justify-between mb-2.5">
+<span class="text-xs font-headline font-bold text-primary tracking-wide">CONTROL PLANE (Master)</span>
+<span class="text-[10px] font-mono text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded">Raft Consensus</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs font-mono">
+<!-- kube-apiserver -->
+<div class="border border-primary/30 bg-surface-container-lowest rounded p-2 flex flex-col justify-center">
+<div class="font-bold text-on-surface text-[11px]">kube-apiserver</div>
+<div class="text-[9px] text-secondary mt-0.5">REST / AuthZ</div>
+</div>
+<!-- etcd -->
+<div class="border border-amber-400/50 bg-amber-50/50 rounded p-2 flex flex-col justify-center">
+<div class="font-bold text-amber-900 text-[11px]">etcd v3.5</div>
+<div class="text-[9px] text-amber-700 mt-0.5">Key-Value Store</div>
+</div>
+<!-- kube-scheduler -->
+<div class="border border-outline-variant bg-surface-container-lowest rounded p-2 flex flex-col justify-center">
+<div class="font-bold text-on-surface text-[11px]">kube-scheduler</div>
+<div class="text-[9px] text-secondary mt-0.5">Filter &amp; Score</div>
+</div>
+<!-- controller-manager -->
+<div class="border border-outline-variant bg-surface-container-lowest rounded p-2 flex flex-col justify-center">
+<div class="font-bold text-on-surface text-[11px]">controller-mgr</div>
+<div class="text-[9px] text-secondary mt-0.5">Reconciliation</div>
+</div>
+</div>
+</div>
+<!-- Bidirectional Arrows Connector -->
+<div class="flex items-center justify-around text-[10px] font-mono text-secondary py-0.5">
+<div class="flex items-center gap-1 bg-surface-container-lowest border border-outline-variant px-2 py-0.5 rounded-full shadow-xs">
+<span class="material-symbols-outlined text-[12px] text-primary">sync_alt</span>
+<span>gRPC / Bidirectional mTLS (Port 10250)</span>
+</div>
+</div>
+<!-- Worker Nodes Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Worker Node 1 -->
+<div class="border border-outline-variant bg-surface rounded-lg p-3">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-headline font-bold text-on-surface">WORKER NODE 01</span>
+<span class="text-[10px] font-mono text-secondary">Linux 6.5</span>
+</div>
+<div class="grid grid-cols-2 gap-1.5 mb-2 text-[11px] font-mono">
+<div class="bg-surface-container-lowest border border-outline-variant p-1.5 rounded text-center">
+<div class="font-semibold text-primary">kubelet</div>
+<div class="text-[9px] text-secondary">Node Agent</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-1.5 rounded text-center">
+<div class="font-semibold text-on-surface">kube-proxy</div>
+<div class="text-[9px] text-secondary">IPVS / iptables</div>
+</div>
+</div>
+<!-- Pod Runtime Box -->
+<div class="border border-dashed border-outline-variant rounded p-2 bg-surface-container-low">
+<div class="flex items-center justify-between text-[10px] font-mono text-secondary mb-1">
+<span>CRI: containerd</span>
+<span class="text-emerald-700 bg-emerald-100/80 px-1 rounded">2 Pods</span>
+</div>
+<div class="flex gap-1.5">
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded p-1 text-[10px] font-mono text-center">
+<span class="text-tertiary font-bold">Pod/api</span>
+<span class="block text-[8px] text-secondary">10.244.1.12</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded p-1 text-[10px] font-mono text-center">
+<span class="text-primary font-bold">Pod/web</span>
+<span class="block text-[8px] text-secondary">10.244.1.13</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Worker Node 2 -->
+<div class="border border-outline-variant bg-surface rounded-lg p-3">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-headline font-bold text-on-surface">WORKER NODE 02</span>
+<span class="text-[10px] font-mono text-secondary">Linux 6.5</span>
+</div>
+<div class="grid grid-cols-2 gap-1.5 mb-2 text-[11px] font-mono">
+<div class="bg-surface-container-lowest border border-outline-variant p-1.5 rounded text-center">
+<div class="font-semibold text-primary">kubelet</div>
+<div class="text-[9px] text-secondary">Node Agent</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-1.5 rounded text-center">
+<div class="font-semibold text-on-surface">kube-proxy</div>
+<div class="text-[9px] text-secondary">IPVS / iptables</div>
+</div>
+</div>
+<!-- Pod Runtime Box -->
+<div class="border border-dashed border-outline-variant rounded p-2 bg-surface-container-low">
+<div class="flex items-center justify-between text-[10px] font-mono text-secondary mb-1">
+<span>CRI: containerd</span>
+<span class="text-emerald-700 bg-emerald-100/80 px-1 rounded">2 Pods</span>
+</div>
+<div class="flex gap-1.5">
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded p-1 text-[10px] font-mono text-center">
+<span class="text-primary font-bold">Pod/worker</span>
+<span class="block text-[8px] text-secondary">10.244.2.08</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded p-1 text-[10px] font-mono text-center">
+<span class="text-primary font-bold">Pod/cache</span>
+<span class="block text-[8px] text-secondary">10.244.2.09</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- CNI Overlay Banner -->
+<div class="bg-surface-container-high/80 border border-outline-variant rounded p-2 text-center text-[10px] font-mono text-secondary flex items-center justify-between">
+<span class="font-bold text-on-surface">CNI Overlay Subnet: 10.244.0.0/16</span>
+<span class="text-secondary">Calico eBPF / Flannel VXLAN encapsulation</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= 6 CURRICULUM PARTS (ALL 18 CHAPTERS) ================= -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-14" id="curriculum">
+<div class="mb-10">
+<div class="text-xs font-mono font-bold text-primary tracking-wider uppercase mb-1">Comprehensive Curriculum</div>
+<h2 class="font-headline font-bold text-2xl sm:text-3xl text-on-surface tracking-tight">The 18 Kubernetes Interview Chapters</h2>
+<p class="font-body text-secondary text-sm mt-1 max-w-2xl">Structured from raw control plane mechanics up to complex multi-tenant incident troubleshooting. Master all 18 to clear Staff/Senior platform engineering loops.</p>
+</div>
+<div class="space-y-10">
+<!-- PART 1 -->
+<div class="border border-outline-variant rounded-lg bg-surface p-5 sm:p-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-outline-variant">
+<div>
+<span class="text-[11px] font-mono font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">PART 01</span>
+<h3 class="font-headline font-bold text-lg text-on-surface mt-1">Control Plane &amp; Core Architecture</h3>
+</div>
+<div class="text-xs font-mono text-secondary">3 Chapters • 35 Topics • 52% Completed</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Ch 1 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 01</span>
+<span>12 topics • 4 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">API Server &amp; Request Lifecycle</h4>
+<p class="text-xs text-secondary mb-3">Authentication, Mutating/Validating Webhooks, Schema Validation, and etcd commit pipeline.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">85%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 85%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 text-emerald-800 font-medium">Junior</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+</div>
+</div>
+</div>
+<!-- Ch 2 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 02</span>
+<span>9 topics • 3 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">etcd Consensus &amp; Consistency</h4>
+<p class="text-xs text-secondary mb-3">Raft protocol, Leader election, revision counters, compaction, defragmentation, and quorum splits.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">50%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 50%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+<!-- Ch 3 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 03</span>
+<span>14 topics • 5 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Controller Manager &amp; Custom Controllers</h4>
+<p class="text-xs text-secondary mb-3">Informer factories, Workqueues, Level-triggered reconciliation loops, and Leader Election locks.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">20%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 20%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- PART 2 -->
+<div class="border border-outline-variant rounded-lg bg-surface p-5 sm:p-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-outline-variant">
+<div>
+<span class="text-[11px] font-mono font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">PART 02</span>
+<h3 class="font-headline font-bold text-lg text-on-surface mt-1">Pod Lifecycle &amp; Workload Controllers</h3>
+</div>
+<div class="text-xs font-mono text-secondary">3 Chapters • 40 Topics • 76% Completed</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Ch 4 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 04</span>
+<span class="text-emerald-700 font-semibold">100% Completed</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Pod Phases, Probes &amp; Init Containers</h4>
+<p class="text-xs text-secondary mb-3">Startup vs Liveness vs Readiness, PreStop hook mechanics, and graceful termination timeouts.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>16 topics • 4 diagrams</span>
+<span class="font-bold text-emerald-700">16/16</span>
+</div>
+<div class="w-full bg-emerald-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-emerald-600 h-full rounded-full" style="width: 100%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 text-emerald-800 font-medium">Junior</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+</div>
+</div>
+</div>
+<!-- Ch 5 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 05</span>
+<span>11 topics • 3 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Deployments, ReplicaSets &amp; Rollouts</h4>
+<p class="text-xs text-secondary mb-3">MaxSurge and MaxUnavailable calculation, revision histories, pod-template-hash collision resolution.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">90%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 90%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 text-emerald-800 font-medium">Junior</span>
+</div>
+</div>
+</div>
+<!-- Ch 6 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 06</span>
+<span>13 topics • 4 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">StatefulSets, Headless Services &amp; Storage</h4>
+<p class="text-xs text-secondary mb-3">Ordinal indexing, VolumeClaimTemplates, Headless DNS SRV lookups, and Partitioned rollouts.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">40%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 40%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- PART 3 -->
+<div class="border border-outline-variant rounded-lg bg-surface p-5 sm:p-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-outline-variant">
+<div>
+<span class="text-[11px] font-mono font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">PART 03</span>
+<h3 class="font-headline font-bold text-lg text-on-surface mt-1">Scheduling &amp; Resource Management</h3>
+</div>
+<div class="text-xs font-mono text-secondary">3 Chapters • 30 Topics • 25% Completed</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Ch 7 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 07</span>
+<span>10 topics • 2 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Kube-Scheduler Algorithm &amp; Scoring</h4>
+<p class="text-xs text-secondary mb-3">Filtering (Predicates), Prioritizing (Priorities), Scheduling Framework plugins, and Pod Topology Spread.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">0%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 0%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+<!-- Ch 8 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 08</span>
+<span>8 topics • 2 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Taints, Tolerations &amp; Node Affinity</h4>
+<p class="text-xs text-secondary mb-3">NoSchedule, PreferNoSchedule, NoExecute evictions, and hard vs soft node affinity match expressions.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">15%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 15%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 text-emerald-800 font-medium">Junior</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+</div>
+</div>
+</div>
+<!-- Ch 9 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 09</span>
+<span>12 topics • 3 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Requests, Limits, QoS &amp; OOMKilling</h4>
+<p class="text-xs text-secondary mb-3">Guaranteed, Burstable, and BestEffort classes. CFS quota throttling and oom_score_adj calculation.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">60%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 60%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- PART 4 -->
+<div class="border border-outline-variant rounded-lg bg-surface p-5 sm:p-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-outline-variant">
+<div>
+<span class="text-[11px] font-mono font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">PART 04</span>
+<h3 class="font-headline font-bold text-lg text-on-surface mt-1">Networking &amp; Ingress Internals</h3>
+</div>
+<div class="text-xs font-mono text-secondary">3 Chapters • 35 Topics • 13% Completed</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Ch 10 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 10</span>
+<span>15 topics • 4 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Pod-to-Pod &amp; Service ClusterIP Mechanics</h4>
+<p class="text-xs text-secondary mb-3">veth pairs, Linux network namespaces, CoreDNS lookup flows, and the overlay encapsulation packet journey.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">30%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 30%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+<!-- Ch 11 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 11</span>
+<span>11 topics • 3 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Kube-Proxy, iptables &amp; IPVS Packet Flows</h4>
+<p class="text-xs text-secondary mb-3">NAT table chains (PREROUTING, KUBE-SERVICES), conntrack table exhaustion, and IPVS hash map scaling.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">0%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 0%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+<!-- Ch 12 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 12</span>
+<span>9 topics • 2 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Ingress Controllers vs Gateway API</h4>
+<p class="text-xs text-secondary mb-3">HTTPRoute, GatewayClass, TLS termination modes, and migrating legacy Ingress annotations to Gateway API.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">10%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 10%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- PART 5 -->
+<div class="border border-outline-variant rounded-lg bg-surface p-5 sm:p-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-outline-variant">
+<div>
+<span class="text-[11px] font-mono font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">PART 05</span>
+<h3 class="font-headline font-bold text-lg text-on-surface mt-1">Security, RBAC &amp; Multi-Tenancy</h3>
+</div>
+<div class="text-xs font-mono text-secondary">3 Chapters • 30 Topics • 0% Completed</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Ch 13 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 13</span>
+<span>10 topics • 2 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">ServiceAccounts, Tokens &amp; Bound Credentials</h4>
+<p class="text-xs text-secondary mb-3">Projected ServiceAccount tokens, audience validation, short-lived JWT rotation, and cloud IAM binding.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">0%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 0%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 text-emerald-800 font-medium">Junior</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+</div>
+</div>
+</div>
+<!-- Ch 14 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 14</span>
+<span>12 topics • 3 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">RBAC Roles, ClusterRoles &amp; Audit Logging</h4>
+<p class="text-xs text-secondary mb-3">Verbs, resources, API groups, RoleBinding vs ClusterRoleBinding pitfalls, and audit policy backends.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">0%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 0%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+</div>
+</div>
+</div>
+<!-- Ch 15 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 15</span>
+<span>8 topics • 3 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">NetworkPolicies &amp; Pod Security Admission (PSA)</h4>
+<p class="text-xs text-secondary mb-3">Default-deny ingress/egress, PSA levels (Privileged, Baseline, Restricted), and seccomp/AppArmor enforcement.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">0%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 0%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- PART 6 -->
+<div class="border border-outline-variant rounded-lg bg-surface p-5 sm:p-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-outline-variant">
+<div>
+<span class="text-[11px] font-mono font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">PART 06</span>
+<h3 class="font-headline font-bold text-lg text-on-surface mt-1">Production Troubleshooting &amp; Reliability</h3>
+</div>
+<div class="text-xs font-mono text-secondary">3 Chapters • 35 Topics • 25% Completed</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Ch 16 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 16</span>
+<span>14 topics • 4 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">CrashLoopBackOff &amp; Debugging Workflows</h4>
+<p class="text-xs text-secondary mb-3">Exit code triage (137 OOM, 139 Segfault, 126/127 exec issues), ephemeral debug containers, and event logs.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">75%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 75%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 text-emerald-800 font-medium">Junior</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+<!-- Ch 17 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 17</span>
+<span>11 topics • 3 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Node NotReady, CNI Failures &amp; Disk Pressure</h4>
+<p class="text-xs text-secondary mb-3">Kubelet certificate expiry, systemd cgroup driver mismatches, image garbage collection, and PID limits.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">0%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 0%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-blue-800 font-medium">Mid</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+<!-- Ch 18 -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 hover:border-primary transition-all">
+<div class="flex items-center justify-between text-xs font-mono text-secondary mb-2">
+<span class="font-bold text-primary">CH 18</span>
+<span>10 topics • 2 diagrams</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface mb-2 leading-snug">Cluster Upgrades, Drain Mechanics &amp; PDBs</h4>
+<p class="text-xs text-secondary mb-3">Kube-apiserver skew policy, zero-downtime control plane rollouts, and PodDisruptionBudget deadlocks.</p>
+<div class="space-y-2 pt-2 border-t border-outline-variant/60">
+<div class="flex items-center justify-between text-[11px] font-mono text-secondary">
+<span>Progress</span>
+<span class="font-bold text-on-surface">0%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 0%"></div>
+</div>
+<div class="flex gap-1.5 pt-1">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-100 text-purple-800 font-medium">Senior</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= QUICK COMPARE SECTION ================= -->
+<section class="border-t border-b border-outline-variant bg-surface-container-lowest py-14" id="quick-compare">
+<div class="max-w-7xl mx-auto px-4 sm:px-6">
+<div class="mb-8">
+<div class="text-xs font-mono font-bold text-tertiary tracking-wider uppercase mb-1">High-Frequency Interview Question</div>
+<h2 class="font-headline font-bold text-2xl sm:text-3xl text-on-surface tracking-tight">Quick compare: Deployment vs StatefulSet vs DaemonSet</h2>
+<p class="font-body text-secondary text-sm mt-1 max-w-2xl">A standard favorite in Staff SRE and Kubernetes Platform interviews. Review the operational invariants below before answering.</p>
+</div>
+<!-- Table Container with Sticky Header & Zebra Rows -->
+<div class="border border-outline-variant rounded-lg overflow-hidden shadow-none bg-surface-container-lowest">
+<div class="overflow-x-auto max-h-[500px]">
+<table class="w-full text-left border-collapse text-xs sm:text-sm font-body">
+<thead class="sticky top-0 z-20 bg-surface border-b border-outline-variant font-headline text-on-surface font-bold text-xs uppercase tracking-wider">
+<tr>
+<th class="py-3 px-4 w-1/4 border-r border-outline-variant bg-surface" scope="col">Feature / Concept</th>
+<th class="py-3 px-4 w-1/4 border-r border-outline-variant bg-surface text-primary" scope="col">Deployment</th>
+<th class="py-3 px-4 w-1/4 border-r border-outline-variant bg-surface text-on-surface" scope="col">StatefulSet</th>
+<th class="py-3 px-4 w-1/4 bg-surface text-on-surface" scope="col">DaemonSet</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/60 font-body">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-3 px-4 font-mono font-semibold text-on-surface border-r border-outline-variant bg-surface/50">Primary Use Case</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary">Stateless web APIs, microservices, asynchronous workers.</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary">Stateful clustered databases (Kafka, ZooKeeper, PostgreSQL, Elasticsearch).</td>
+<td class="py-3 px-4 text-secondary">Node-level agents (Fluentbit, Node-Exporter, Promtail, CNI plugins).</td>
+</tr>
+<!-- Row 2 -->
+<tr class="bg-surface-container-low hover:bg-surface-container transition-colors">
+<td class="py-3 px-4 font-mono font-semibold text-on-surface border-r border-outline-variant bg-surface/50">Pod Identity &amp; Naming</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary font-mono text-xs">Random hash suffix (e.g. <span class="text-on-surface font-semibold">api-7d49b-x92zk</span>). Pods are fungible &amp; interchangeable.</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary font-mono text-xs">Stable ordinal index (e.g. <span class="text-on-surface font-semibold">kafka-0</span>, <span class="text-on-surface font-semibold">kafka-1</span>). Persistent upon reschedule.</td>
+<td class="py-3 px-4 text-secondary font-mono text-xs">Tied directly to the underlying Node name (one instance per matching Node).</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-3 px-4 font-mono font-semibold text-on-surface border-r border-outline-variant bg-surface/50">Storage Binding</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary">Shared ReadWriteMany (NFS) PVC or ephemeral local emptyDir storage.</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary"><span class="font-mono text-primary font-semibold">volumeClaimTemplates</span> generates dedicated PVC per ordinal pod index.</td>
+<td class="py-3 px-4 text-secondary">Typically mounts the host filesystem using <span class="font-mono font-semibold text-on-surface">hostPath</span> (/var/log, /proc).</td>
+</tr>
+<!-- Row 4 -->
+<tr class="bg-surface-container-low hover:bg-surface-container transition-colors">
+<td class="py-3 px-4 font-mono font-semibold text-on-surface border-r border-outline-variant bg-surface/50">Scaling &amp; Ordering</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary">Concurrent and unordered creation/termination for maximum speed.</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary">Strict sequential order (0 → 1 → 2) or parallel via <span class="font-mono">podManagementPolicy</span>.</td>
+<td class="py-3 px-4 text-secondary">Automatically scales up/down as new schedulable worker nodes join or drain.</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-3 px-4 font-mono font-semibold text-on-surface border-r border-outline-variant bg-surface/50">Network Identity</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary">Shared Service VIP with round-robin traffic routing via iptables/IPVS.</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary">Requires a Headless Service (<span class="font-mono">clusterIP: None</span>) for dedicated DNS A-records.</td>
+<td class="py-3 px-4 text-secondary">Often uses <span class="font-mono font-semibold text-on-surface">hostNetwork: true</span> or direct <span class="font-mono">hostPort</span> mapping.</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="py-3 px-4 font-mono font-semibold text-on-surface border-r border-outline-variant bg-surface/50">Rollout Strategy</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary font-mono text-xs">RollingUpdate with maxSurge &amp; maxUnavailable knobs.</td>
+<td class="py-3 px-4 border-r border-outline-variant text-secondary font-mono text-xs">RollingUpdate (in reverse ordinal order: N-1 to 0) or partitioned canary.</td>
+<td class="py-3 px-4 text-secondary font-mono text-xs">RollingUpdate (controlled via maxUnavailable) or OnDelete legacy mode.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Interview Tip Callout Banner -->
+<div class="border-t border-outline-variant bg-primary/5 p-4 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">lightbulb</span>
+<div class="text-xs font-body text-on-surface">
+<strong class="font-headline font-bold text-primary">Interview Tip &amp; Gotcha:</strong> When asked "Why does deleting a StatefulSet pod not delete its PVC?", explain that Kubernetes deliberately retains PVCs to avoid accidental data loss during crash loops. Deleting the volume requires manual human intervention or an explicit external controller policy.
+            </div>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= FLASHCARDS & MOCK INTERVIEW TEASER ================= -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-14" id="flashcards">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Flashcard Interactive Preview -->
+<div class="border border-outline-variant rounded-lg bg-surface p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-tertiary bg-tertiary/10 px-2.5 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">style</span>
+                FLASHCARD #042
+              </span>
+<span class="text-xs font-mono text-secondary">Control Plane Internals</span>
+</div>
+<h3 class="font-headline font-bold text-lg text-on-surface mb-3">
+              "Explain what happens step-by-step when an API request hits kube-apiserver."
+            </h3>
+<div class="border border-outline-variant rounded-lg bg-surface-container-lowest p-4 mb-4 font-mono text-xs space-y-2 text-secondary">
+<div class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">1</span>
+<span>Authentication (x509, Webhook, Bearer Token)</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">2</span>
+<span>Authorization (RBAC check for Verb + Resource)</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">3</span>
+<span>Mutating Admission Webhooks (inject sidecars, defaults)</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">4</span>
+<span>Object Schema Validation &amp; Validating Webhooks</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-4 h-4 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold">5</span>
+<span>etcd commit (Raft log replicated and committed)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3 border-t border-outline-variant">
+<span class="text-xs font-mono text-secondary">180+ flashcards in the full bank</span>
+<button class="inline-flex items-center gap-1 text-xs font-headline font-bold text-primary hover:underline">
+<span>Flip flashcard</span>
+<span class="material-symbols-outlined text-[16px]">sync</span>
+</button>
+</div>
+</div>
+<!-- Mock Interview Teaser -->
+<div class="border border-outline-variant rounded-lg bg-surface p-6 flex flex-col justify-between" id="mock-interview">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-primary bg-primary/10 px-2.5 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+                SCENARIO LAB #19
+              </span>
+<span class="text-xs font-mono text-secondary">Networking Deep-Dive</span>
+</div>
+<h3 class="font-headline font-bold text-lg text-on-surface mb-3">
+              "How does kube-proxy handle connection tracking and conntrack table saturation?"
+            </h3>
+<p class="text-xs font-body text-secondary leading-relaxed mb-4">
+              When a cluster experiences high UDP traffic or microservice burst floods, the Linux Netfilter conntrack table can fill up, silently dropping new TCP SYN packets without emitting error logs inside application pods.
+            </p>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-3 text-xs font-mono text-on-surface space-y-1">
+<div class="text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+                Key Investigation Command:
+              </div>
+<div class="text-secondary overflow-x-auto whitespace-pre">sysctl net.netfilter.nf_conntrack_count
+sysctl net.netfilter.nf_conntrack_max</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant mt-4">
+<span class="text-xs font-mono text-secondary">45 production scenario walk-throughs</span>
+<button class="inline-flex items-center gap-1 text-xs font-headline font-bold text-primary hover:underline">
+<span>View full scenario</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- ================= MINIMALIST FOOTER (STRICT COMPLIANCE) ================= -->
+<footer class="border-t border-outline-variant bg-surface-container-low py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="font-display font-bold text-base text-primary tracking-tight">
+        KubePrep
+      </div>
+<div class="font-body text-sm text-on-surface-variant">
+        Free study guide
+      </div>
+</div>
+</footer>
+</body></html>

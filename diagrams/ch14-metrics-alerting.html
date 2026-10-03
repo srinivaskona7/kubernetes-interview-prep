@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Prometheus works</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Monitoring · Observability</p>
+    <h1>How Prometheus works</h1>
+    <svg viewBox="0 0 936 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch14-metrics-alerting-title ch14-metrics-alerting-desc">
+      <title id="ch14-metrics-alerting-title">How Prometheus works</title>
+      <desc id="ch14-metrics-alerting-desc">Prometheus discovers targets through the Kubernetes API, scrapes apps, exporters and a Pushgateway, stores labelled time series, fires alert rules to Alertmanager which notifies people, and Grafana queries it with PromQL.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M340,200 L304,200 Q296,200 296,192 L296,76 Q296,68 288,68 L240,68" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M340,200 L304,200 Q296,200 296,192 L296,152 Q296,144 288,144 L240,144" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M340,200 L304,200 Q296,200 296,208 L296,212 Q296,220 288,220 L240,220" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M340,200 L304,200 Q296,200 296,208 L296,288 Q296,296 288,296 L240,296" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M540,172 L612,172 Q620,172 620,164 L620,76 Q620,68 628,68 L704,68" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M804,96 L804,136" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M704,244 L540,244" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="268" y="62" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WATCH</text>
+<text x="268" y="138" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SCRAPE</text>
+<text x="268" y="214" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SCRAPE</text>
+<text x="268" y="290" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SCRAPE</text>
+<text x="580" y="166" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FIRES</text>
+<text x="812" y="120" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">ROUTES</text>
+<text x="622" y="238" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PROMQL</text>
+<text x="340" y="288" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">A TARGET THAT STOPS ANSWERING SETS up TO 0</text>
+<text x="340" y="304" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">LABELS LET YOU SLICE BY POD, NAMESPACE, VERSION</text>
+<rect x="40" y="40" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="40" y="40" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="140.0" y="66.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kubernetes API</text><text x="140.0" y="82.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">finds new Pods</text>
+<rect x="40" y="116" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="40" y="116" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="140.0" y="142.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">App /metrics</text><text x="140.0" y="158.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">your own counters</text>
+<rect x="40" y="192" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="40" y="192" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="140.0" y="212.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Exporters</text><text x="140.0" y="228.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">node-exporter,</text><text x="140.0" y="240.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">kube-state-metrics</text>
+<rect x="40" y="268" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="40" y="268" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="140.0" y="294.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pushgateway</text><text x="140.0" y="310.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">short batch jobs push here</text>
+<rect x="340" y="152" width="200" height="96" rx="6" fill="#f5f5f5"/><rect x="340" y="152" width="200" height="96" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="440.0" y="192.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Prometheus</text><text x="440.0" y="208.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">pull, store, query</text><text x="440.0" y="220.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">labelled time series</text>
+<rect x="704" y="40" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="704" y="40" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="804.0" y="66.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Alertmanager</text><text x="804.0" y="82.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">group, route, silence</text>
+<rect x="704" y="136" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="704" y="136" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="804.0" y="162.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Notify people</text><text x="804.0" y="178.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">page, chat or ticket</text>
+<rect x="704" y="216" width="200" height="56" rx="6" fill="#f5f5f5"/><rect x="704" y="216" width="200" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="804.0" y="242.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Grafana</text><text x="804.0" y="258.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">dashboards</text>
+<line x1="30" y1="372" x2="906" y2="372" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="388" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><rect x="120" y="380" width="12" height="12" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="140" y="389" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">FOCAL</text><rect x="205.0" y="380" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="225.0" y="389" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">COMPONENT</text>
+    </svg>
+  </div>
+</body>
+</html>

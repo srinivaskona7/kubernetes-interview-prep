@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cluster components</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture</p>
+    <h1>Control plane and worker node</h1>
+    <svg viewBox="0 0 960 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch2-arch-title ch2-arch-desc">
+      <title id="ch2-arch-title">Cluster components</title>
+      <desc id="ch2-arch-desc">Architecture showing the API server linking etcd, scheduler and controller manager on the control plane to the kubelet, runtime and kube-proxy on a worker node.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="16" y="60" width="416" height="300" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/><text x="28" y="76" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">CONTROL PLANE</text>
+<rect x="688" y="60" width="224" height="324" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/><text x="700" y="76" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">WORKER NODE</text>
+<path d="M252,208 H188" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M322,152 V176" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M322,264 V240" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M720,128 H496 Q488,128 488,136 V188 Q488,196 480,196 H392" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M720,328 H528 Q520,328 520,320 V236 Q520,228 512,228 H392" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M800,160 V196" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="194" y="188" width="44" height="12" rx="2" fill="#f5f5f5"/><text x="216" y="197" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">STATE</text>
+<rect x="332" y="158" width="64" height="12" rx="2" fill="#f5f5f5"/><text x="364" y="167" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BIND POD</text>
+<rect x="332" y="246" width="44" height="12" rx="2" fill="#f5f5f5"/><text x="354" y="255" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WATCH</text>
+<rect x="594" y="108" width="52" height="12" rx="2" fill="#f5f5f5"/><text x="620" y="117" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REPORT</text>
+<rect x="586" y="308" width="68" height="12" rx="2" fill="#f5f5f5"/><text x="620" y="317" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WATCH SVC</text>
+<rect x="810" y="172" width="32" height="12" rx="2" fill="#f5f5f5"/><text x="826" y="181" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CRI</text>
+<rect x="40" y="176" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="176" width="140" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="110" y="208" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">etcd</text>
+<text x="110" y="224" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">state store</text>
+<rect x="252" y="176" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="252" y="176" width="140" height="64" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="322" y="208" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">API Server</text>
+<text x="322" y="224" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">kube-apiserver</text>
+<rect x="252" y="88" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="252" y="88" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="322" y="120" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Scheduler</text>
+<text x="322" y="136" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">kube-scheduler</text>
+<rect x="252" y="264" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="252" y="264" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="322" y="296" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Controller Mgr</text>
+<text x="322" y="312" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">reconcile loops</text>
+<rect x="720" y="96" width="160" height="64" rx="6" fill="#f5f5f5"/><rect x="720" y="96" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="800" y="128" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kubelet</text>
+<text x="800" y="144" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">node agent</text>
+<rect x="720" y="196" width="160" height="64" rx="6" fill="#f5f5f5"/><rect x="720" y="196" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="800" y="228" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Container Runtime</text>
+<text x="800" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">containerd</text>
+<rect x="720" y="296" width="160" height="64" rx="6" fill="#f5f5f5"/><rect x="720" y="296" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="800" y="328" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">kube-proxy</text>
+<text x="800" y="344" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">service rules</text>
+<line x1="30" y1="404" x2="930" y2="404" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="420" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="412" width="12" height="12" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="140" y="421" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">FOCAL COMPONENT</text>
+<rect x="310" y="412" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="330" y="421" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">COMPONENT</text>
+<rect x="500" y="412" width="12" height="12" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/><text x="520" y="421" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">STATE STORE</text>
+
+    </svg>
+  </div>
+</body>
+</html>

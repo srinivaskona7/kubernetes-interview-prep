@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Outage story in STAR form</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Interview · Behavioural</p>
+    <h1>Outage story in STAR form</h1>
+
+    <svg viewBox="0 0 1000 376" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch17-outage-story-title ch17-outage-story-desc">
+      <title id="ch17-outage-story-title">Outage story in STAR form</title>
+      <desc id="ch17-outage-story-desc">An outage told in STAR beats, with the action expanded into an ordered diagnosis from CrashLoopBackOff through exit code 137 to OOMKilled, and the result leading to a lasting fix.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      
+      <rect x="40" y="56" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="40" y="56" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="52" y="66" width="43" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="73" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BEAT 1</text><text x="52" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Situation</text><text x="52" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">checkout API returned 503</text><text x="52" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">DB StatefulSet down at night</text>
+<rect x="280" y="56" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="280" y="56" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="292" y="66" width="43" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="313" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BEAT 2</text><text x="292" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Task</text><text x="292" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">I owned restoring service</text><text x="292" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">then finding the cause</text>
+<rect x="520" y="56" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="520" y="56" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="532" y="66" width="43" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="553" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BEAT 3</text><text x="532" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Action</text><text x="532" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">ordered diagnosis, below;</text><text x="532" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">tell the team as you go</text>
+<rect x="760" y="56" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="760" y="56" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="772" y="66" width="43" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="793" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BEAT 4</text><text x="772" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Result</text><text x="772" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">recovery time as a number</text><text x="772" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">blameless postmortem</text>
+<rect x="40" y="208" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="40" y="208" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="52" y="218" width="62" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="83" y="227" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">1 · SIGNAL</text><text x="52" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">kubectl describe pod</text><text x="52" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">CrashLoopBackOff,</text><text x="52" y="276" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">restart count climbing</text>
+<rect x="280" y="208" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="280" y="208" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="292" y="218" width="67" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="325" y="227" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">2 · MEANING</text><text x="292" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Exit code 137</text><text x="292" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">SIGKILL, often the</text><text x="292" y="276" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">OOM killer</text>
+<rect x="520" y="208" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="520" y="208" width="200" height="84" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="532" y="218" width="67" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="565" y="227" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">3 · CONFIRM</text><text x="532" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">lastState: OOMKilled</text><text x="532" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">node kernel log agrees;</text><text x="532" y="276" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">raise memory to restore</text>
+<rect x="760" y="208" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="760" y="208" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="772" y="218" width="62" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="803" y="227" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">AFTERWARDS</text><text x="772" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Lasting fix</text><text x="772" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">memory alert before limit</text><text x="772" y="276" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">fixed query, runbook</text>
+      <path d="M240,98 L280,98" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M480,98 L520,98" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M720,98 L760,98" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M620,140 L620,168 Q620,176 612,176 L148,176 Q140,176 140,184 L140,208" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="360" y="168" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DIAGNOSE IN ORDER</text>
+<path d="M240,250 L280,250" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M480,250 L520,250" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M860,140 L860,208" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="868" y="180" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">FOLLOW-UP</text>
+<text x="40" y="324" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">Restore service first, then find the root cause; say it in that order.</text>
+      <line x1="32" y1="348" x2="968" y2="348" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="364" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="360" x2="148" y2="360" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="363" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="212" y="356" width="12" height="8" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="232" y="363" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">the confirming evidence</text>
+    </svg>
+  </div>
+</body>
+</html>

@@ -1,0 +1,835 @@
+{
+  "number": 5,
+  "title": "Autoscaling in Action",
+  "part": "Part 2 · Scaling and Operations",
+  "tagline": "Growing and shrinking the nodes themselves with Cluster Autoscaler and Karpenter.",
+  "overview": "HPA and VPA change how big your Pods are or how many you run, but the cluster still needs enough machines underneath them. This chapter covers the two node-level autoscalers: the Cluster Autoscaler, which resizes pre-defined node groups when Pods cannot be placed, and Karpenter, which talks to the cloud directly and picks the right machine for each batch of Pods. You will also see how to wire one up securely on EKS, prove it works, and debug it.",
+  "topics": [
+    {
+      "id": "ch5-why-cluster-level-scaling",
+      "level": "junior",
+      "question": "HPA and VPA already scale workloads. Why do we also need to scale the cluster itself?",
+      "say_first": "HPA and VPA change Pods, but Pods need nodes to live on. If the nodes run out, new Pods just sit Pending, so something has to add and remove machines too.",
+      "explain": [
+        "Think of a restaurant. HPA hires more waiters (Pods) when the dining room is busy and VPA gives each waiter a bigger section. Neither of them can build more tables. Cluster-level autoscaling is the manager who adds or removes tables (nodes) so the waiters always have somewhere to stand.",
+        "A Kubernetes cluster has a control plane and worker nodes. On a managed service such as EKS the provider scales the control plane for you, which is the recommended route. You still influence its load though: creating Pods in a tight loop or hammering the API server with queries makes it work harder.",
+        "Worker nodes are where your applications and also cluster add-ons (monitoring agents, ingress controllers, compliance tooling) run. As you grow, all of that needs more compute, and on a cloud that means more virtual machines. Two tools automate this: the Cluster Autoscaler and Karpenter."
+      ],
+      "key_points": [
+        "HPA changes replica count, VPA changes Pod size, node autoscalers change machine count.",
+        "Managed services scale the control plane, but your API usage patterns still affect it.",
+        "Add-ons consume node capacity too, so they need headroom as the cluster grows.",
+        "The two common node autoscalers are Cluster Autoscaler and Karpenter."
+      ],
+      "table": {
+        "caption": "Three layers of scaling",
+        "headers": [
+          "Layer",
+          "What it changes",
+          "Typical tool"
+        ],
+        "rows": [
+          [
+            "Horizontal",
+            "Number of Pod replicas",
+            "HPA"
+          ],
+          [
+            "Vertical",
+            "CPU and memory of each Pod",
+            "VPA"
+          ],
+          [
+            "Cluster",
+            "Number and type of nodes",
+            "Cluster Autoscaler or Karpenter"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "Who scales the control plane on EKS?",
+        "What happens to a Pod if no node has room for it?"
+      ],
+      "pitfalls": [
+        "Assuming HPA alone will keep the app healthy when the cluster is full.",
+        "Forgetting that heavy API-server traffic from your own tooling can slow a managed control plane."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-three-scaling-layers.html",
+        "title": "Why scale the cluster too",
+        "ratio": "1000/368"
+      }
+    },
+    {
+      "id": "ch5-ca-what-it-does",
+      "level": "junior",
+      "question": "What does the Cluster Autoscaler do?",
+      "say_first": "It automatically resizes the cluster so that every Pod has a place to run: it adds nodes when Pods cannot be scheduled and removes nodes that are underused.",
+      "explain": [
+        "Picture an office that adds or removes desks depending on how many people turn up. The Cluster Autoscaler (CA) does that for nodes. Its goal is that no Pod stays homeless, while you do not pay for empty desks.",
+        "Scale up happens when it finds Pods that the scheduler could not place because no node has enough free resources. Scale down happens when nodes are underutilised and their Pods can be moved elsewhere.",
+        "Importantly, the CA does not read live CPU or memory graphs. It looks at Pod state, specifically Pending Pods that failed to schedule for lack of resources."
+      ],
+      "key_points": [
+        "Scale up is triggered by unschedulable (Pending) Pods.",
+        "Scale down is triggered by nodes that stay underused long enough.",
+        "It reasons about Pod requests and scheduling, not live usage metrics.",
+        "It works through cloud-provider node groups."
+      ],
+      "follow_ups": [
+        "What exactly counts as a trigger for scale up?",
+        "How does it talk to the cloud provider?"
+      ],
+      "pitfalls": [
+        "Saying the CA scales on CPU percentage, which is HPA behaviour."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-ca-two-directions.html",
+        "title": "What the Cluster Autoscaler does",
+        "ratio": "1000/376"
+      }
+    },
+    {
+      "id": "ch5-ca-trigger-high-cpu",
+      "level": "junior",
+      "question": "Node CPU is at 95% but the Cluster Autoscaler added nothing. Is something broken?",
+      "say_first": "No, that is expected. The CA reacts to Pending Pods, not to utilisation, so if every Pod is running it stays idle no matter how hot the nodes are.",
+      "explain": [
+        "High utilisation is a symptom the CA does not watch. It only wakes up when the scheduler reports a Pod it cannot place. If all current Pods are already running, there is nothing for the CA to fix.",
+        "A scale up begins when a new Pod arrives whose resource requests do not fit anywhere. That Pod goes Pending, the CA notices, and a node is requested.",
+        "If you want to react to CPU pressure, that is a job for HPA (more replicas) which will then create Pods that may in turn become Pending and trigger the CA. The two work as a chain."
+      ],
+      "key_points": [
+        "Trigger equals unschedulable Pod, not high CPU or memory.",
+        "Running Pods under heavy load do not cause node scale up by themselves.",
+        "HPA plus CA is the usual chain: more replicas, then more nodes.",
+        "Accurate resource requests are what make the CA decisions meaningful."
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl get pods -A --field-selector=status.phase=Pending",
+          "note": "Lists the Pods that could trigger a scale up"
+        },
+        {
+          "cmd": "kubectl describe pod <pod-name>",
+          "note": "Events show 'FailedScheduling' and the reason, for example Insufficient cpu"
+        }
+      ],
+      "follow_ups": [
+        "How would HPA and the CA cooperate during a traffic spike?",
+        "Why do wrong resource requests make autoscaling unreliable?"
+      ],
+      "pitfalls": [
+        "Debugging the CA when the real issue is that no Pod is actually Pending."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-pending-not-cpu.html",
+        "title": "Pending Pods trigger it, not CPU",
+        "ratio": "1000/420"
+      }
+    },
+    {
+      "id": "ch5-ca-loop",
+      "level": "mid",
+      "question": "Walk me through how the Cluster Autoscaler works step by step, including scale down.",
+      "say_first": "It runs a loop, roughly every ten seconds by default: find unschedulable Pods, ask the node group to grow within its limits, let the scheduler use the new nodes; and separately, drain and remove nodes that stay unneeded.",
+      "explain": [
+        "Step 1: the CA keeps checking for Pending Pods. Step 2: if it finds some and the node group has headroom (below its maximum), it asks the cloud to add nodes. Step 3: the new machines boot and join the cluster. Step 4: the scheduler sees the fresh capacity and binds the waiting Pods.",
+        "Scale down is the mirror image. A node whose Pods could all fit elsewhere is marked unneeded. If it stays that way for the configured time, the CA drains it (evicts Pods respecting safeguards) and the node group terminates the machine.",
+        "On AWS the CA does not call EC2 directly; it changes the desired size of an Auto Scaling group (ASG), and the ASG launches or terminates instances."
+      ],
+      "key_points": [
+        "Polling interval is about 10 seconds and is tunable.",
+        "Scale up is bounded by the node group maximum, scale down by its minimum.",
+        "Scale down needs the node to be unneeded for a configurable time before removal.",
+        "The scheduler, not the CA, finally places the Pods."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-ca-loop.html",
+        "title": "Cluster Autoscaler up and down",
+        "ratio": "1000/420"
+      },
+      "follow_ups": [
+        "Which setting controls how long a node must be idle?",
+        "Why does a scale up take minutes rather than seconds?"
+      ],
+      "pitfalls": [
+        "Believing the CA places Pods itself.",
+        "Forgetting that boot time of the virtual machine limits how fast capacity appears."
+      ]
+    },
+    {
+      "id": "ch5-ca-asg-discovery-tags",
+      "level": "mid",
+      "question": "How does the Cluster Autoscaler know which Auto Scaling groups it may manage on EKS?",
+      "say_first": "Through two tags on the Auto Scaling group itself: one that opts the group in, and one that ties it to a specific cluster name.",
+      "explain": [
+        "The CA does not grab every node group in your account. Think of two sticky notes on a machine: one says 'available for autoscaling', the other says 'belongs to cluster X'. Without both notes, the CA walks straight past.",
+        "The tags must be on the ASG, not only on the EC2 instances it creates. With eksctl you declare them in the managed node group config and eksctl copies them onto the ASG.",
+        "Also set sane minSize and maxSize. They are your safety rails: a floor for baseline capacity and a ceiling so a runaway workload cannot launch unlimited machines and bills."
+      ],
+      "key_points": [
+        "Both tags are mandatory for auto-discovery.",
+        "Tags belong on the ASG; instance-only tags are not enough.",
+        "The cluster-specific tag stops one CA managing another cluster's nodes.",
+        "minSize and maxSize act as cost and availability guardrails."
+      ],
+      "table": {
+        "caption": "Discovery tags the autoscaler looks for",
+        "headers": [
+          "Tag key",
+          "Value",
+          "Meaning"
+        ],
+        "rows": [
+          [
+            "k8s.io/cluster-autoscaler/enabled",
+            "true",
+            "This group may be managed"
+          ],
+          [
+            "k8s.io/cluster-autoscaler/<cluster-name>",
+            "owned",
+            "Group belongs to this cluster"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "eksctl create cluster -f ./demo-cluster.yaml",
+          "note": "Creates the cluster; the file declares managedNodeGroups with minSize 1, maxSize 5 and the two tags"
+        },
+        {
+          "cmd": "aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[].Tags'",
+          "note": "Check the tags really landed on the ASG"
+        }
+      ],
+      "follow_ups": [
+        "What do you check first when Pods stay Pending and nothing scales?",
+        "Why have a maxSize at all?"
+      ],
+      "pitfalls": [
+        "Tagging instances but not the ASG.",
+        "Misspelling the cluster name inside the tag key."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-asg-discovery-tags.html",
+        "title": "Which groups the autoscaler manages",
+        "ratio": "1000/380"
+      }
+    },
+    {
+      "id": "ch5-irsa-for-ca",
+      "level": "senior",
+      "question": "How does the Cluster Autoscaler Pod get permission to call AWS without storing access keys?",
+      "say_first": "With IAM Roles for Service Accounts (IRSA): the Pod's Kubernetes ServiceAccount is linked to an IAM role through the cluster's OIDC provider, so the Pod swaps its token for short-lived AWS credentials.",
+      "explain": [
+        "First, register the cluster's OIDC identity provider in IAM. That tells AWS 'trust identity tokens issued by this cluster'. Then create an IAM role whose trust policy allows that provider, attach a permissions policy, and annotate a ServiceAccount with the role ARN.",
+        "At runtime the Pod receives a signed service account token. It presents the token to AWS STS using AssumeRoleWithWebIdentity. STS validates it and checks the role's trust policy, then hands back temporary credentials. The Pod uses those to call the Auto Scaling API, for example SetDesiredCapacity.",
+        "The benefit is no long-lived secrets in the cluster, credentials that expire on their own, and permissions scoped to just this ServiceAccount rather than to the whole node."
+      ],
+      "key_points": [
+        "Enable the cluster OIDC provider in IAM once per cluster.",
+        "The ServiceAccount annotation eks.amazonaws.com/role-arn is the link.",
+        "Credentials are temporary and issued per Pod via STS.",
+        "eksctl can create role, trust policy and annotated ServiceAccount in one command."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-irsa-flow.html",
+        "title": "How the autoscaler gets AWS access",
+        "ratio": "1000/560"
+      },
+      "commands": [
+        {
+          "cmd": "eksctl utils associate-iam-oidc-provider --region $AWS_REGION --cluster $CLUSTER_NAME --approve",
+          "note": "Registers the OIDC provider in IAM"
+        },
+        {
+          "cmd": "eksctl create iamserviceaccount --cluster $CLUSTER_NAME --region $AWS_REGION --namespace kube-system --name cluster-autoscaler --attach-policy-arn $CA_POLICY_ARN --approve --override-existing-serviceaccounts",
+          "note": "Creates the IAM role and an annotated ServiceAccount"
+        },
+        {
+          "cmd": "kubectl -n kube-system get sa cluster-autoscaler -o yaml",
+          "note": "Look for the eks.amazonaws.com/role-arn annotation"
+        }
+      ],
+      "follow_ups": [
+        "Why is IRSA safer than node instance profile permissions?",
+        "What breaks if the annotation is missing?"
+      ],
+      "pitfalls": [
+        "Putting static AWS keys in a Secret instead of using IRSA.",
+        "Assuming the role works without enabling the OIDC provider first."
+      ]
+    },
+    {
+      "id": "ch5-least-privilege-iam-policy",
+      "level": "senior",
+      "question": "What should the IAM policy for the Cluster Autoscaler look like?",
+      "say_first": "Split it in two: broad read-only Describe permissions, and powerful write actions limited by a condition to Auto Scaling groups carrying the autoscaler tags.",
+      "explain": [
+        "The CA must see what exists, so Describe calls on groups, instances, launch templates and instance types are allowed on all resources. They change nothing, so the risk is low.",
+        "Writing is different. SetDesiredCapacity, TerminateInstanceInAutoScalingGroup and UpdateAutoScalingGroup can add or kill machines. Restrict them with a condition on the resource tags, so a bug or compromise cannot touch unrelated groups in the account.",
+        "This is the principle of least privilege applied concretely: the autoscaler can read widely but can only change the groups explicitly marked for it."
+      ],
+      "key_points": [
+        "Describe actions can use Resource set to a wildcard.",
+        "Write actions need a tag-based Condition.",
+        "Avoid giving a wildcard Resource to every action.",
+        "Create the policy once, then attach it to the IRSA role."
+      ],
+      "table": {
+        "caption": "The two halves of the policy",
+        "headers": [
+          "Part",
+          "Example actions",
+          "Scope"
+        ],
+        "rows": [
+          [
+            "Read-only",
+            "autoscaling:DescribeAutoScalingGroups, ec2:DescribeInstanceTypes, eks:DescribeNodegroup",
+            "All resources"
+          ],
+          [
+            "Tag-restricted write",
+            "autoscaling:SetDesiredCapacity, autoscaling:TerminateInstanceInAutoScalingGroup, autoscaling:UpdateAutoScalingGroup",
+            "Only groups with the autoscaler tags"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "aws iam create-policy --policy-name AmazonEKSClusterAutoscalerPolicy --policy-document file://./cluster-autoscaler-policy.json",
+          "note": "Creates the policy from the JSON file"
+        }
+      ],
+      "follow_ups": [
+        "Why is a wildcard on write actions dangerous?",
+        "Where does the tag condition get its values from?"
+      ],
+      "pitfalls": [
+        "Granting autoscaling:* on all resources for convenience."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-iam-read-write-split.html",
+        "title": "Two-part autoscaler IAM policy",
+        "ratio": "1000/420"
+      }
+    },
+    {
+      "id": "ch5-ca-helm-install",
+      "level": "mid",
+      "question": "You install the Cluster Autoscaler Helm chart on a cluster where IRSA is already set up. Which settings matter most?",
+      "say_first": "Tell the chart not to create a ServiceAccount and to use the existing IRSA-annotated one; otherwise the Pod runs with no AWS permissions.",
+      "explain": [
+        "If Helm creates its own ServiceAccount, it will not carry the role annotation, so the Pod cannot get AWS credentials and every call returns AccessDenied. Setting create to false and naming the prepared account avoids that.",
+        "autoDiscovery.clusterName tells the CA which ownership tag to search for. Other useful arguments: an expander strategy such as least-waste to choose the node group that wastes the least, balance-similar-node-groups to spread across zones, and scale-down-unneeded-time to control how patient it is before removing a node.",
+        "Always verify after installing; a green Helm release only proves the manifests applied."
+      ],
+      "key_points": [
+        "rbac.serviceAccount.create=false and rbac.serviceAccount.name=cluster-autoscaler.",
+        "autoDiscovery.clusterName must match the tag on the ASG.",
+        "Expander picks which group to grow when several would work.",
+        "scale-down-unneeded-time tunes how fast empty nodes disappear."
+      ],
+      "commands": [
+        {
+          "cmd": "helm repo add autoscaler https://kubernetes.github.io/autoscaler && helm repo update",
+          "note": "Adds the official chart repository"
+        },
+        {
+          "cmd": "helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler --namespace kube-system --set cloudProvider=aws --set awsRegion=$AWS_REGION --set autoDiscovery.clusterName=$CLUSTER_NAME --set expander=least-waste --set rbac.serviceAccount.create=false --set rbac.serviceAccount.name=cluster-autoscaler --set extraArgs.balance-similar-node-groups=true --set extraArgs.scale-down-unneeded-time=5m",
+          "note": "Installs the CA using the existing IRSA ServiceAccount"
+        }
+      ],
+      "follow_ups": [
+        "What does the expander setting choose?",
+        "How would you confirm IRSA is actually in effect?"
+      ],
+      "pitfalls": [
+        "Letting the chart create a second, un-annotated ServiceAccount."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-helm-serviceaccount.html",
+        "title": "Helm install and the ServiceAccount",
+        "ratio": "1000/420"
+      }
+    },
+    {
+      "id": "ch5-ca-smoke-test",
+      "level": "mid",
+      "question": "How would you prove the Cluster Autoscaler works after installing it?",
+      "say_first": "Create demand that cannot fit, watch the Pending Pods trigger a scale up in the logs and new nodes appear, then delete the load and watch the nodes go away.",
+      "explain": [
+        "Deploy something that asks for more CPU than the current node offers. A t3.medium has 2 vCPU, so twenty replicas each requesting 200m will leave several Pods Pending. That Pending state is the trigger.",
+        "Tail the autoscaler logs for lines saying a Pod is unschedulable and a node group is being expanded, and watch kubectl get nodes until the new nodes are Ready and the Pods are scheduled.",
+        "Finally remove the test. After the unneeded time (five minutes in our install) the CA terminates the empty nodes and the group heads back toward its minimum. Seeing both directions is the proof."
+      ],
+      "key_points": [
+        "Use resource requests, not a CPU burner, to create demand.",
+        "Pending Pods are the observable trigger.",
+        "Logs, nodes and Pod status together confirm the full loop.",
+        "Always test scale down too, and clean up cloud resources afterwards."
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl apply -f ./scale-test.yaml",
+          "note": "20 replicas each requesting 200m CPU and 256Mi memory (pause image)"
+        },
+        {
+          "cmd": "kubectl get pods -l app=scale-test",
+          "note": "Several should show Pending"
+        },
+        {
+          "cmd": "kubectl -n kube-system logs -f deploy/cluster-autoscaler-aws-cluster-autoscaler",
+          "note": "Look for 'unschedulable' and 'Scale-up' messages (name depends on nameOverride)"
+        },
+        {
+          "cmd": "kubectl get nodes -w",
+          "note": "Watch new nodes join and turn Ready"
+        },
+        {
+          "cmd": "kubectl delete -f ./scale-test.yaml",
+          "note": "Remove load to trigger scale down"
+        }
+      ],
+      "follow_ups": [
+        "How would you test scale down specifically?",
+        "What would you check if the Pods stay Pending?"
+      ],
+      "pitfalls": [
+        "Declaring success after helm install without generating any load.",
+        "Leaving the test cluster running and paying for it."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-smoke-test-both-ways.html",
+        "title": "Proving scale up and scale down",
+        "ratio": "1000/420"
+      }
+    },
+    {
+      "id": "ch5-ca-troubleshooting",
+      "level": "senior",
+      "question": "The CA is installed but it is not scaling. What are the first things you check?",
+      "say_first": "Work from most to least likely: discovery tags on the ASG, then IRSA permissions in the CA logs, and for stuck scale down look at minSize, PodDisruptionBudgets and Pods that refuse eviction.",
+      "explain": [
+        "No scale up despite Pending Pods usually means the CA cannot see the group. Check the two tags on the ASG itself in the EC2 console and read the CA logs for 'no node groups' style messages.",
+        "A crash-looping Pod or AccessDenied errors point at IRSA. Inspect the ServiceAccount; if the role annotation is missing, the chart probably created its own account instead of using yours.",
+        "Scale up works but nodes never leave: the CA refuses to remove a node if it cannot safely evict everything on it. Candidates are the group already at minSize, a PodDisruptionBudget that would be violated, Pods with local storage, or Pods annotated safe-to-evict false."
+      ],
+      "key_points": [
+        "Scale up problem: think discovery tags first.",
+        "Permission problem: think ServiceAccount annotation and policy.",
+        "Scale down problem: think minSize, PDBs, annotations, local storage and the timer.",
+        "Logs of the autoscaler Pod explain most decisions."
+      ],
+      "table": {
+        "caption": "Symptom to likely cause",
+        "headers": [
+          "Symptom",
+          "Likely cause",
+          "First check"
+        ],
+        "rows": [
+          [
+            "Pending Pods, no scale up",
+            "ASG not discovered",
+            "Tags on the ASG and CA logs"
+          ],
+          [
+            "CA crash-loops or AccessDenied",
+            "IRSA misconfigured",
+            "kubectl get sa -o yaml for the role annotation"
+          ],
+          [
+            "Nodes never removed",
+            "Eviction blocked or at minSize",
+            "PDBs, safe-to-evict annotation, ASG minSize"
+          ]
+        ]
+      },
+      "diagram": {
+        "file": "diagrams/ch5-scale-down-blockers.html",
+        "title": "Why a node will not scale down",
+        "ratio": "1000/428"
+      },
+      "commands": [
+        {
+          "cmd": "kubectl -n kube-system get sa cluster-autoscaler -o yaml",
+          "note": "Confirm eks.amazonaws.com/role-arn is present"
+        },
+        {
+          "cmd": "kubectl get pdb -A",
+          "note": "Find budgets that could pin a node"
+        },
+        {
+          "cmd": "kubectl describe pod <pod-name>",
+          "note": "Look at annotations such as cluster-autoscaler.kubernetes.io/safe-to-evict"
+        }
+      ],
+      "follow_ups": [
+        "Does emptyDir storage block scale down?",
+        "How do PDBs interact with node draining?"
+      ],
+      "pitfalls": [
+        "Guessing at node sizes before reading the autoscaler logs.",
+        "Checking tags on instances instead of on the ASG."
+      ]
+    },
+    {
+      "id": "ch5-ca-limitations",
+      "level": "senior",
+      "question": "What are the limitations of the Cluster Autoscaler?",
+      "say_first": "It is reactive, bound to pre-defined node groups, driven by requests rather than real usage, and limited by how fast the cloud can boot machines.",
+      "explain": [
+        "Because it only acts after the scheduler fails, there is always a delay of a few minutes while the VM is provisioned. Spiky traffic can outrun it.",
+        "Because it grows predefined groups, you must decide instance types in advance and manage many groups for different needs. And since it reasons about Pod requests, over-generous requests lead to over-provisioning.",
+        "It also assumes Pods can be restarted elsewhere, so disruption-sensitive apps need PodDisruptionBudgets or annotations. On-premises support is weaker, and very large clusters can make it slow, though trimming node groups or giving it more resources helps."
+      ],
+      "key_points": [
+        "Scaling is reactive and not instant.",
+        "Node shapes are fixed by node groups chosen in advance.",
+        "Request-based, so inflated requests mean wasted nodes.",
+        "Never run it and another node autoscaler over the same nodes."
+      ],
+      "table": {
+        "caption": "Limitation and the usual mitigation",
+        "headers": [
+          "Limitation",
+          "Why it hurts",
+          "Mitigation"
+        ],
+        "rows": [
+          [
+            "Scaling delay",
+            "Minutes to boot new nodes",
+            "Overprovision with low-priority placeholder Pods"
+          ],
+          [
+            "Fixed node groups",
+            "Instance types chosen upfront",
+            "Several groups, or move to Karpenter"
+          ],
+          [
+            "Request-based",
+            "Bad requests waste capacity",
+            "Right-size requests, use VPA"
+          ],
+          [
+            "Assumes restart is safe",
+            "Sensitive apps get disrupted",
+            "PDBs and safe-to-evict annotations"
+          ],
+          [
+            "Scale at size",
+            "Slower decisions on huge clusters",
+            "Fewer groups, give CA more resources"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "Why must two node autoscalers never manage the same nodes?",
+        "What does Karpenter do differently?"
+      ],
+      "pitfalls": [
+        "Running the CA and Karpenter over the same node set; one adds a node while the other removes it."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-limitations-mitigations.html",
+        "title": "Cluster Autoscaler limits and fixes",
+        "ratio": "1000/424"
+      }
+    },
+    {
+      "id": "ch5-karpenter-vs-ca",
+      "level": "mid",
+      "question": "How does Karpenter differ from the Cluster Autoscaler?",
+      "say_first": "The CA asks pre-defined Auto Scaling groups to grow; Karpenter reads the pending Pods and calls the EC2 API directly to launch the best-fitting instance, no node groups needed.",
+      "explain": [
+        "The CA is like a manager who can only order from a fixed catalog of desk sizes. Karpenter looks at who is waiting and orders exactly the desk that fits, from any supplier that has stock.",
+        "Because it works with EC2 directly, it can add capacity quickly, choose among many instance types, and take advantage of cheaper spot capacity based on real availability.",
+        "It also consolidates: it can move Pods and replace nodes with cheaper ones. Constraints such as 'spot only' or particular zones live in Kubernetes custom resources, so you manage a handful of policies instead of many node groups."
+      ],
+      "key_points": [
+        "CA works indirectly through ASGs; Karpenter calls EC2 directly.",
+        "Karpenter chooses instance type per workload rather than per group.",
+        "Spot usage and consolidation are first-class features.",
+        "It is newer and evolves quickly, so plan for regular upgrades."
+      ],
+      "table": {
+        "caption": "Cluster Autoscaler versus Karpenter",
+        "headers": [
+          "Aspect",
+          "Cluster Autoscaler",
+          "Karpenter"
+        ],
+        "rows": [
+          [
+            "Talks to",
+            "Auto Scaling groups",
+            "EC2 API directly"
+          ],
+          [
+            "Node shapes",
+            "Fixed by each node group",
+            "Chosen per batch of Pods"
+          ],
+          [
+            "Configuration",
+            "Many node groups",
+            "NodePool and NodeClass resources"
+          ],
+          [
+            "Cost features",
+            "Expander strategies",
+            "Spot awareness and consolidation"
+          ],
+          [
+            "Speed",
+            "Bounded by ASG round trip",
+            "Faster, just-in-time provisioning"
+          ],
+          [
+            "Maturity",
+            "Long established",
+            "Newer, faster-moving"
+          ]
+        ]
+      },
+      "diagram": {
+        "file": "diagrams/ch5-ca-vs-karpenter.html",
+        "title": "Two routes to a new node",
+        "ratio": "880/480"
+      },
+      "follow_ups": [
+        "When would you still choose the Cluster Autoscaler?",
+        "How does Karpenter reduce the number of node groups?"
+      ],
+      "pitfalls": [
+        "Describing Karpenter as just a faster Cluster Autoscaler; the direct, per-Pod instance choice is the real difference."
+      ]
+    },
+    {
+      "id": "ch5-karpenter-nodepool",
+      "level": "mid",
+      "question": "What is a Karpenter NodePool and what can you control with it?",
+      "say_first": "A NodePool is the rulebook for the nodes Karpenter may create: allowed zones, instance types, architectures, taints, limits and expiry, plus a link to a NodeClass for cloud-specific details.",
+      "explain": [
+        "Karpenter needs at least one NodePool before it will create anything. When Pods are Pending, it finds NodePools whose rules allow them, filters instance types by the requirements, and launches one.",
+        "requirements use operators such as In, NotIn, Exists, DoesNotExist, Gt and Lt over node labels. nodeClassRef points at the NodeClass (for AWS, the AMI, subnets and so on). taints repel ordinary Pods, which is how you reserve capacity; startupTaints are temporary and are cleared by something like a DaemonSet once the node is ready, and Pods do not need to tolerate them.",
+        "Design pools so a Pod matches only one. If several match, the one with the higher weight wins. You can also tune kubelet settings, for example maxPods when IP addresses per node are limited."
+      ],
+      "key_points": [
+        "At least one NodePool must exist.",
+        "requirements constrain zone, instance type, architecture and capacity type.",
+        "taints reserve nodes; startupTaints are short-lived readiness gates.",
+        "Overlapping pools are resolved by weight."
+      ],
+      "table": {
+        "caption": "Key NodePool fields",
+        "headers": [
+          "Field",
+          "Purpose"
+        ],
+        "rows": [
+          [
+            "requirements",
+            "Allowed zones, instance families, architectures, capacity type"
+          ],
+          [
+            "nodeClassRef",
+            "Cloud-specific node blueprint (AMI, subnets, storage)"
+          ],
+          [
+            "taints",
+            "Permanent taints so only tolerating Pods land here"
+          ],
+          [
+            "startupTaints",
+            "Temporary taints removed once node setup completes"
+          ],
+          [
+            "limits",
+            "Cap on total resources the pool may provision"
+          ],
+          [
+            "weight",
+            "Tie-breaker when more than one pool matches"
+          ]
+        ]
+      },
+      "diagram": {
+        "file": "diagrams/ch5-karpenter-flow.html",
+        "title": "How Karpenter picks a node",
+        "ratio": "1040/376"
+      },
+      "commands": [
+        {
+          "cmd": "kubectl get nodepools",
+          "note": "Lists NodePools in the cluster"
+        },
+        {
+          "cmd": "kubectl get nodeclaims",
+          "note": "Shows the machines Karpenter has requested"
+        }
+      ],
+      "follow_ups": [
+        "How would you dedicate nodes to high-priority workloads?",
+        "Why restrict a pool to certain zones when using persistent volumes?"
+      ],
+      "pitfalls": [
+        "Creating overlapping NodePools without weights.",
+        "Confusing taints with startupTaints."
+      ]
+    },
+    {
+      "id": "ch5-karpenter-consolidation-budgets",
+      "level": "senior",
+      "question": "Explain Karpenter consolidation, disruption budgets and node expiry.",
+      "say_first": "Consolidation removes or replaces underused nodes to save money, budgets cap how many nodes can be disrupted at once or when, and expireAfter recycles old nodes automatically.",
+      "explain": [
+        "Consolidation has two flavours. A policy of empty nodes only is simple: remove nodes with no workload Pods. The broader policy also considers underutilised nodes: delete one if its Pods fit on the others, or swap it for a cheaper instance. For many-node cases Karpenter uses heuristics, preferring nodes with fewer Pods, nearer expiry or lower-priority workloads. In the v1 API these policies are named WhenEmpty and WhenEmptyOrUnderutilized (the older name was WhenUnderutilized).",
+        "Budgets slow the pace. A percentage budget is rounded up from the node count, and nodes already deleting or NotReady are subtracted. With several budgets, the most restrictive one wins. A budget can carry a schedule and duration, for example blocking all disruption during a daily window.",
+        "expireAfter sets a node lifetime, such as 720h for 30 days. Karpenter drains and replaces older nodes, so they pick up fresh AMIs and security patches and you avoid long-lived configuration drift. PodDisruptionBudgets on your apps still protect availability during all of this."
+      ],
+      "key_points": [
+        "Two policies: only empty nodes, or empty plus underutilised.",
+        "Most restrictive budget applies when several are defined.",
+        "expireAfter enforces regular node recycling.",
+        "PodDisruptionBudgets still guard application availability."
+      ],
+      "table": {
+        "caption": "Disruption controls",
+        "headers": [
+          "Control",
+          "What it does",
+          "Example"
+        ],
+        "rows": [
+          [
+            "consolidationPolicy",
+            "Chooses which nodes are candidates",
+            "WhenEmptyOrUnderutilized"
+          ],
+          [
+            "budgets.nodes",
+            "Max nodes disrupted at once",
+            "\"15%\" or \"2\""
+          ],
+          [
+            "budgets.schedule + duration",
+            "Time window the budget applies",
+            "@daily for 15m with nodes \"0\" blocks disruption"
+          ],
+          [
+            "expireAfter",
+            "Maximum node age before replacement",
+            "720h"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl apply -f nodepool-disruption.yaml",
+          "note": "Applies a NodePool whose spec.disruption sets consolidationPolicy: WhenEmptyOrUnderutilized and budgets of nodes: \"15%\" plus a daily nodes: \"0\" window for 15m; expireAfter: 720h sits under spec.template.spec"
+        }
+      ],
+      "follow_ups": [
+        "How are percentage budgets calculated?",
+        "Why recycle healthy nodes at all?"
+      ],
+      "pitfalls": [
+        "Disabling disruption budgets and letting consolidation churn Pods during peak hours.",
+        "Using the old policy name on a v1 NodePool."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-consolidation-budgets.html",
+        "title": "Consolidation, budgets and expiry",
+        "ratio": "1000/380"
+      }
+    },
+    {
+      "id": "ch5-pick-the-right-autoscaler",
+      "level": "senior",
+      "question": "In an interview scenario, how would you choose between the Cluster Autoscaler and Karpenter, and what rules apply either way?",
+      "say_first": "Karpenter when you are on AWS and want flexible instance choice, spot and consolidation; Cluster Autoscaler when you need a long-established tool or multi-cloud, predictable behaviour. Never run both over the same nodes.",
+      "explain": [
+        "Start from the workload. Mixed shapes, many instance types, spot use and cost pressure favour Karpenter. Stable, predictable fleets with existing ASG tooling, or non-AWS clouds, fit the CA well.",
+        "Whichever you pick, set safe bounds (maximum size or limits), keep Pod requests honest, use PodDisruptionBudgets for sensitive apps, and test both scale up and scale down. Stateful apps need care because persistent volumes are tied to an availability zone.",
+        "Finally, clean up lab environments: uninstall the Helm release, delete the cluster with eksctl and remove orphaned IAM policies, so you do not pay for idle resources."
+      ],
+      "key_points": [
+        "Match tool to cloud, workload variety and cost goals.",
+        "Only one node autoscaler per set of nodes.",
+        "Bounds, honest requests and PDBs apply to both.",
+        "Clean up cloud resources after experiments."
+      ],
+      "table": {
+        "caption": "Quick decision guide",
+        "headers": [
+          "Situation",
+          "Lean towards"
+        ],
+        "rows": [
+          [
+            "AWS, varied workloads, want spot and consolidation",
+            "Karpenter"
+          ],
+          [
+            "Multi-cloud or on-premises, conservative change policy",
+            "Cluster Autoscaler"
+          ],
+          [
+            "Existing ASG-based platform tooling",
+            "Cluster Autoscaler"
+          ],
+          [
+            "Need just-in-time right-sized nodes",
+            "Karpenter"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "helm -n kube-system uninstall cluster-autoscaler",
+          "note": "Removes the autoscaler release"
+        },
+        {
+          "cmd": "eksctl delete cluster --name $CLUSTER_NAME --region $AWS_REGION",
+          "note": "Deletes the lab cluster and its nodes"
+        }
+      ],
+      "follow_ups": [
+        "How do stateful workloads change the scaling strategy?",
+        "How would event-driven scaling fit into this picture?"
+      ],
+      "pitfalls": [
+        "Running two node autoscalers on the same nodes.",
+        "Forgetting to delete lab clusters."
+      ],
+      "diagram": {
+        "file": "diagrams/ch5-choose-autoscaler.html",
+        "title": "Choosing a node autoscaler",
+        "ratio": "1000/380"
+      }
+    }
+  ],
+  "diagrams": [
+    "diagrams/ch5-ca-loop.html",
+    "diagrams/ch5-irsa-flow.html",
+    "diagrams/ch5-scale-down-blockers.html",
+    "diagrams/ch5-ca-vs-karpenter.html",
+    "diagrams/ch5-karpenter-flow.html",
+    "diagrams/ch5-three-scaling-layers.html",
+    "diagrams/ch5-ca-two-directions.html",
+    "diagrams/ch5-pending-not-cpu.html",
+    "diagrams/ch5-asg-discovery-tags.html",
+    "diagrams/ch5-iam-read-write-split.html",
+    "diagrams/ch5-helm-serviceaccount.html",
+    "diagrams/ch5-smoke-test-both-ways.html",
+    "diagrams/ch5-limitations-mitigations.html",
+    "diagrams/ch5-consolidation-budgets.html",
+    "diagrams/ch5-choose-autoscaler.html"
+  ]
+}

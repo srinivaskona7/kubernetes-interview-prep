@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Karpenter picks a node</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75; --color-accent:#eb6c36;
+      --font-sans:'Geist', system-ui, sans-serif; --font-serif:'Instrument Serif', serif; --font-mono:'Geist Mono', ui-monospace, monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1200px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:0.66rem; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:0.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight:400; letter-spacing:-0.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Autoscaling · Karpenter</p>
+    <h1>How Karpenter picks a node</h1>
+    <svg viewBox="0 0 1040 376" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch5-karpenter-flow-title ch5-karpenter-flow-desc">
+      <title id="ch5-karpenter-flow-title">How Karpenter picks a node</title>
+      <desc id="ch5-karpenter-flow-desc">Flowchart of a pending Pod being matched to a NodePool, filtered to fitting instance types, priced, and launched as a node.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M144,132 H192" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M320,132 H368" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="330" y="112" width="28" height="12" rx="2" fill="#f5f5f5"/>
+<text x="344" y="121" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text>
+<path d="M496,132 H544" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M672,132 H720" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M848,132 H896" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M256,172 V236" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="264" y="198" width="24" height="12" rx="2" fill="#f5f5f5"/>
+<text x="276" y="207" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+<rect x="32" y="108" width="112" height="48" rx="24" fill="#f5f5f5"/>
+<rect x="32" y="108" width="112" height="48" rx="24" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="88" y="136" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pending Pod</text>
+<polygon points="256,92 320,132 256,172 192,132" fill="#f5f5f5"/>
+<polygon points="256,92 320,132 256,172 192,132" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="256" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">NodePool</text>
+<text x="256" y="146" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">match?</text>
+<rect x="368" y="104" width="128" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="368" y="104" width="128" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="432" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Filter types</text>
+<text x="432" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">zone, arch, size</text>
+<rect x="544" y="104" width="128" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="544" y="104" width="128" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="608" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pick cheapest</text>
+<text x="608" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">spot or on-demand</text>
+<rect x="720" y="104" width="128" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="104" width="128" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="784" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Launch node</text>
+<text x="784" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">direct EC2 call</text>
+<rect x="896" y="108" width="112" height="48" rx="24" fill="#f5f5f5"/>
+<rect x="896" y="108" width="112" height="48" rx="24" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="952" y="136" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod scheduled</text>
+<rect x="192" y="236" width="128" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="192" y="236" width="128" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="256" y="262" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Stays Pending</text>
+<text x="256" y="278" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no rule allows it</text>
+<line x1="30" y1="328" x2="1010" y2="328" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="30" y="344" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="336" width="24" height="12" rx="2" fill="#fff" stroke="#2d3142"/>
+<text x="152" y="345" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">step</text>
+<rect x="208" y="336" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36"/>
+<text x="240" y="345" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">key choice</text>
+    </svg>
+  </div>
+</body>
+</html>

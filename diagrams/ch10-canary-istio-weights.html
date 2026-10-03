@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Istio canary: weights independent of pod count</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Deployment strategy</p>
+    <h1>Istio canary: weights independent of pod count</h1>
+
+    <svg viewBox="0 0 1000 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch10-canary-istio-weights-title ch10-canary-istio-weights-desc">
+      <title id="ch10-canary-istio-weights-title">Istio canary: weights independent of pod count</title>
+      <desc id="ch10-canary-istio-weights-desc">Istio canary routing: a VirtualService splits requests ninety and ten percent across the stable and canary subsets that a DestinationRule defines by version label.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect x="40" y="152" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="152" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="160" width="32" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="64" y="169" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USER</text><text x="110" y="188" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Clients</text><rect x="220" y="136" width="180" height="96" rx="6" fill="#f5f5f5"/><rect x="220" y="136" width="180" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="228" y="144" width="86" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="271" y="153" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">VIRTUALSERVICE</text><text x="310" y="186" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Weights 90 / 10</text><text x="310" y="202" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">route by subset</text><rect x="470" y="136" width="180" height="96" rx="6" fill="#f5f5f5"/><rect x="470" y="136" width="180" height="96" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="478" y="144" width="91" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.8" stroke-width="0.8"/><text x="523.5" y="153" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DESTINATIONRULE</text><text x="560" y="186" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Subsets by label</text><text x="560" y="202" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">version=stable, canary</text><rect x="740" y="60" width="220" height="80" rx="6" fill="#f5f5f5"/><rect x="740" y="60" width="220" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="748" y="68" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="769" y="77" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STABLE</text><text x="850" y="102" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">version=stable</text><text x="850" y="118" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">behind the same Service</text><rect x="740" y="228" width="220" height="80" rx="6" fill="#f5f5f5"/><rect x="740" y="228" width="220" height="80" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="748" y="236" width="42" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.8" stroke-width="0.8"/><text x="769" y="245" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CANARY</text><text x="850" y="270" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">version=canary</text><text x="850" y="286" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">1 pod can take 10%</text><path d="M180 184 H220" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M400 184 H470" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="409" y="164" width="52" height="12" rx="2" fill="#f5f5f5"/><text x="435" y="173" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SUBSETS</text><path d="M650 168 H682 Q690 168 690 160 V108 Q690 100 698 100 H740" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="701" y="80" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="715" y="89" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">90%</text><path d="M650 200 H682 Q690 200 690 208 V260 Q690 268 698 268 H740" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="701" y="248" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="715" y="257" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">10%</text><line x1="30" y1="320" x2="970" y2="320" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="336" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="332" x2="148" y2="332" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="335" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="220" y="326" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="256" y="335" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">focal node</text>
+    </svg>
+  </div>
+</body>
+</html>

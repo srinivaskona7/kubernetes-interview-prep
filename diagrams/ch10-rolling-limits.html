@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rolling update limits and the pattern for each</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Deployment strategy</p>
+    <h1>Rolling update limits and the pattern for each</h1>
+
+    <svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch10-rolling-limits-title ch10-rolling-limits-desc">
+      <title id="ch10-rolling-limits-title">Rolling update limits and the pattern for each</title>
+      <desc id="ch10-rolling-limits-desc">Four limits of a rolling update, each paired with the deployment strategy that answers it: blue-green, canary, A/B test and shadow.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect x="60" y="40" width="340" height="56" rx="6" fill="#f5f5f5"/><rect x="60" y="40" width="340" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="68" y="48" width="37" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.8" stroke-width="0.8"/><text x="86.5" y="57" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LIMIT</text><text x="230" y="70" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Rollback as slow as rollout</text><text x="230" y="86" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">reverse rolling update</text><rect x="560" y="40" width="340" height="56" rx="6" fill="#f5f5f5"/><rect x="560" y="40" width="340" height="56" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="568" y="48" width="64" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.8" stroke-width="0.8"/><text x="600" y="57" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BLUE-GREEN</text><text x="730" y="70" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Blue-green</text><text x="730" y="86" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">flip the Service back in one step</text><path d="M400 68 H560" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="451" y="48" width="58" height="12" rx="2" fill="#f5f5f5"/><text x="480" y="57" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FIX WITH</text><rect x="60" y="120" width="340" height="56" rx="6" fill="#f5f5f5"/><rect x="60" y="120" width="340" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="68" y="128" width="37" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.8" stroke-width="0.8"/><text x="86.5" y="137" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LIMIT</text><text x="230" y="150" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">No say over who sees v2</text><text x="230" y="166" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">mixed versions in production</text><rect x="560" y="120" width="340" height="56" rx="6" fill="#f5f5f5"/><rect x="560" y="120" width="340" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="568" y="128" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="589" y="137" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CANARY</text><text x="730" y="150" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Canary</text><text x="730" y="166" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">expose a small share first</text><path d="M400 148 H560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="451" y="128" width="58" height="12" rx="2" fill="#f5f5f5"/><text x="480" y="137" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FIX WITH</text><rect x="60" y="200" width="340" height="56" rx="6" fill="#f5f5f5"/><rect x="60" y="200" width="340" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="68" y="208" width="37" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.8" stroke-width="0.8"/><text x="86.5" y="217" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LIMIT</text><text x="230" y="230" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Business result unknown</text><text x="230" y="246" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">cannot compare outcomes</text><rect x="560" y="200" width="340" height="56" rx="6" fill="#f5f5f5"/><rect x="560" y="200" width="340" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="568" y="208" width="26" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="581" y="217" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">A/B</text><text x="730" y="230" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A/B test</text><text x="730" y="246" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">split by rule, measure each variant</text><path d="M400 228 H560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="451" y="208" width="58" height="12" rx="2" fill="#f5f5f5"/><text x="480" y="217" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FIX WITH</text><rect x="60" y="280" width="340" height="56" rx="6" fill="#f5f5f5"/><rect x="60" y="280" width="340" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="68" y="288" width="37" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.8" stroke-width="0.8"/><text x="86.5" y="297" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LIMIT</text><text x="230" y="310" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cannot test under real load</text><text x="230" y="326" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">no safe way without risk</text><rect x="560" y="280" width="340" height="56" rx="6" fill="#f5f5f5"/><rect x="560" y="280" width="340" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="568" y="288" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="589" y="297" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SHADOW</text><text x="730" y="310" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Shadow</text><text x="730" y="326" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">mirror traffic, users unaffected</text><path d="M400 308 H560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="451" y="288" width="58" height="12" rx="2" fill="#f5f5f5"/><text x="480" y="297" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FIX WITH</text><line x1="30" y1="360" x2="970" y2="360" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="376" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="372" x2="148" y2="372" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="375" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="220" y="366" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="256" y="375" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">focal node</text>
+    </svg>
+  </div>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explaining a Service</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Interview · Explaining</p>
+    <h1>Explaining a Service</h1>
+
+    <svg viewBox="0 0 1000 372" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch17-explain-service-title ch17-explain-service-desc">
+      <title id="ch17-explain-service-title">Explaining a Service</title>
+      <desc id="ch17-explain-service-desc">Two rows: the restaurant analogy to say first, customers to a host to chefs, mapped onto the real terms, client Pod to Service to Ready Pods.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      
+      <rect x="40" y="72" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="72" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="52" y="98" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Customers</text><text x="52" y="114" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">order from one host</text><text x="52" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">never see the chefs</text>
+<rect x="400" y="72" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="400" y="72" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="412" y="98" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Host</text><text x="412" y="114" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">takes every order</text><text x="412" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">hands it to a free chef</text>
+<rect x="760" y="72" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="760" y="72" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="772" y="98" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Chefs</text><text x="772" y="114" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">whoever is free cooks</text><text x="772" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">chefs come and go</text>
+<rect x="40" y="212" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="212" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="52" y="238" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Client Pod</text><text x="52" y="254" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">calls payments:80</text><text x="52" y="268" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">uses the DNS name</text>
+<rect x="400" y="212" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="400" y="212" width="200" height="72" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="412" y="238" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Service</text><text x="412" y="254" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">ClusterIP + DNS name</text><text x="412" y="268" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">selector picks Pods by label</text>
+<rect x="760" y="212" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="760" y="212" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="772" y="238" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Ready Pods</text><text x="772" y="254" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">IPs change on restart</text><text x="772" y="268" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">only Ready get traffic</text>
+      <text x="40" y="56" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">1 · SAY THE PICTURE FIRST</text>
+<path d="M240,108 L400,108" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="320" y="100" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ORDER</text>
+<path d="M600,108 L760,108" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="680" y="100" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PASSED TO</text>
+<text x="40" y="196" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">2 · THEN ADD THE REAL TERMS</text>
+<path d="M240,248 L400,248" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="320" y="240" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CALLS</text>
+<path d="M600,248 L760,248" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="680" y="240" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SPREADS TO</text>
+<path d="M208,144 L208,212" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="216" y="180" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">MAPS TO</text>
+<path d="M568,144 L568,212" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="576" y="180" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">MAPS TO</text>
+<path d="M928,144 L928,212" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="936" y="180" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">MAPS TO</text>
+<text x="40" y="324" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">Start from the problem: Pod IPs change, the Service address does not.</text>
+      <line x1="32" y1="344" x2="968" y2="344" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="360" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="356" x2="148" y2="356" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="359" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="212" y="352" width="12" height="8" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="232" y="359" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">the stable part</text>
+    </svg>
+  </div>
+</body>
+</html>

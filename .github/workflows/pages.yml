@@ -1,0 +1,63 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # build.py validates ids, diagram references and (locally) banned terms,
+      # then regenerates js/data.js. The committed copy must already match,
+      # otherwise the site would ship stale data.
+      - name: Rebuild data and check it is committed
+        run: |
+          python3 build.py
+          git diff --exit-code -- js/data.js || {
+            echo "::error::js/data.js is out of date - run 'python3 build.py' and commit it"; exit 1; }
+
+      - name: Assemble site
+        run: |
+          mkdir _site
+          cp -r index.html css js assets .nojekyll _site/ 2>/dev/null || cp -r index.html css js assets _site/
+          touch _site/.nojekyll
+
+      - name: Smoke test
+        run: |
+          for f in index.html css/style.css js/app.js js/data.js assets/logo.svg assets/mark.svg; do
+            test -s "_site/$f" || { echo "::error::missing $f"; exit 1; }
+          done
+          test "$(wc -c < _site/js/data.js)" -gt 200000 || { echo "::error::data.js suspiciously small"; exit 1; }
+          grep -q 'js/data.js' _site/index.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

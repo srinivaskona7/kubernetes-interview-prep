@@ -1,0 +1,924 @@
+{
+ "number": 17,
+ "title": "Common Mistakes and How to Avoid Them",
+ "part": "Part 6 · Troubleshooting and Best Practices",
+ "tagline": "Turn interview slip-ups into structured, calm, senior-sounding answers",
+ "overview": "Technical skill is only half of a senior interview; the other half is how you organise and deliver it. This chapter turns the most common mistakes, such as rambling, guessing instead of following a method, blaming people and bluffing, into topics with weak-versus-strong answer comparisons, covering story structure, troubleshooting frameworks for scheduling, image pulls, networking, rollouts, etcd and nodes, and clear explanation under pressure.",
+ "topics": [
+  {
+   "id": "ch17-star-method",
+   "level": "junior",
+   "question": "Tell me about a time you fixed a production problem. How do you structure that answer?",
+   "say_first": "I use four beats: situation, task, action, result. I set the scene in one breath, say what I owned, walk through what I did, and finish with a measured outcome and what we changed afterwards.",
+   "explain": [
+    "Picture a news report. The headline tells you what happened, then who was responsible, then what they did, then how it ended. A rambling answer is a report with the paragraphs shuffled.",
+    "Situation and task should take about a quarter of your time. Most of the answer belongs in the action, and it should say 'I', not 'we', so the interviewer can see your own judgment.",
+    "The result is where senior answers stand out: a number (recovery time, error rate, cost), plus a lasting fix such as an alert, a runbook or an admission policy.",
+    "The same shape is used in blameless postmortems, so practising it makes you better at the job as well as the interview."
+   ],
+   "key_points": [
+    "Situation and task: short, with the stakes named.",
+    "Action: your decisions and the commands or signals behind them.",
+    "Result: a number and a follow-up improvement.",
+    "Say what you learned; it signals growth.",
+    "Keep each story to about two minutes."
+   ],
+   "table": {
+    "caption": "Same incident, two tellings",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Our etcd was flaky for a while and I looked into it with the team and it got better.",
+      "Leader elections kept failing and slowing deploys (situation). I owned finding the cause without downtime (task). Metrics showed a partition; a bad MTU on one rack was the culprit, and I tuned heartbeat and election timeouts after it was fixed (action). Elections stopped timing out and we wrote a partition playbook (result)."
+     ],
+     [
+      "No numbers, no owner, no lesson.",
+      "Each beat is labelled, personal, measurable and ends with a lasting change."
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch17-star-story.html",
+    "title": "A STAR story in four beats",
+    "ratio": "1000/340"
+   },
+   "follow_ups": [
+    "How long should a STAR answer be?",
+    "How do you handle a story where the result was mixed?"
+   ],
+   "pitfalls": [
+    "Spending five minutes on background before any action.",
+    "Saying 'we' throughout so your own contribution is invisible.",
+    "Ending with 'and then it was fixed' and no metric."
+   ]
+  },
+  {
+   "id": "ch17-story-library",
+   "level": "mid",
+   "question": "How do you prepare for behavioural questions in a Kubernetes interview?",
+   "say_first": "I write five or six short STAR stories ahead of time, covering an outage, a disagreement, a migration, a cost or scaling win and a mistake, then I match the question to the closest story on the day.",
+   "explain": [
+    "Think of a toolbox you pack the night before. You will not know which bolt is needed, but a small, labelled set covers most jobs.",
+    "Pick everyday wins as well as fire drills: tuning an autoscaler that was burning money, or a quiet migration that users never noticed. They are often easier to defend under follow-up questions.",
+    "For each story write a few lines: what was at stake, what you owned, what you did, what changed. Note the real numbers now, because you will not recall them in the room.",
+    "Treat stories as anchors, not scripts. Reciting word for word sounds stiff and collapses when the interviewer interrupts."
+   ],
+   "key_points": [
+    "Cover different themes: outage, conflict, scale, cost, mistake, mentoring.",
+    "Record real metrics in advance.",
+    "Rehearse aloud, not just in your head.",
+    "Have one story that shows a failure you owned."
+   ],
+   "table": {
+    "caption": "Preparing for behavioural questions",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Hoping to remember something good on the spot.",
+      "A written set of stories, each tagged with the themes it covers."
+     ],
+     [
+      "Only dramatic outages.",
+      "A mix of big incidents and small, sharp improvements."
+     ],
+     [
+      "Memorised paragraph.",
+      "Short notes that let you adapt to follow-ups."
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Tell me about a mistake you made.",
+    "What would you do differently next time?"
+   ],
+   "pitfalls": [
+    "Reusing the same story for every question.",
+    "Inventing or inflating numbers; follow-ups expose it."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-story-library.html",
+    "title": "Story library",
+    "ratio": "1000/376"
+   }
+  },
+  {
+   "id": "ch17-pending-pod",
+   "level": "junior",
+   "question": "A Pod is stuck in Pending. Walk me through what you do.",
+   "say_first": "Pending means the API accepted the Pod but the scheduler has not placed it on a node. I run kubectl describe pod and read the Events, which normally name the reason, such as insufficient CPU, an untolerated taint or an unbound volume claim.",
+   "explain": [
+    "Think of a hotel booking that is accepted but has no room assigned. Nothing is wrong with the guest (your app); the problem is finding a room (a node) that fits every requirement.",
+    "The scheduler checks resource requests against free capacity on each node, then taints against tolerations, then nodeSelector and affinity rules, then volumes. The first failing check appears in the FailedScheduling event.",
+    "Say your order out loud: events first, then requests versus node allocatable, then taints and affinity, then the PVC. That order shows a method rather than a guess.",
+    "One real case: a manifest copied from a heavy service requested eight cores on four-core nodes. The scheduler was behaving correctly; the request was the bug."
+   ],
+   "key_points": [
+    "Pending is a scheduling or storage problem, not an app crash.",
+    "Events in describe are the fastest clue.",
+    "Requests, not limits, drive scheduling.",
+    "A cluster autoscaler may need a minute to add a node.",
+    "Unbound PVCs also keep Pods Pending."
+   ],
+   "table": {
+    "caption": "Answering a Pending question",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Maybe restart the Pod, or delete it and try again.",
+      "Describe the Pod, read FailedScheduling, then compare requests with node capacity."
+     ],
+     [
+      "Lists every cause from memory in random order.",
+      "Ordered checks: resources, taints, affinity, volumes."
+     ],
+     [
+      "Says the node is broken.",
+      "Explains the scheduler refused every node and why."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pod my-pending-pod",
+     "note": "Events show the FailedScheduling reason, e.g. 0/3 nodes are available: 3 Insufficient cpu"
+    },
+    {
+     "cmd": "kubectl describe nodes | grep -A6 'Allocated resources'",
+     "note": "Compare what is already requested with node capacity"
+    },
+    {
+     "cmd": "kubectl get events --field-selector reason=FailedScheduling",
+     "note": "Cluster-wide view of scheduling failures"
+    },
+    {
+     "cmd": "kubectl get pvc",
+     "note": "A Pending claim keeps its Pod Pending"
+    }
+   ],
+   "follow_ups": [
+    "What if describe shows no events at all?",
+    "How does a cluster autoscaler react to a Pending Pod?"
+   ],
+   "pitfalls": [
+    "Blaming the application; it has not started.",
+    "Confusing limits with requests when explaining the failure."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-pending-pod.html",
+    "title": "Debugging a Pending Pod",
+    "ratio": "1000/376"
+   }
+  },
+  {
+   "id": "ch17-image-pull",
+   "level": "junior",
+   "question": "Your Pod shows ImagePullBackOff. What do you check, and what mistake is most common with private registries?",
+   "say_first": "The kubelet could not fetch the image, so the container never started. I check the image name and tag, then whether a pull secret exists in the Pod's own namespace, then whether the node can reach the registry.",
+   "explain": [
+    "ErrImagePull is the first failed attempt and ImagePullBackOff is the kubelet waiting longer between retries. Both mean the same thing: a failure before your code ever ran.",
+    "Picture a courier told to collect a parcel. Either the address is wrong (typo in the image or tag), the courier has no pass for the building (missing or wrong credentials), or the road is closed (network or firewall).",
+    "Secrets are namespaced. A registry secret created in default will not help a Pod in another namespace, which is the classic slip. The secret goes in Pod spec.imagePullSecrets, or on the ServiceAccount the Pod uses.",
+    "If names and secrets are perfect, look at the node: egress rules, proxy, DNS or a policy that blocks port 443 from the node to the registry can produce the same symptom."
+   ],
+   "key_points": [
+    "Read the exact error in describe events.",
+    "Verify image path and tag by hand.",
+    "Pull secrets must be in the Pod's namespace.",
+    "Type kubernetes.io/dockerconfigjson is the right secret type.",
+    "Node-level networking is the last suspect but a real one."
+   ],
+   "table": {
+    "caption": "Diagnosing ImagePullBackOff",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Try a different image until one works.",
+      "Read the event text: not found, unauthorized or timeout each point somewhere different."
+     ],
+     [
+      "Says the secret is fine because it exists.",
+      "Checks the secret is in the same namespace and that the credentials are still valid."
+     ],
+     [
+      "Stops once the YAML looks right.",
+      "Tests a pull from the node when everything else checks out."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pod private-app-xyz",
+     "note": "Event text separates 'not found', 'unauthorized' and timeouts"
+    },
+    {
+     "cmd": "kubectl create secret docker-registry my-registry-creds --docker-server=my-private-registry.io --docker-username=USER --docker-password=PASS -n secure",
+     "note": "Create the pull secret in the right namespace"
+    },
+    {
+     "cmd": "kubectl patch serviceaccount default -n secure -p '{\"imagePullSecrets\":[{\"name\":\"my-registry-creds\"}]}'",
+     "note": "Attach the secret to the default ServiceAccount of that namespace"
+    },
+    {
+     "cmd": "kubectl get secret my-registry-creds -n secure",
+     "note": "Confirms the secret exists where the Pod runs"
+    }
+   ],
+   "follow_ups": [
+    "How do you attach a pull secret to every Pod in a namespace?",
+    "Why might a pull work on one node but fail on another?"
+   ],
+   "pitfalls": [
+    "Creating the secret in the wrong namespace.",
+    "Using imagePullSecrets at the wrong indentation level in a Deployment; it belongs under the Pod template spec."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-image-pull.html",
+    "title": "Debugging ImagePullBackOff",
+    "ratio": "1000/352"
+   }
+  },
+  {
+   "id": "ch17-unreachable-app",
+   "level": "mid",
+   "question": "Your app is running but cannot be reached from outside the cluster. What do you check?",
+   "say_first": "I follow the request from outside in: DNS, load balancer, Ingress controller and rule, Service and its endpoints, then the Pods. I start with the Service endpoints because an empty list is the most common break.",
+   "explain": [
+    "Treat it like a parcel delivery. DNS is the address book, the load balancer is the depot, the Ingress is the sorting desk, the Service is the street name and the Pods are the houses. Check each hand-off instead of guessing.",
+    "On the Service, confirm the type and that the selector matches the Pod labels. ClusterIP alone is internal; Ingress can still route to it, but direct outside access needs NodePort or LoadBalancer.",
+    "An Ingress object does nothing without a running controller. Select it with spec.ingressClassName; the old kubernetes.io/ingress.class annotation is deprecated. Check the backend Service name and port match.",
+    "Then look at NetworkPolicies that may block the controller from reaching the Pods, and at readiness: a Pod that is not Ready is removed from the endpoints.",
+    "A real case: CI renamed the Pod label to my-app-v2 but left the Service selector alone. Everything looked healthy, yet the endpoints list was empty."
+   ],
+   "key_points": [
+    "Empty endpoints means the selector does not match ready Pods.",
+    "Ingress needs a controller and a matching class.",
+    "Service port is not the same as targetPort.",
+    "Check DNS points at the controller's load balancer.",
+    "NetworkPolicies and readiness probes are quiet blockers."
+   ],
+   "table": {
+    "caption": "Debugging an unreachable app",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Redeploy and hope.",
+      "Trace hop by hop and name the hop that fails."
+     ],
+     [
+      "Says the Ingress is wrong without evidence.",
+      "Shows the endpoints are empty and compares selector with labels."
+     ],
+     [
+      "Forgets DNS and TLS.",
+      "Checks the hostname resolves and the certificate matches."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get svc,ingress -n my-ns",
+     "note": "Type, ports and hosts in one view"
+    },
+    {
+     "cmd": "kubectl get endpointslices -l kubernetes.io/service-name=my-app-service",
+     "note": "Shows which Pod IPs sit behind the Service"
+    },
+    {
+     "cmd": "kubectl get pods --show-labels",
+     "note": "Compare labels with the Service selector"
+    },
+    {
+     "cmd": "kubectl run tmp --rm -it --image=busybox:1.36 -- wget -qO- http://my-app-service:80",
+     "note": "Test the Service from inside the cluster"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-unreachable-path.html",
+    "title": "Where an unreachable app breaks",
+    "ratio": "1000/376"
+   },
+   "follow_ups": [
+    "How do you test a Service from inside the cluster?",
+    "What changes if you use the Gateway API instead of Ingress?"
+   ],
+   "pitfalls": [
+    "Assuming ClusterIP is reachable from the internet.",
+    "Checking the Ingress YAML and never looking at endpoints."
+   ]
+  },
+  {
+   "id": "ch17-cross-namespace",
+   "level": "mid",
+   "question": "Pods in two namespaces cannot talk to each other. How do you debug it?",
+   "say_first": "I check DNS first, then NetworkPolicies on both sides, then the network plugin. A timeout with working DNS usually points to a policy that denies the traffic.",
+   "explain": [
+    "Imagine two office floors with a door policy. DNS is knowing the other floor's name; the NetworkPolicy is the security guard who decides who may walk through.",
+    "From the source Pod, resolve the full name, such as database.backend.svc.cluster.local. If that fails the fault is in CoreDNS or the name, not the connection.",
+    "If DNS works and connections time out, list policies in both namespaces. Egress rules on the source and ingress rules on the destination must both allow the flow, when both are restricted.",
+    "A default-deny ingress policy with no allow rules blocks everything. Add a rule with a namespaceSelector; the built-in label kubernetes.io/metadata.name is the dependable one to match.",
+    "Remember enforcement is done by the network plugin. Without a plugin that supports policies, they are silently ignored."
+   ],
+   "key_points": [
+    "Resolve names before blaming the network.",
+    "Timeouts suggest policy drops; refused suggests nothing is listening.",
+    "Check both ingress and egress policies.",
+    "Match namespaces by label.",
+    "The CNI must support NetworkPolicy."
+   ],
+   "table": {
+    "caption": "Cross-namespace debugging",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "It must be a bug in Kubernetes networking.",
+      "Splits the problem into DNS, policy, plugin and tests each."
+     ],
+     [
+      "Opens everything to fix it fast.",
+      "Adds the narrowest allow rule for the needed source and port."
+     ],
+     [
+      "Forgets egress rules.",
+      "Checks both directions of policy."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl exec -it web-0 -n frontend -- nslookup database.backend.svc.cluster.local",
+     "note": "Confirms name resolution from the source Pod"
+    },
+    {
+     "cmd": "kubectl get networkpolicy -n backend",
+     "note": "Lists policies that select the destination Pods"
+    },
+    {
+     "cmd": "kubectl describe networkpolicy default-deny-all-ingress -n backend",
+     "note": "Shows which Pods are selected and which rules exist"
+    },
+    {
+     "cmd": "kubectl get ns frontend --show-labels",
+     "note": "Verify the label your namespaceSelector relies on"
+    }
+   ],
+   "follow_ups": [
+    "How does a default-deny policy interact with DNS egress?",
+    "How would you test a policy without changing it?"
+   ],
+   "pitfalls": [
+    "Assuming Pods can always reach each other across namespaces.",
+    "Using a namespaceSelector on a label that the namespace does not carry."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-cross-namespace.html",
+    "title": "Cross-namespace traffic",
+    "ratio": "1000/400"
+   }
+  },
+  {
+   "id": "ch17-stuck-rollout",
+   "level": "senior",
+   "question": "A rolling update is stuck halfway. What could be wrong?",
+   "say_first": "Usually the new Pods never become Ready, so the Deployment correctly refuses to remove more old Pods. I look at the new Pods, their readiness probe and logs first, then the rollout settings and quota.",
+   "explain": [
+    "A rolling update is a relay race: the next runner only leaves once the baton is firmly held. The stall is a safety feature protecting you from replacing working Pods with broken ones.",
+    "Check the new Pods: Pending points to capacity or quota, CrashLoopBackOff points to the app, Running but not Ready points to the readiness probe or a dependency.",
+    "maxUnavailable: 0 means an old Pod goes only after a new one is Ready. Paired with a broken probe the rollout waits. A low maxSurge on a full cluster leaves surge Pods Pending.",
+    "A ResourceQuota can be hit by the extra surge Pods. After progressDeadlineSeconds passes, the Deployment reports Progressing as False, but it does not roll back on its own.",
+    "One real case: the new version needed an updated password Secret the pipeline never applied. Note that Secrets exposed as environment variables are read only at start, so those Pods need a restart after the fix."
+   ],
+   "key_points": [
+    "Stalling is protective, not a crash.",
+    "Compare Pending, CrashLoopBackOff and not-Ready states.",
+    "Read probe config and new Pod logs.",
+    "Check maxSurge, maxUnavailable and quota.",
+    "Use kubectl rollout undo to recover quickly."
+   ],
+   "table": {
+    "caption": "Stuck rollout answers",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Delete the Deployment and recreate it.",
+      "Inspect the new ReplicaSet's Pods and roll back if users are affected."
+     ],
+     [
+      "Blames Kubernetes for being slow.",
+      "Explains the probe gate and why it protects availability."
+     ],
+     [
+      "Changes the probe to always pass.",
+      "Fixes the dependency; keeps the probe honest."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl rollout status deployment/web",
+     "note": "Waits and reports progress or the reason it is stuck"
+    },
+    {
+     "cmd": "kubectl get rs -l app=web",
+     "note": "Old and new ReplicaSets with ready counts"
+    },
+    {
+     "cmd": "kubectl describe quota -n my-ns",
+     "note": "Shows whether the surge hit a quota"
+    },
+    {
+     "cmd": "kubectl rollout undo deployment/web",
+     "note": "Return to the previous working revision"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-stuck-rollout.html",
+    "title": "Stuck rollout: what to ask first",
+    "ratio": "1000/428"
+   },
+   "follow_ups": [
+    "When would you roll back instead of fixing forward?",
+    "What does progressDeadlineSeconds do?"
+   ],
+   "pitfalls": [
+    "Loosening the readiness probe to force the rollout through.",
+    "Forgetting that env-var Secrets do not refresh in running Pods."
+   ]
+  },
+  {
+   "id": "ch17-etcd-at-scale",
+   "level": "senior",
+   "question": "How would you keep etcd healthy in a cluster with thousands of nodes?",
+   "say_first": "I put etcd on fast local SSD or NVMe, keep its database small with compaction and scheduled defragmentation, watch fsync latency and leader changes, and keep read load off it through the API server cache.",
+   "explain": [
+    "etcd is the cluster's notebook, and every change must be written in ink before it counts. If the pen is slow, everything waits, which is why disk latency matters more than CPU.",
+    "Hardware: dedicated low-latency disks, never shared network storage. Watch etcd_disk_wal_fsync_duration_seconds; the 99th percentile should stay around 10 ms or lower.",
+    "Housekeeping: etcd keeps revision history, so set auto-compaction and defragment members one at a time, because defrag briefly blocks that member. Keep the database well under the default 2 GiB quota or raise it deliberately, up to the recommended 8 GiB limit.",
+    "Watch etcd_mvcc_db_total_size_in_bytes for growth and etcd_server_leader_changes_seen_total for network trouble between members. Keep an odd member count, usually three or five.",
+    "Large clusters also need a tuned API server: the watch cache serves most reads, and careful use of list calls and events reduces pressure."
+   ],
+   "key_points": [
+    "Disk latency is the top risk.",
+    "Compaction frees revisions; defrag returns space.",
+    "Defragment one member at a time.",
+    "Alert on fsync time, DB size and leader changes.",
+    "Odd-sized quorum: three or five members."
+   ],
+   "table": {
+    "caption": "etcd scale answers",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Give etcd more CPU and memory.",
+      "Fast dedicated disks first, then tuning and monitoring."
+     ],
+     [
+      "Run defrag on every member at once.",
+      "Rolling defrag in a quiet window."
+     ],
+     [
+      "Wait until the quota alarm fires.",
+      "Alert on DB size and fsync latency early."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "etcdctl endpoint status --write-out=table",
+     "note": "Shows DB size, leader and raft index per member"
+    },
+    {
+     "cmd": "etcdctl defrag --endpoints=https://10.0.0.1:2379",
+     "note": "Defragment a single member (repeat one by one)"
+    },
+    {
+     "cmd": "etcdctl alarm list",
+     "note": "Shows whether a space alarm is active"
+    }
+   ],
+   "follow_ups": [
+    "What happens when etcd hits its space quota?",
+    "Why not run a seven-member cluster?"
+   ],
+   "pitfalls": [
+    "Placing etcd on general-purpose network disks.",
+    "Ignoring backups while tuning performance."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-etcd-at-scale.html",
+    "title": "Keeping etcd healthy",
+    "ratio": "1000/388"
+   }
+  },
+  {
+   "id": "ch17-flapping-node",
+   "level": "senior",
+   "question": "A node keeps flipping between Ready and NotReady. How do you investigate?",
+   "say_first": "The kubelet is failing to report in reliably, so I look at the node itself: kubelet logs, resource pressure, the container runtime and its health, then the network path to the API server.",
+   "explain": [
+    "A node heartbeat is like a worker checking in by radio. If the radio drops, the control plane marks the node NotReady after a grace period and starts evicting Pods, which causes churn when it flaps.",
+    "Start with kubectl describe node for conditions and events, then journalctl -u kubelet on the node. Messages such as 'PLEG is not healthy' point at a struggling container runtime.",
+    "Check pressure: memory and OOM kills in dmesg, disk full on the root or kubelet directory, CPU starvation and process ID exhaustion. Each can make the kubelet miss its heartbeat.",
+    "Then test the network: can the node reach the API server health endpoint consistently? Packet loss or a firewall change can cause intermittent NotReady.",
+    "Modern clusters use containerd or CRI-O rather than Docker, so look at the runtime with crictl and its own logs. Fix by cordoning and draining the node, repairing it, then uncordoning."
+   ],
+   "key_points": [
+    "Conditions and events on the node come first.",
+    "Kubelet logs reveal PLEG and runtime issues.",
+    "Check memory, disk, CPU and PIDs.",
+    "Test API server reachability from the node.",
+    "Cordon and drain before repairing."
+   ],
+   "table": {
+    "caption": "Flapping node answers",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Reboot the node and move on.",
+      "Capture logs and conditions first, then drain, fix and return it."
+     ],
+     [
+      "Only looks at Kubernetes objects.",
+      "Also examines the host: journal, dmesg, disk, runtime."
+     ],
+     [
+      "Thinks it is always the network.",
+      "Narrows between resource pressure, runtime and connectivity."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe node worker-1",
+     "note": "Conditions, taints and recent events"
+    },
+    {
+     "cmd": "journalctl -u kubelet --since '30 min ago'",
+     "note": "Kubelet errors such as PLEG not healthy"
+    },
+    {
+     "cmd": "kubectl drain worker-1 --ignore-daemonsets --delete-emptydir-data",
+     "note": "Safely evict Pods before repair"
+    },
+    {
+     "cmd": "crictl ps -a",
+     "note": "Container runtime view on the node"
+    }
+   ],
+   "follow_ups": [
+    "How long before Pods are evicted from a NotReady node?",
+    "What does cordon versus drain do?"
+   ],
+   "pitfalls": [
+    "Rebooting before collecting evidence.",
+    "Looking only at Docker on a containerd node."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-flapping-node.html",
+    "title": "Investigating a flapping node",
+    "ratio": "1000/376"
+   }
+  },
+  {
+   "id": "ch17-explain-service",
+   "level": "junior",
+   "question": "Explain what a Kubernetes Service is and why we need one, as if to a non-engineer.",
+   "say_first": "Pods come and go and get new IP addresses each time, so a Service gives a group of them one stable name and address and spreads traffic across the healthy ones.",
+   "explain": [
+    "Lead with the problem, not the definition. Calling a friend who changes phone number every few minutes is hopeless; a Service is the fixed number that always rings someone who is there.",
+    "Use one analogy and stay with it: a restaurant host takes orders and hands them to whichever chef is free. Customers do not know or care how many chefs there are.",
+    "Only after the picture lands do you add the real terms: the selector picks Pods by label, the ClusterIP and DNS name stay constant, and only Ready Pods receive traffic.",
+    "A useful self-test: explain it to a twelve-year-old, note where you stumbled, study that gap, then simplify again."
+   ],
+   "key_points": [
+    "Start from the problem: Pod IPs are not stable.",
+    "One analogy, used consistently.",
+    "Then add selector, ClusterIP, DNS, endpoints.",
+    "Mention that only Ready Pods get traffic.",
+    "Stop when the point is made."
+   ],
+   "table": {
+    "caption": "Explaining a Service",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "A Service is a Kubernetes object that defines a logical set of Pods and a policy to access them.",
+      "Pods change addresses, so a Service is the stable front door that shares traffic between whichever Pods are healthy."
+     ],
+     [
+      "Lists ClusterIP, NodePort, LoadBalancer, headless at once.",
+      "Gives the idea first, then types if asked."
+     ],
+     [
+      "Uses unexplained jargon.",
+      "Uses a host-and-chefs picture, then maps it to selectors."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl expose deployment web --port=80 --target-port=8080",
+     "note": "Create a ClusterIP Service for a Deployment"
+    },
+    {
+     "cmd": "kubectl get endpointslices",
+     "note": "See which Pod IPs are behind the Service"
+    }
+   ],
+   "follow_ups": [
+    "When would you use a headless Service?",
+    "How does kube-proxy make a Service work?"
+   ],
+   "pitfalls": [
+    "Reciting the documentation definition.",
+    "Piling on analogies until none sticks."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-explain-service.html",
+    "title": "Explaining a Service",
+    "ratio": "1000/372"
+   }
+  },
+  {
+   "id": "ch17-outage-story",
+   "level": "senior",
+   "question": "Tell me about your most challenging production outage.",
+   "say_first": "I describe a real incident in STAR form: what broke and the stakes, what I owned, the diagnosis I ran, the fix, and the blameless follow-up that stopped it happening again.",
+   "explain": [
+    "Interviewers are probing calm under pressure, systematic diagnosis, ownership and whether you learn without pointing fingers.",
+    "A sample arc: a database StatefulSet went unresponsive at night and the checkout API returned 503. The Pod was in CrashLoopBackOff, describe showed exit code 137, and the node's kernel log confirmed an OOM kill.",
+    "Be precise: exit code 137 means SIGKILL, often the OOM killer, so confirm with the lastState reason OOMKilled. Then raise memory to restore service, and talk through the leak afterwards.",
+    "Close with the systemic fix: a memory alert well before the limit, a fixed query, and a postmortem focused on the system, not a person."
+   ],
+   "key_points": [
+    "Say what you did and in which order.",
+    "Separate restore service from find root cause.",
+    "Communicate during the incident, not just after.",
+    "End with an alert, test or runbook.",
+    "Blameless wording; no scapegoats."
+   ],
+   "table": {
+    "caption": "Outage stories",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "It was a nightmare, the DB was down and a colleague had misconfigured it.",
+      "Database Pod was OOM killed; I confirmed it from events and node logs, raised the limit, recovered in 15 minutes, then led a blameless review."
+     ],
+     [
+      "Hero story about working all night alone.",
+      "Shows coordination: a war-room channel, clear updates, handoffs."
+     ],
+     [
+      "Fix only.",
+      "Fix plus prevention: a memory alert and the query change."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pod postgres-0",
+     "note": "Check lastState reason OOMKilled and exit code 137"
+    },
+    {
+     "cmd": "kubectl top pod postgres-0",
+     "note": "Current memory versus limit"
+    },
+    {
+     "cmd": "kubectl get events --sort-by=.lastTimestamp",
+     "note": "Timeline of what happened"
+    }
+   ],
+   "follow_ups": [
+    "What would you have done if you could not roll forward?",
+    "How did you decide severity and who to page?"
+   ],
+   "pitfalls": [
+    "Blaming a person or team.",
+    "Claiming a fix with no evidence for the root cause."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-outage-story.html",
+    "title": "Outage story in STAR form",
+    "ratio": "1000/376"
+   }
+  },
+  {
+   "id": "ch17-disagreement-story",
+   "level": "mid",
+   "question": "Describe a time you disagreed with a colleague about a technical approach.",
+   "say_first": "I replace opinion with evidence: I propose a short proof of concept with agreed criteria, present the data honestly, and commit to the outcome even when it is not my original choice.",
+   "explain": [
+    "This checks ego, collaboration and judgement. Interviewers want someone who argues for ideas but serves the result.",
+    "Example: two options for a logging pipeline, a familiar collector plus Elasticsearch versus a lighter Loki setup. Each engineer built a small version and both were measured on resource use, query speed and operating effort.",
+    "The data favoured the colleague's choice. The strong closing is not 'I was right' but 'I helped build it, and I learned to test assumptions quickly rather than debate them'.",
+    "Pick a disagreement where you were partly wrong. Winning stories sound defensive."
+   ],
+   "key_points": [
+    "Define objective criteria first.",
+    "Time-box the experiment.",
+    "Present both sides fairly.",
+    "Commit after the decision.",
+    "State what you learned."
+   ],
+   "table": {
+    "caption": "Disagreement answers",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "I was right and they eventually agreed.",
+      "We tested both for two days against shared criteria; the data chose the other option and I helped deliver it."
+     ],
+     [
+      "We never resolved it.",
+      "Describes how it was resolved and what the relationship is like now."
+     ],
+     [
+      "Avoids naming the trade-off.",
+      "Names cost, performance and team skill as the trade-offs."
+     ]
+    ]
+   },
+   "follow_ups": [
+    "What if the data had been inconclusive?",
+    "How do you disagree with a more senior person?"
+   ],
+   "pitfalls": [
+    "Painting the colleague as unreasonable.",
+    "Picking a trivial disagreement with no trade-off."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-disagreement-story.html",
+    "title": "Handling a disagreement",
+    "ratio": "1000/380"
+   }
+  },
+  {
+   "id": "ch17-dont-know",
+   "level": "mid",
+   "question": "You hit a question you cannot answer. What do you do?",
+   "say_first": "I say what I do know, state my assumptions, then reason toward an answer out loud and name how I would verify it. Thinking aloud shows method; silence or bluffing shows nothing.",
+   "explain": [
+    "Think of a navigator with no GPS. Saying 'I'm not certain of the exact flag, but here is how I would find it' still gets you to the destination and is trusted.",
+    "A simple loop: restate the symptom, give two or three ranked hypotheses, pick one check, say what each result would mean, then summarise the cause, fix and prevention.",
+    "If you are missing a fact, be honest in one short sentence, then show adjacent knowledge: which object owns it, which command lists it, where you would look in the docs.",
+    "If you realise mid-answer that you were wrong, correct yourself cleanly. That reads as senior, not weak."
+   ],
+   "key_points": [
+    "Restate the problem first to buy thinking time.",
+    "Rank hypotheses before running checks.",
+    "Narrate what each check rules out.",
+    "Admit gaps in one sentence, then reason.",
+    "Never invent a flag or behaviour."
+   ],
+   "table": {
+    "caption": "When stuck",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Long silence, then a guess stated as fact.",
+      "I'm not sure of the exact field, but I'd check describe events and the API docs via kubectl explain."
+     ],
+     [
+      "Changes the subject.",
+      "Stays on the problem and shows the path to an answer."
+     ],
+     [
+      "Apologises repeatedly.",
+      "One honest sentence, then momentum."
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl explain deployment.spec.strategy.rollingUpdate",
+     "note": "Look up a field's meaning on the spot"
+    },
+    {
+     "cmd": "kubectl api-resources",
+     "note": "Discover which resource kinds exist"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-think-aloud.html",
+    "title": "Thinking aloud under pressure",
+    "ratio": "1000/372"
+   },
+   "follow_ups": [
+    "How would you confirm your hypothesis safely in production?",
+    "What would you escalate, and to whom?"
+   ],
+   "pitfalls": [
+    "Bluffing about a command you are unsure of.",
+    "Going quiet while you think; narrate instead."
+   ]
+  },
+  {
+   "id": "ch17-rambling",
+   "level": "mid",
+   "question": "How long and how detailed should your answers be?",
+   "say_first": "I open with a one- or two-sentence answer, then offer detail in layers and let the interviewer pull the thread they care about. Short, structured and ready to go deeper beats exhaustive.",
+   "explain": [
+    "Think of a newspaper: headline first, then the first paragraph, then the long read. Interviewers can always ask for the long read.",
+    "Say first: the answer in a sentence. Then one reason or example. Then pause. A pause invites follow-ups and lets you read the room.",
+    "Match the level to the role. Senior answers mention trade-offs, failure modes and cost, not just the happy path.",
+    "Avoid listing every tool you know. Name the one you chose and why, and say what you would use in a different situation."
+   ],
+   "key_points": [
+    "Answer first, then explain.",
+    "Keep most answers under two minutes.",
+    "Pause and check in.",
+    "Give trade-offs at senior level.",
+    "Be ready with a deeper layer."
+   ],
+   "table": {
+    "caption": "Length and structure",
+    "headers": [
+     "Weak answer",
+     "Strong answer"
+    ],
+    "rows": [
+     [
+      "Starts with history and goes for ten minutes.",
+      "Opens with the answer in a sentence, then one example."
+     ],
+     [
+      "Lists ten tools.",
+      "Names a choice and the reason."
+     ],
+     [
+      "Never checks if it is landing.",
+      "Asks 'shall I go deeper on the networking side?'"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Give me the 30-second version.",
+    "What trade-offs did you consider?"
+   ],
+   "pitfalls": [
+    "Treating silence as a signal to keep talking.",
+    "Answering a different question than the one asked."
+   ],
+   "diagram": {
+    "file": "diagrams/ch17-rambling.html",
+    "title": "Layered answers",
+    "ratio": "1000/372"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch17-star-story.html",
+  "diagrams/ch17-unreachable-path.html",
+  "diagrams/ch17-stuck-rollout.html",
+  "diagrams/ch17-think-aloud.html",
+  "diagrams/ch17-story-library.html",
+  "diagrams/ch17-pending-pod.html",
+  "diagrams/ch17-image-pull.html",
+  "diagrams/ch17-cross-namespace.html",
+  "diagrams/ch17-etcd-at-scale.html",
+  "diagrams/ch17-flapping-node.html",
+  "diagrams/ch17-explain-service.html",
+  "diagrams/ch17-outage-story.html",
+  "diagrams/ch17-disagreement-story.html",
+  "diagrams/ch17-rambling.html"
+ ]
+}

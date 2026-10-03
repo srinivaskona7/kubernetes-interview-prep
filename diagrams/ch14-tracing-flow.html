@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How a distributed trace is built</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Monitoring · Observability</p>
+    <h1>How a distributed trace is built</h1>
+    <svg viewBox="0 0 936 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch14-tracing-flow-title ch14-tracing-flow-desc">
+      <title id="ch14-tracing-flow-title">How a distributed trace is built</title>
+      <desc id="ch14-tracing-flow-desc">One request passes through frontend, checkout and payments services, each forwarding the trace context in a traceparent header. Every service records a span; spans nest on a timeline and share one trace ID.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="24" y="136" width="888" height="208" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/><text x="36" y="152" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">ONE TRACE ID · SPANS ON A TIMELINE</text>
+<path d="M188,72 L280,72" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M428,72 L520,72" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M668,72 L760,72" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="234" y="66" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQUEST</text>
+<text x="474" y="66" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TRACEPARENT</text>
+<text x="714" y="66" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TRACEPARENT</text>
+<text x="40" y="192" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">ROOT</text>
+<text x="40" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">CHILD</text>
+<text x="40" y="296" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">CHILD</text>
+<text x="280" y="332" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">START</text>
+<text x="900" y="332" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.06em">END</text>
+<rect x="40" y="40" width="148" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="40" width="148" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="114.0" y="70.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Client</text><text x="114.0" y="86.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">sends request</text>
+<rect x="280" y="40" width="148" height="64" rx="6" fill="#f5f5f5"/><rect x="280" y="40" width="148" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="354.0" y="70.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Frontend</text><text x="354.0" y="86.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">root span</text>
+<rect x="520" y="40" width="148" height="64" rx="6" fill="#f5f5f5"/><rect x="520" y="40" width="148" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="594.0" y="70.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Checkout</text><text x="594.0" y="86.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">child span</text>
+<rect x="760" y="40" width="148" height="64" rx="6" fill="#f5f5f5"/><rect x="760" y="40" width="148" height="64" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="834.0" y="70.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Payments</text><text x="834.0" y="86.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">child span</text>
+<rect x="280" y="168" width="620" height="40" rx="6" fill="#f5f5f5"/><rect x="280" y="168" width="620" height="40" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="590.0" y="192.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Frontend span, the whole request</text>
+<rect x="364" y="220" width="444" height="40" rx="6" fill="#f5f5f5"/><rect x="364" y="220" width="444" height="40" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="586.0" y="244.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Checkout span, child</text>
+<rect x="488" y="272" width="256" height="40" rx="6" fill="#f5f5f5"/><rect x="488" y="272" width="256" height="40" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="616.0" y="296.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Payments span: slow</text>
+<line x1="30" y1="372" x2="906" y2="372" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="388" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><rect x="120" y="380" width="12" height="12" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="140" y="389" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">SLOW HOP</text><rect x="220.0" y="380" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="240.0" y="389" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">COMPONENT</text>
+    </svg>
+  </div>
+</body>
+</html>

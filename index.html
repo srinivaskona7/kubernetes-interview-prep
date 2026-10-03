@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KubePrep — Kubernetes interview prep, one diagram at a time</title>
+<meta name="description" content="A visual Kubernetes interview study guide: chapter-wise Q&A, diagrams, comparison tables, flashcards and mock interviews.">
+<link rel="icon" type="image/svg+xml" href="assets/mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#/" aria-label="KubePrep home"><img src="assets/logo.svg" alt="KubePrep"></a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="#/" data-r="home">Chapters</a>
+      <a href="#/flashcards" data-r="flashcards">Flashcards</a>
+      <a href="#/mock" data-r="mock">Mock interview</a>
+      <a href="#/cheatsheet" data-r="cheatsheet">Cheat sheet</a>
+      <a href="#/diagrams" data-r="diagrams">Diagrams</a>
+    </nav>
+    <span class="sp"></span>
+    <button class="searchbtn" id="openSearch" aria-label="Search"><span>Search questions, commands…</span><kbd>⌘K</kbd></button>
+    <div class="ring" id="ring" title="Topics studied"></div>
+    <button class="menu" id="menu" aria-label="Menu">Menu</button>
+  </div>
+</header>
+<main id="app"></main>
+<footer><div class="wrap"><img src="assets/logo.svg" alt="KubePrep"><span>Free study guide</span></div></footer>
+
+<div class="overlay" id="searchOv" role="dialog" aria-label="Search"><div class="box">
+  <input id="q" type="search" placeholder="Search questions, answers, commands…" autocomplete="off">
+  <div class="res" id="res"></div>
+</div></div>
+<div class="overlay" id="zoomOv" role="dialog" aria-label="Diagram"><div class="zoom" id="zoomBox"></div></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

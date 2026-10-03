@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investigating a flapping node</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Troubleshooting · Nodes</p>
+    <h1>Investigating a flapping node</h1>
+
+    <svg viewBox="0 0 1000 376" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch17-flapping-node-title ch17-flapping-node-desc">
+      <title id="ch17-flapping-node-title">Investigating a flapping node</title>
+      <desc id="ch17-flapping-node-desc">A worker node kubelet sends heartbeats to the control plane; pressure and a struggling container runtime can make it miss them. Check describe node first, then kubelet logs, pressure, runtime and network, then cordon and drain to repair.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect x="40" y="48" width="480" height="272" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/><text x="52" y="64" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">WORKER NODE</text>
+      <rect x="64" y="88" width="200" height="96" rx="6" fill="#f5f5f5"/><rect x="64" y="88" width="200" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="76" y="98" width="72" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="112" y="107" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">3 · PRESSURE</text><text x="76" y="126" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Resource pressure</text><text x="76" y="142" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">memory, OOM in dmesg</text><text x="76" y="156" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">disk, CPU, PIDs</text>
+<rect x="296" y="88" width="200" height="96" rx="6" fill="#f5f5f5"/><rect x="296" y="88" width="200" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="308" y="98" width="91" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="353" y="107" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">2 · KUBELET LOGS</text><text x="308" y="126" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">kubelet</text><text x="308" y="142" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">journalctl -u kubelet</text><text x="308" y="156" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">&quot;PLEG is not healthy&quot;</text>
+<rect x="296" y="216" width="200" height="84" rx="6" fill="#f5f5f5"/><rect x="296" y="216" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="308" y="226" width="67" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="341" y="235" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">4 · RUNTIME</text><text x="308" y="254" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Container runtime</text><text x="308" y="270" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">containerd or CRI-O</text><text x="308" y="284" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">crictl ps, runtime logs</text>
+<rect x="640" y="88" width="320" height="96" rx="6" fill="#f5f5f5"/><rect x="640" y="88" width="320" height="96" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="652" y="98" width="81" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="693" y="107" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">1 · START HERE</text><text x="652" y="126" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Control plane view</text><text x="652" y="142" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">kubectl describe node: conditions</text><text x="652" y="156" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">and events; node controller marks</text><text x="652" y="170" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">NotReady after grace, evicts Pods</text>
+<rect x="640" y="232" width="320" height="72" rx="6" fill="#f5f5f5"/><rect x="640" y="232" width="320" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="652" y="242" width="28" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="666" y="251" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FIX</text><text x="652" y="270" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Cordon, drain, repair</text><text x="652" y="286" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">then uncordon the node</text>
+      <path d="M264,136 L296,136" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M396,216 L396,184" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="404" y="204" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">STATE</text>
+<path d="M496,136 L640,136" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="568" y="128" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">5 · HEARTBEAT</text>
+<path d="M800,184 L800,232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="808" y="218" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">THEN</text>
+<text x="72" y="244" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">Flapping = NotReady, evict,</text>
+<text x="72" y="260" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">reschedule, repeat: churn.</text>
+      <line x1="32" y1="348" x2="968" y2="348" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="364" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="360" x2="148" y2="360" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="363" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="212" y="356" width="12" height="8" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="232" y="363" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">start here</text>
+    </svg>
+  </div>
+</body>
+</html>

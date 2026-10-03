@@ -1,0 +1,688 @@
+{
+ "number": 4,
+ "title": "Principles of Scaling: Horizontal vs Vertical",
+ "part": "Part 2 · Scaling",
+ "tagline": "Scale out, scale up, and how the HPA and VPA decide for you",
+ "overview": "This chapter explains why workloads need to scale and the difference between adding replicas and enlarging Pods. It then covers how the HPA and VPA work, how to choose between them, and the practices and pitfalls that decide whether autoscaling helps or hurts.",
+ "topics": [
+  {
+   "id": "ch4-what-is-scaling",
+   "level": "junior",
+   "question": "What is scaling, and why does it matter for a Kubernetes workload?",
+   "say_first": "Scaling is a system's ability to cope with more (or less) demand by changing the capacity it has. In Kubernetes it keeps apps responsive during peaks and cheap during quiet periods.",
+   "explain": [
+    "Think of a restaurant. On a quiet Tuesday two waiters are enough; on a Saturday night you need ten. Scaling is the act of matching staff to the crowd, without leaving people waiting and without paying idle waiters.",
+    "In Kubernetes you can adjust capacity at several levels: the number of Pod copies, the size of each Pod, and the number of nodes that host those Pods.",
+    "Good scaling design pays off in five ways: steady performance under load, lower cost, the ability to adapt to unpredictable demand, higher availability because work is spread over many copies, and room to grow later."
+   ],
+   "key_points": [
+    "Scaling = matching capacity to demand",
+    "Too little capacity hurts users; too much wastes money",
+    "Spreading load over several copies also improves availability",
+    "Kubernetes can scale Pods and nodes, manually or automatically"
+   ],
+   "follow_ups": [
+    "What are the two directions of scaling?",
+    "Which parts of a cluster can be scaled?"
+   ],
+   "pitfalls": [
+    "Describing scaling only as 'adding servers' and ignoring cost and scale-in"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-what-is-scaling.html",
+    "title": "Scaling matches capacity to demand",
+    "ratio": "960/312"
+   }
+  },
+  {
+   "id": "ch4-horizontal-vs-vertical",
+   "level": "junior",
+   "question": "What is the difference between horizontal and vertical scaling, and what are scale out, scale in, scale up and scale down?",
+   "say_first": "Horizontal scaling changes how many copies you run (out = more, in = fewer). Vertical scaling changes how big each copy is (up = more CPU/memory, down = less).",
+   "explain": [
+    "Horizontal is like opening extra checkout lanes in a supermarket: the queue is shared among more cashiers. Vertical is like giving one cashier a faster scanner: same lane, more power.",
+    "Horizontal scaling has no hard ceiling other than cluster capacity and suits stateless services. Vertical scaling is simple, but a single Pod can never be larger than the biggest node, and changing a Pod's size normally means restarting it.",
+    "Most real platforms use both: scale out the apps that can run many copies, and right-size the ones that cannot."
+   ],
+   "table": {
+    "caption": "Horizontal versus vertical scaling",
+    "headers": [
+     "Aspect",
+     "Horizontal (out / in)",
+     "Vertical (up / down)"
+    ],
+    "rows": [
+     [
+      "What changes",
+      "Number of Pod replicas",
+      "CPU and memory of each Pod"
+     ],
+     [
+      "Kubernetes tool",
+      "HPA, kubectl scale",
+      "VPA, editing requests/limits"
+     ],
+     [
+      "Upper limit",
+      "Cluster capacity",
+      "Size of one node"
+     ],
+     [
+      "Disruption",
+      "None for existing Pods",
+      "Pod is usually restarted"
+     ],
+     [
+      "Best for",
+      "Stateless, parallel workloads",
+      "Apps that cannot run several copies"
+     ]
+    ]
+   },
+   "key_points": [
+    "Out/in = replica count; up/down = resource size",
+    "Vertical scaling is capped by node size",
+    "Horizontal scaling needs an app that tolerates many copies",
+    "Combine both across different workloads"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-scale-out-vs-up.html",
+    "title": "Scale out versus scale up",
+    "ratio": "1000/400"
+   },
+   "follow_ups": [
+    "Which one would you choose for a stateless web API?",
+    "Why does vertical scaling usually restart the Pod?"
+   ],
+   "pitfalls": [
+    "Mixing up 'scale in' (fewer replicas) with 'scale down' (smaller Pod)"
+   ]
+  },
+  {
+   "id": "ch4-types-of-scaling",
+   "level": "junior",
+   "question": "What types of scaling do you know in Kubernetes?",
+   "say_first": "I would split it into Pod-level and node-level scaling, each manual or automatic: kubectl scale, HPA and VPA for Pods, and a node autoscaler for the machines.",
+   "explain": [
+    "A good move in an interview is to ask whether the interviewer wants the concepts (out, in, up, down) or the specific tools (HPA, VPA). Then answer that one, and mention the other briefly.",
+    "At Pod level you can change replicas by hand with kubectl scale, let the HPA do it from metrics, or let the VPA change the size of each Pod. At node level, a cluster autoscaler adds or removes machines so that Pods always have somewhere to run."
+   ],
+   "table": {
+    "caption": "Scaling options at a glance",
+    "headers": [
+     "Layer",
+     "Mode",
+     "Mechanism"
+    ],
+    "rows": [
+     [
+      "Pod count",
+      "Manual",
+      "kubectl scale"
+     ],
+     [
+      "Pod count",
+      "Automatic",
+      "Horizontal Pod Autoscaler"
+     ],
+     [
+      "Pod size",
+      "Automatic",
+      "Vertical Pod Autoscaler"
+     ],
+     [
+      "Node count",
+      "Automatic",
+      "Cluster autoscaler or similar node scaler"
+     ]
+    ]
+   },
+   "key_points": [
+    "Clarify the question before answering",
+    "Pods and nodes scale separately",
+    "Pod autoscalers do not add nodes by themselves"
+   ],
+   "follow_ups": [
+    "Which of these needs the Metrics Server?",
+    "What happens if the HPA wants more Pods than the nodes can hold?"
+   ],
+   "pitfalls": [
+    "Forgetting that nodes also need to scale"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-types-of-scaling.html",
+    "title": "Pod-level and node-level scaling",
+    "ratio": "960/420"
+   }
+  },
+  {
+   "id": "ch4-manual-scaling",
+   "level": "junior",
+   "question": "How do you scale a workload manually?",
+   "say_first": "Use kubectl scale (or edit spec.replicas) on the Deployment, and the controllers do the rest.",
+   "explain": [
+    "You only state the desired replica count. The Deployment and its ReplicaSet notice the difference between desired and actual and create or delete Pods until they match.",
+    "Scaling to zero is allowed and stops all Pods while keeping the object, which is handy for dev environments but means the service serves nothing. If an HPA targets the same Deployment, it takes over the replica count again, so manual changes are temporary."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl scale deployment example --replicas=5",
+     "note": "scale out to five replicas"
+    },
+    {
+     "cmd": "kubectl scale deployment example --replicas=2",
+     "note": "scale in to two replicas"
+    },
+    {
+     "cmd": "kubectl scale deployment example --replicas=0",
+     "note": "stop all Pods but keep the Deployment"
+    },
+    {
+     "cmd": "kubectl get deployment example",
+     "note": "check READY versus desired counts"
+    }
+   ],
+   "key_points": [
+    "Declare the number; controllers reconcile",
+    "Replicas 0 means no running Pods",
+    "An active HPA overrides manual replica changes"
+   ],
+   "follow_ups": [
+    "Why does a manual change vanish when an HPA exists?"
+   ],
+   "pitfalls": [
+    "Scaling a StatefulSet down without thinking about its data"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-manual-scaling.html",
+    "title": "Manual scaling reconciles to your number",
+    "ratio": "960/312"
+   }
+  },
+  {
+   "id": "ch4-scaling-components",
+   "level": "mid",
+   "question": "Which Kubernetes components take part when you scale a workload out?",
+   "say_first": "The API server records the request in etcd, the controller manager creates the extra Pod objects, the scheduler picks nodes for them, and the kubelets start them.",
+   "explain": [
+    "Picture an order at a kitchen pass. The waiter (kubectl) hands a ticket to the front desk (API server), which files it (etcd). The head chef (controller manager) sees the ticket says 'five dishes, only three made' and queues two more. The expediter (scheduler) assigns each to a station (node), and the cooks (kubelets) cook.",
+    "Nothing talks to anything directly. Every component watches the API server and reacts to changes, which is why the system recovers cleanly if one piece restarts."
+   ],
+   "key_points": [
+    "API server is the single front door; etcd stores the intent",
+    "Controller manager reconciles replica counts",
+    "Scheduler only chooses a node; it does not start containers",
+    "Kubelet on the chosen node pulls images and runs the Pod"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-scale-request-path.html",
+    "title": "Path of a scale request",
+    "ratio": "1000/520"
+   },
+   "follow_ups": [
+    "What does the scheduler look at when placing new Pods?",
+    "What happens if no node has room?"
+   ],
+   "pitfalls": [
+    "Saying the controller manager starts the containers"
+   ]
+  },
+  {
+   "id": "ch4-hpa-vpa-overview",
+   "level": "mid",
+   "question": "What are the HPA and the VPA, and when would you use each?",
+   "say_first": "The HPA changes how many Pod replicas run based on metrics; the VPA changes the CPU and memory requests of each Pod based on observed usage.",
+   "explain": [
+    "Use the HPA when load varies through the day, during launches or seasonal peaks, when traffic is hard to predict, or when you want to save money by not over-provisioning.",
+    "Use the VPA when an app cannot simply run more copies, or when you do not know the right requests and limits and want data-driven values."
+   ],
+   "table": {
+    "caption": "HPA and VPA at a glance",
+    "headers": [
+     "Question",
+     "HPA",
+     "VPA"
+    ],
+    "rows": [
+     [
+      "Adjusts",
+      "Replica count",
+      "Container requests and limits"
+     ],
+     [
+      "Typical trigger",
+      "CPU, memory, custom or external metrics",
+      "Historical usage of each container"
+     ],
+     [
+      "Effect on running Pods",
+      "None, adds or removes Pods",
+      "Evicts and recreates Pods with new sizes"
+     ],
+     [
+      "Good fit",
+      "Stateless web or API tiers",
+      "Single-instance or hard-to-split apps"
+     ]
+    ]
+   },
+   "key_points": [
+    "HPA = how many; VPA = how big",
+    "Both are controllers driven by metrics",
+    "Both can run in one cluster on different workloads"
+   ],
+   "follow_ups": [
+    "Can a queue length drive the HPA?",
+    "Can the two run on the same Deployment?"
+   ],
+   "pitfalls": [
+    "Claiming the VPA scales replicas"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-hpa-vpa-overview.html",
+    "title": "HPA changes how many, VPA changes how big",
+    "ratio": "960/312"
+   }
+  },
+  {
+   "id": "ch4-how-hpa-works",
+   "level": "mid",
+   "question": "How does the HPA work internally?",
+   "say_first": "Every sync period (about 15 seconds) it reads current metrics, compares them with the target in its spec, calculates the desired replica count and updates the scale of the target.",
+   "explain": [
+    "Kubelets expose container usage (collected by cAdvisor), the Metrics Server aggregates it and serves the Metrics API, and the HPA controller reads that API.",
+    "The core idea is proportional: desiredReplicas = ceil(currentReplicas x currentMetric / targetMetric). If four Pods run at 90% CPU and the target is 60%, it asks for ceil(4 x 90/60) = 6 Pods. The result is clamped between minReplicas and maxReplicas.",
+    "It then writes the new count through the scale subresource of the Deployment; the ReplicaSet creates or removes Pods. A thermostat is a good analogy: measure, compare, adjust, repeat."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get hpa example --watch",
+     "note": "watch current versus target metric and replicas"
+    },
+    {
+     "cmd": "kubectl describe hpa example",
+     "note": "see conditions and scaling events"
+    }
+   ],
+   "key_points": [
+    "Needs the Metrics Server for CPU and memory",
+    "Scales proportionally between min and max",
+    "Acts on the Deployment's scale subresource",
+    "Supports custom and external metrics"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-hpa-loop.html",
+    "title": "The HPA control loop",
+    "ratio": "960/500"
+   },
+   "follow_ups": [
+    "What stops the HPA from flapping up and down?",
+    "Where do utilization percentages come from?"
+   ],
+   "pitfalls": [
+    "Thinking the HPA reads metrics from Pods directly"
+   ]
+  },
+  {
+   "id": "ch4-start-with-hpa",
+   "level": "mid",
+   "question": "What do you need in place before using an HPA, and how do you create one?",
+   "say_first": "Two things: a working Metrics Server, and resource requests on the containers you want to scale. Then you create an HPA object that targets the workload.",
+   "explain": [
+    "Utilization is a percentage of the container's request. With no request there is no baseline, so the HPA cannot compute CPU or memory utilization and reports unknown.",
+    "Workflow: pick the metric and target, apply the HPA, generate load and watch how it reacts, tune thresholds, and revisit as the app changes. The manifest below scales a Deployment between 2 and 10 replicas to keep average CPU near 70% of requests."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl top pods",
+     "note": "proves the Metrics Server works"
+    },
+    {
+     "cmd": "kubectl autoscale deployment example --cpu-percent=70 --min=2 --max=10",
+     "note": "quick imperative HPA"
+    },
+    {
+     "cmd": "kubectl get hpa",
+     "note": "list autoscalers and their current targets"
+    },
+    {
+     "cmd": "apiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: example\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: example\n  minReplicas: 2\n  maxReplicas: 10\n  metrics:\n  - type: Resource\n    resource:\n      name: cpu\n      target:\n        type: Utilization\n        averageUtilization: 70",
+     "note": "declarative HPA (autoscaling/v2)"
+    }
+   ],
+   "key_points": [
+    "Metrics Server is mandatory for resource metrics",
+    "Requests are the denominator of utilization",
+    "autoscaling/v2 is the current API",
+    "Set sensible minReplicas for availability"
+   ],
+   "follow_ups": [
+    "Why does the HPA show <unknown>?",
+    "How would you scale on memory instead?"
+   ],
+   "pitfalls": [
+    "Setting only limits and no requests",
+    "Forgetting the Metrics Server on a fresh cluster"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-start-with-hpa.html",
+    "title": "What an HPA needs before it works",
+    "ratio": "960/312"
+   }
+  },
+  {
+   "id": "ch4-hpa-queue-keda",
+   "level": "senior",
+   "question": "Can you scale Pods based on the length of a queue such as RabbitMQ?",
+   "say_first": "Yes. Either feed the queue length to the HPA through a custom or external metrics adapter, or use KEDA, which manages HPAs for you from many event sources.",
+   "explain": [
+    "CPU often reacts too late for queue workers: the backlog grows first and CPU follows. Scaling on the backlog itself is proactive.",
+    "With the metrics-adapter route you install an adapter that exposes the queue metric through the custom or external metrics API and reference it in the HPA. With KEDA you install its operator, describe a scaler (queue, topic, database query and so on) and KEDA creates and drives the HPA, and can even scale to zero."
+   ],
+   "table": {
+    "caption": "Two ways to scale on external signals",
+    "headers": [
+     "Aspect",
+     "Metrics adapter + HPA",
+     "KEDA"
+    ],
+    "rows": [
+     [
+      "Setup",
+      "Adapter per metrics source",
+      "One operator, many scalers"
+     ],
+     [
+      "Config object",
+      "HPA with external metric",
+      "ScaledObject (KEDA resource)"
+     ],
+     [
+      "Scale to zero",
+      "Not by plain HPA",
+      "Supported"
+     ],
+     [
+      "Best when",
+      "One or two custom signals",
+      "Many event-driven sources"
+     ]
+    ]
+   },
+   "key_points": [
+    "Backlog-based scaling reacts earlier than CPU",
+    "Custom and external metrics need an adapter",
+    "KEDA is a CNCF project built on top of the HPA"
+   ],
+   "follow_ups": [
+    "Why can plain HPA not reach zero replicas?"
+   ],
+   "pitfalls": [
+    "Assuming the HPA can read RabbitMQ natively"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-hpa-queue-keda.html",
+    "title": "Scaling on queue length",
+    "ratio": "960/312"
+   }
+  },
+  {
+   "id": "ch4-how-vpa-works",
+   "level": "mid",
+   "question": "How does the VPA optimize resources?",
+   "say_first": "It learns each container's real CPU and memory usage over time, recommends better requests and limits, and applies them by evicting the Pod so it is recreated with the new values.",
+   "explain": [
+    "Three components cooperate. The Recommender studies usage history and computes a target. The Updater compares it with what Pods currently have and evicts those that are far off. The Admission Controller, a webhook, patches the replacement Pod's requests as it is created.",
+    "Because Kubernetes classically cannot resize a running container, a restart is part of the deal, so Pods should tolerate being evicted. The updateMode decides how aggressive it is: Off only recommends, Initial applies at creation only, Recreate and Auto apply by eviction."
+   ],
+   "commands": [
+    {
+     "cmd": "apiVersion: autoscaling.k8s.io/v1\nkind: VerticalPodAutoscaler\nmetadata:\n  name: example\nspec:\n  targetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: example\n  updatePolicy:\n    updateMode: \"Off\"",
+     "note": "recommendation-only VPA (the VPA add-on must be installed)"
+    },
+    {
+     "cmd": "kubectl describe vpa example",
+     "note": "read the recommended requests"
+    }
+   ],
+   "key_points": [
+    "Recommender, Updater, Admission Controller",
+    "Applies changes by evicting and recreating Pods",
+    "updateMode Off is a safe way to start",
+    "Prevents both over-provisioning and starvation"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-vpa-flow.html",
+    "title": "How the VPA resizes a Pod",
+    "ratio": "1000/400"
+   },
+   "follow_ups": [
+    "Why is a single replica risky with the VPA?",
+    "What does updateMode Off give you?"
+   ],
+   "pitfalls": [
+    "Expecting in-place resize in every version"
+   ]
+  },
+  {
+   "id": "ch4-hpa-vs-vpa",
+   "level": "mid",
+   "question": "Compare the HPA and the VPA: what are the trade-offs?",
+   "say_first": "HPA gives elasticity and resilience at the cost of needing a splittable app; VPA right-sizes each Pod but restarts it and cannot exceed one node.",
+   "explain": [
+    "The HPA reacts quickly and keeps availability high, but extra replicas must be useful: a database that cannot share its load gains nothing from copies.",
+    "The VPA improves efficiency and takes guesswork out of requests, but evictions cause restarts and recommendations lag behind sudden spikes."
+   ],
+   "table": {
+    "caption": "HPA versus VPA trade-offs",
+    "headers": [
+     "Aspect",
+     "HPA",
+     "VPA"
+    ],
+    "rows": [
+     [
+      "Strength",
+      "Fast elasticity, high availability",
+      "Right-sized requests, less waste"
+     ],
+     [
+      "Weakness",
+      "App must run many copies",
+      "Restarts Pods, slow to react"
+     ],
+     [
+      "Limit",
+      "maxReplicas and cluster size",
+      "Largest node"
+     ],
+     [
+      "Needs",
+      "Metrics Server, requests",
+      "VPA components, usage history"
+     ]
+    ]
+   },
+   "key_points": [
+    "Choose by workload shape, not by preference",
+    "Both depend on good requests",
+    "Neither adds nodes"
+   ],
+   "follow_ups": [
+    "Which would you pick for a stateless API?",
+    "Which for a batch worker that cannot be parallelised?"
+   ],
+   "pitfalls": [
+    "Presenting one as strictly better"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-hpa-vs-vpa.html",
+    "title": "HPA and VPA trade-offs",
+    "ratio": "960/312"
+   }
+  },
+  {
+   "id": "ch4-hpa-and-vpa-together",
+   "level": "senior",
+   "question": "Can the HPA and VPA run on the same workload?",
+   "say_first": "Not on the same resource metric for the same workload: they would fight, since one changes the replica count based on utilization while the other changes the request that utilization is measured against. Use both in the cluster, on different workloads.",
+   "explain": [
+    "Utilization is usage divided by request. If the VPA raises the request, utilization drops, so the HPA scales in; then usage per Pod rises, the VPA reacts, and the result oscillates.",
+    "Safe patterns: HPA on stateless front ends, VPA on stateful or single-instance components, or the VPA in recommendation mode alongside an HPA, or an HPA driven by custom metrics unrelated to CPU and memory."
+   ],
+   "key_points": [
+    "Same workload, same resource metric: conflict",
+    "Different workloads: fully fine and recommended",
+    "Recommendation-only VPA is a low-risk companion"
+   ],
+   "follow_ups": [
+    "How would you right-size requests for an HPA-managed app?"
+   ],
+   "pitfalls": [
+    "Enabling both on CPU for one Deployment"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-hpa-and-vpa-together.html",
+    "title": "Why both on one workload oscillate",
+    "ratio": "960/312"
+   }
+  },
+  {
+   "id": "ch4-choose-autoscaler",
+   "level": "mid",
+   "question": "How do you decide which autoscaler to use?",
+   "say_first": "Ask whether the app can run more copies. If yes, use the HPA (or KEDA for event signals); if not, use the VPA.",
+   "explain": [
+    "Walk the decision in two steps. First, can the workload tolerate multiple replicas? If not, vertical is your only automatic option. Second, if it can, is CPU or memory a good proxy for load? If yes use the HPA; if the real driver is a queue, stream or schedule, use custom metrics or KEDA."
+   ],
+   "key_points": [
+    "Replica-friendly apps go horizontal",
+    "CPU and memory are only proxies for load",
+    "Event-driven signals favour KEDA"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-which-autoscaler.html",
+    "title": "Which autoscaler fits",
+    "ratio": "1160/440"
+   },
+   "follow_ups": [
+    "What if nodes run out of room?"
+   ],
+   "pitfalls": [
+    "Defaulting to HPA for every workload"
+   ]
+  },
+  {
+   "id": "ch4-best-practices",
+   "level": "senior",
+   "question": "What best practices do you follow when adopting autoscaling?",
+   "say_first": "Set accurate requests, add readiness and liveness probes, pick metrics that reflect real load with realistic thresholds, roll out gradually from non-production, and monitor scaling events.",
+   "explain": [
+    "Requests give the HPA a baseline and the VPA a starting point. Readiness probes matter because Pods that are not ready are treated cautiously when computing load and should not receive traffic anyway.",
+    "Thresholds that are too tight cause flapping, and thresholds that are too lax let users suffer. Start with low-risk workloads, test changes in lower environments, then watch events and dashboards continuously."
+   ],
+   "key_points": [
+    "Explicit requests and limits on every container",
+    "Probes configured correctly",
+    "Metrics and thresholds based on observed behaviour",
+    "Test in non-production first",
+    "Monitor HPA and VPA events",
+    "Use both tools, but on different workloads"
+   ],
+   "follow_ups": [
+    "How would you tune a flapping HPA?"
+   ],
+   "pitfalls": [
+    "Copy-pasting a 50% CPU target for every service"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-best-practices.html",
+    "title": "Autoscaling adoption checklist",
+    "ratio": "960/312"
+   }
+  },
+  {
+   "id": "ch4-pitfalls-capacity",
+   "level": "senior",
+   "question": "What are common autoscaling pitfalls, and what happens when the cluster has no room?",
+   "say_first": "The classic ones are missing requests, wrong metrics, no monitoring, and ignoring node capacity: the HPA and VPA do not check free resources, so new Pods can sit Pending.",
+   "explain": [
+    "Pod autoscalers decide purely from metrics. If nodes are full, quota is exhausted or a VPA asks for more than any node has, the Pod cannot be scheduled and stays Pending.",
+    "The remedy is to pair them with node scaling, such as a cluster autoscaler or comparable node provisioner, and to watch Pending Pods and quota."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get pods --field-selector=status.phase=Pending",
+     "note": "find Pods waiting for room"
+    },
+    {
+     "cmd": "kubectl get events --sort-by=.lastTimestamp",
+     "note": "see scheduling failures and scaling events"
+    }
+   ],
+   "table": {
+    "caption": "Pitfall and fix",
+    "headers": [
+     "Pitfall",
+     "Symptom",
+     "Fix"
+    ],
+    "rows": [
+     [
+      "No resource requests",
+      "HPA shows unknown or scales wrongly",
+      "Set requests"
+     ],
+     [
+      "Wrong metric",
+      "Scaling lags or overshoots",
+      "Choose a metric tied to load"
+     ],
+     [
+      "No monitoring",
+      "Silent flapping",
+      "Alert on scaling events"
+     ],
+     [
+      "No node headroom",
+      "Pods stay Pending",
+      "Add a node autoscaler, check quota"
+     ]
+    ]
+   },
+   "key_points": [
+    "Pod scaling and node scaling are separate",
+    "Pending Pods are the signal to check capacity",
+    "Monitoring is part of the design"
+   ],
+   "follow_ups": [
+    "Which tool adds nodes automatically?"
+   ],
+   "pitfalls": [
+    "Assuming the HPA guarantees capacity"
+   ],
+   "diagram": {
+    "file": "diagrams/ch4-pitfalls-capacity.html",
+    "title": "When the cluster has no room",
+    "ratio": "960/312"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch4-scale-out-vs-up.html",
+  "diagrams/ch4-scale-request-path.html",
+  "diagrams/ch4-hpa-loop.html",
+  "diagrams/ch4-vpa-flow.html",
+  "diagrams/ch4-which-autoscaler.html",
+  "diagrams/ch4-what-is-scaling.html",
+  "diagrams/ch4-types-of-scaling.html",
+  "diagrams/ch4-manual-scaling.html",
+  "diagrams/ch4-hpa-vpa-overview.html",
+  "diagrams/ch4-start-with-hpa.html",
+  "diagrams/ch4-hpa-queue-keda.html",
+  "diagrams/ch4-hpa-vs-vpa.html",
+  "diagrams/ch4-hpa-and-vpa-together.html",
+  "diagrams/ch4-best-practices.html",
+  "diagrams/ch4-pitfalls-capacity.html"
+ ]
+}

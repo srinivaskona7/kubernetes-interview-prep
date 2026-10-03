@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What to monitor for a stateful app</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flow · Observability</p>
+    <h1>What to monitor for a stateful app</h1>
+
+    <svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch8-monitor-stateful-title ch8-monitor-stateful-desc">
+<title id="ch8-monitor-stateful-title">What to monitor for a stateful app</title>
+<desc id="ch8-monitor-stateful-desc">Volume, Pod, application and log signals feed dashboards and alerts, which feed long-term capacity planning.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<polyline points="280,64 352,64 352,188 420,188" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="280,148 352,148 352,188 420,188" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="280,232 352,232 352,188 420,188" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="280,316 352,316 352,188 420,188" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="640,188 760,188" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="677.2" y="182" width="45.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="700" y="191" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TRENDS</text>
+<rect x="40" y="40" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="40" width="240" height="48" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="160" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Volume</text>
+<text x="160" y="80" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">bytes, inodes, I/O latency</text>
+<rect x="40" y="124" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="124" width="240" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="160" y="148" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pods</text>
+<text x="160" y="164" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">status, restarts, OOM kills</text>
+<rect x="40" y="208" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="208" width="240" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="160" y="232" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Application</text>
+<text x="160" y="248" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">connections, lag, query latency</text>
+<rect x="40" y="292" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="292" width="240" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="160" y="316" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Logs and events</text>
+<text x="160" y="332" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">central log stack</text>
+<rect x="420" y="164" width="220" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="420" y="164" width="220" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="530" y="188" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Dashboards and alerts</text>
+<text x="530" y="204" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">alert on critical conditions</text>
+<rect x="760" y="164" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="760" y="164" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="860" y="188" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Capacity planning</text>
+<text x="860" y="204" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">expand volumes before full</text>
+<text x="40" y="396" fill="#4f5d75" font-size="16" font-style="italic" font-family="'Instrument Serif', serif">A full volume or slow I/O stops a database long before CPU does.</text>
+    </svg>
+  </div>
+</body>
+</html>

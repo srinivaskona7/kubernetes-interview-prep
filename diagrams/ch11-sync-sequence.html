@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Argo CD detect and sync</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Sequence</p>
+    <h1>Argo CD detect and sync</h1>
+
+    <!-- Replace ch11-sync-sequence with a unique slug for this diagram before export. -->
+    <svg viewBox="0 0 1000 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch11-sync-sequence-title ch11-sync-sequence-desc">
+      <title id="ch11-sync-sequence-title">Argo CD detect and sync</title>
+      <desc id="ch11-sync-sequence-desc">Sequence diagram of Argo CD fetching a Git commit, rendering manifests, comparing with live state and applying changes when auto-sync is on.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+
+        <!-- OPTIONAL: dot-pattern background. Uncomment the <pattern> and the second <rect> below if you want the dotted paper look. -->
+        <!--
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+        </pattern>
+        -->
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <!-- <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/> -->
+
+      <line x1="160" y1="84" x2="160" y2="460" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="400" y1="84" x2="400" y2="460" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="640" y1="84" x2="640" y2="460" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="880" y1="84" x2="880" y2="460" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<rect x="600" y="396" width="320" height="52" rx="4" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+<rect x="600" y="396" width="40" height="16" rx="2" fill="#f5f5f5" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+<text x="620" y="408" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">OPT</text>
+<text x="652" y="408" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">[auto-sync on]</text>
+<path d="M400,128 H160" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="246" y="108" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="280" y="117" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FETCH REF</text>
+<path d="M160,160 H400" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="242" y="140" width="76" height="12" rx="2" fill="#f5f5f5"/>
+<text x="280" y="149" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">COMMIT SHA</text>
+<path d="M640,200 H400" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="474" y="180" width="92" height="12" rx="2" fill="#f5f5f5"/>
+<text x="520" y="189" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GET MANIFESTS</text>
+<path d="M400,232 H640" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="474" y="212" width="92" height="12" rx="2" fill="#f5f5f5"/>
+<text x="520" y="221" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RENDERED YAML</text>
+<path d="M640,272 H880" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="726" y="252" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="760" y="261" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">READ LIVE</text>
+<path d="M880,304 H640" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="716" y="284" width="88" height="12" rx="2" fill="#f5f5f5"/>
+<text x="760" y="293" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LIVE OBJECTS</text>
+<path d="M648,356 H664 Q672,356 672,364 V372 Q672,380 664,380 H648" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="684" y="372" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">DIFF</text>
+<path d="M640,432 H880" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<rect x="714" y="412" width="92" height="12" rx="2" fill="#f5f5f5"/>
+<text x="760" y="421" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">APPLY CHANGES</text>
+<rect x="88" y="24" width="144" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="88" y="24" width="144" height="48" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="160" y="48" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Git repository</text>
+<text x="160" y="64" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">desired state</text>
+<rect x="328" y="24" width="144" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="328" y="24" width="144" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="400" y="48" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Repo server</text>
+<text x="400" y="64" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">render manifests</text>
+<rect x="568" y="24" width="144" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="568" y="24" width="144" height="48" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="640" y="48" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">App controller</text>
+<text x="640" y="64" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">compare + sync</text>
+<rect x="808" y="24" width="144" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="808" y="24" width="144" height="48" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="880" y="48" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cluster</text>
+<text x="880" y="64" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">live state</text>
+<line x1="30" y1="488" x2="970" y2="488" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="30" y="504" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<line x1="120" y1="501" x2="144" y2="501" stroke="#4f5d75" stroke-width="1.2"/>
+<text x="152" y="504" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">request</text>
+<line x1="227" y1="501" x2="251" y2="501" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4"/>
+<text x="259" y="504" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">reply</text>
+<line x1="324" y1="501" x2="348" y2="501" stroke="#eb6c36" stroke-width="1.2"/>
+<text x="356" y="504" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">headline action</text>
+
+
+    </svg>
+  </div>
+</body>
+</html>

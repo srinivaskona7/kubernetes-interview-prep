@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How the VPA resizes a Pod</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">VPA · Sequence</p>
+    <h1>How the VPA resizes a Pod</h1>
+
+    <svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch4-vpa-flow-title ch4-vpa-flow-desc">
+      <title id="ch4-vpa-flow-title">How the VPA resizes a Pod</title>
+      <desc id="ch4-vpa-flow-desc">Sequence showing the VPA recommender, updater and admission webhook resizing a Pod by evicting it and patching its replacement.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<line x1="100" y1="104" x2="100" y2="400" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="300" y1="104" x2="300" y2="400" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="500" y1="104" x2="500" y2="400" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="700" y1="104" x2="700" y2="400" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="900" y1="104" x2="900" y2="400" stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+<path d="M104 160 H696" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="368" y="140" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="400" y="149" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">APPLY VPA</text>
+<path d="M304 196 H496" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="364" y="176" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="398" y="185" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NEW TARGET</text>
+<path d="M504 232 H696" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="568" y="212" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="600" y="221" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EVICT POD</text>
+<path d="M704 268 H896" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="764" y="248" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="798" y="257" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CREATE POD</text>
+<path d="M896 304 H704" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="752" y="284" width="92" height="12" rx="2" fill="#f5f5f5"/>
+<text x="798" y="293" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PATCH REQUESTS</text>
+<rect x="30" y="40" width="140" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="30" y="40" width="140" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="100" y="70" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Operator</text>
+<text x="100" y="86" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">applies VPA object</text>
+<rect x="230" y="40" width="140" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="230" y="40" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="300" y="70" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Recommender</text>
+<text x="300" y="86" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">learns from usage history</text>
+<rect x="430" y="40" width="140" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="430" y="40" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="500" y="70" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Updater</text>
+<text x="500" y="86" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">evicts stale pods</text>
+<rect x="630" y="40" width="140" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="630" y="40" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="700" y="70" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">API server</text>
+<text x="700" y="86" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Deployment recreates</text>
+<rect x="830" y="40" width="140" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="830" y="40" width="140" height="64" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="900" y="70" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Admission</text>
+<text x="900" y="86" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">VPA webhook</text>
+<text x="500" y="368" fill="#4f5d75" font-size="14" font-family="'Instrument Serif', serif" text-anchor="middle" font-style="italic">The old replica ends; the new one starts with resized requests.</text>
+
+    </svg>
+  </div>
+</body>
+</html>

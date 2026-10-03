@@ -1,0 +1,810 @@
+{
+  "number": 11,
+  "title": "Understanding GitOps: Principles and Practices",
+  "part": "Part 4 · Delivery and Operations",
+  "tagline": "Git as the source of truth, with an agent that keeps the cluster honest",
+  "overview": "GitOps means you describe what the cluster should look like in Git and let an agent inside the cluster make reality match it. This chapter covers the core principles, how to organise repositories and secrets, and how Argo CD turns those ideas into a working system, including the App-of-Apps and ApplicationSet patterns.",
+  "topics": [
+    {
+      "id": "ch11-gitops-principles",
+      "level": "junior",
+      "question": "What are the core principles of GitOps, and why is a pull-based model preferred?",
+      "say_first": "GitOps keeps the desired state declaratively in Git, applies it automatically, and has an agent continuously reconcile the cluster to it. Pull is preferred because the cluster fetches changes itself, so CI never needs cluster credentials.",
+      "explain": [
+        "Think of Git as the architect's blueprint and the cluster as the building. You never walk in and move walls by hand. You change the blueprint, get it reviewed, and a site foreman (the agent) makes the building match it.",
+        "There are four ideas. First, the system is described declaratively: you state the end result, not the steps. Second, that description lives in Git, so every change is a reviewed, traceable commit. Third, approved changes are applied automatically. Fourth, an agent keeps comparing real state with Git and corrects any drift.",
+        "In the pull model the agent runs inside the cluster and reaches out to Git. In the push model an external CI job holds a kubeconfig and pushes in. Pull wins on security (no cluster credentials outside the cluster), auditability (the agent records what it applied) and resilience (the agent retries locally with backoff). Webhooks only make the agent notice sooner; they do not push anything."
+      ],
+      "key_points": [
+        "Declarative: describe the desired end state, not commands",
+        "Git is the single, versioned source of truth; changes arrive through pull requests",
+        "Approved changes are applied automatically",
+        "Continuous reconciliation detects and corrects drift",
+        "Pull model: no CI credentials inside or into the cluster",
+        "A webhook just shortens detection time; the flow is still pull"
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-pull-model.html",
+        "title": "GitOps pull model",
+        "ratio": "1000/400"
+      },
+      "follow_ups": [
+        "What happens if someone edits a live resource with kubectl?",
+        "Can GitOps work with a push-based pipeline at all?"
+      ],
+      "pitfalls": [
+        "Saying GitOps is just CI/CD that stores YAML in Git. The continuous reconciliation loop is the defining part.",
+        "Believing a webhook makes the system push-based."
+      ]
+    },
+    {
+      "id": "ch11-gitops-benefits",
+      "level": "junior",
+      "question": "What benefits does adopting GitOps bring to a team?",
+      "say_first": "Better collaboration through pull requests, a built-in audit trail, consistent environments with less drift, and fast, boring rollbacks by reverting a commit.",
+      "explain": [
+        "Because every change is a pull request, infrastructure gets the same review habits as application code. Developers can use tools they already know and make changes themselves instead of filing tickets with an operations team.",
+        "Git history answers 'who changed what, when and why' for free, which makes compliance and audits much easier. Continuous reconciliation keeps the cluster from slowly wandering away from what was approved.",
+        "Rollback becomes a revert: the previous known-good state is already in Git, and the agent re-applies it. It is worth saying that adoption needs team buy-in and some learning, so it is a cultural change as much as a tooling one."
+      ],
+      "key_points": [
+        "Reviewable, collaborative change process",
+        "Self-service for developers using familiar Git tools",
+        "Stability: drift is detected and corrected",
+        "Audit and compliance from commit history",
+        "Rollback is a git revert"
+      ],
+      "follow_ups": [
+        "What costs or risks come with adopting GitOps?"
+      ],
+      "pitfalls": [
+        "Listing only speed. Auditability and drift control are the stronger selling points."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-gitops-benefits.html",
+        "title": "GitOps benefits in one flow",
+        "ratio": "1000/340"
+      }
+    },
+    {
+      "id": "ch11-declarative-immutable",
+      "level": "junior",
+      "question": "What are declarative infrastructure and immutable infrastructure, and how do they support GitOps?",
+      "say_first": "Declarative means you state the desired end state and the system works out the steps. Immutable means you replace components with new versions instead of editing them in place.",
+      "explain": [
+        "An imperative approach is a recipe: do step one, then step two. A declarative approach is an order at a restaurant: 'one margherita', and the kitchen decides how. Kubernetes manifests, Terraform and CloudFormation are all declarative, which is why they fit neatly into Git.",
+        "Immutable infrastructure is like swapping a light bulb rather than repairing it while it is lit. You never patch a running container; you build a new image and roll it out. That prevents configuration drift because nothing running has been hand-modified.",
+        "Together they give GitOps its power: Git holds the declared desired state, images are immutable, so what runs is exactly what Git says, and rolling back means deploying the previous version."
+      ],
+      "key_points": [
+        "Declarative: desired state, the tool computes the steps",
+        "Imperative: an ordered list of commands",
+        "Immutable: replace, do not modify in place",
+        "Containers and image tags make immutability practical",
+        "Config-management tools such as Ansible and Puppet are also declarative in spirit"
+      ],
+      "table": {
+        "caption": "Declarative versus imperative",
+        "headers": [
+          "Aspect",
+          "Declarative",
+          "Imperative"
+        ],
+        "rows": [
+          [
+            "You describe",
+            "The end state",
+            "The steps to run"
+          ],
+          [
+            "Re-running",
+            "Safe, converges to the same result",
+            "May fail or duplicate work"
+          ],
+          [
+            "Fits Git review",
+            "Yes, a diff shows intent",
+            "Harder, scripts hide intent"
+          ],
+          [
+            "Example",
+            "kubectl apply -f deployment.yaml",
+            "kubectl run, kubectl scale by hand"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl apply -f deployment.yaml",
+          "note": "Declarative: submit the desired state"
+        },
+        {
+          "cmd": "kubectl scale deployment web --replicas=5",
+          "note": "Imperative: a one-off command that Git does not know about"
+        }
+      ],
+      "follow_ups": [
+        "How does an immutable approach change how you handle a hotfix?"
+      ],
+      "pitfalls": [
+        "Editing a live Deployment by hand and calling it GitOps. The agent will revert it, and rightly so."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-declarative-immutable.html",
+        "title": "Declarative and immutable versus imperative and in-place",
+        "ratio": "1000/380"
+      }
+    },
+    {
+      "id": "ch11-gitops-workflow-setup",
+      "level": "mid",
+      "question": "How would you set up a GitOps workflow with Kubernetes from scratch?",
+      "say_first": "Create a Git repo for manifests, wire CI to validate changes, install a GitOps operator such as Argo CD or Flux in the cluster, point it at the repo, and add monitoring and alerts.",
+      "explain": [
+        "Step one is the repo: it becomes the single source of truth for manifests. Step two is CI, using Jenkins, GitLab CI or GitHub Actions to lint and validate changes and to build images, but not to deploy into the cluster directly.",
+        "Step three is installing the operator in the cluster and giving it a source (the repo, a path and a revision) plus a destination (cluster and namespace). Optionally add a Git webhook so changes are noticed in seconds rather than at the next poll.",
+        "Finally, watch the system itself. Prometheus and Grafana can show sync status, failures and reconcile duration, and alerts should fire when an app stays OutOfSync or Degraded."
+      ],
+      "key_points": [
+        "Repo as the source of truth",
+        "CI validates and builds; the operator deploys",
+        "Operator needs source repo and destination cluster/namespace",
+        "Webhooks speed detection but reconciliation stays pull-based",
+        "Monitor the GitOps tooling, not just the apps"
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl create namespace argocd",
+          "note": "Namespace for the operator"
+        },
+        {
+          "cmd": "kubectl apply -n argocd --server-side -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml",
+          "note": "Standard Argo CD install manifest"
+        },
+        {
+          "cmd": "argocd app create web --repo https://github.com/your-org/your-repo.git --path apps/web --dest-server https://kubernetes.default.svc --dest-namespace web",
+          "note": "Register an application from the CLI"
+        }
+      ],
+      "follow_ups": [
+        "Where does image building fit relative to the GitOps repo?"
+      ],
+      "pitfalls": [
+        "Giving the CI system cluster-admin credentials, which defeats the security benefit of pull."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-gitops-workflow-setup.html",
+        "title": "Setting up a GitOps workflow",
+        "ratio": "1000/400"
+      }
+    },
+    {
+      "id": "ch11-repo-structure",
+      "level": "mid",
+      "question": "How do you structure Git repositories for GitOps, and when would you pick a monorepo over multiple repos?",
+      "say_first": "Separate the application code from the deployment configuration, organise by environment and application, and choose monorepo or multi-repo based on how much isolation versus convenience you need.",
+      "explain": [
+        "A common layout has an environments folder (dev, staging, production), an applications folder, and shared manifests. Branching strategies such as main, develop and feature branches, or simple GitHub Flow, define how a change is proposed, reviewed and merged.",
+        "A monorepo is like one shared notebook: easy to search and you can change several services atomically, but history gets noisy and permissions are coarse. Multiple repos are like one notebook per team: strong isolation and fine-grained access, but cross-repo changes need coordination.",
+        "A frequent compromise is a separate repo per application plus one infrastructure or 'live' repo that records what is deployed where."
+      ],
+      "key_points": [
+        "Keep config separate from app source where practical",
+        "Folders per environment make promotion explicit",
+        "Pick a branching model and enforce it with pull requests",
+        "Many organisations use multi-repo for apps and a dedicated environment repo"
+      ],
+      "table": {
+        "caption": "Monorepo versus multi-repo for GitOps",
+        "headers": [
+          "Aspect",
+          "Monorepo",
+          "Multi-repo"
+        ],
+        "rows": [
+          [
+            "Discoverability",
+            "Everything in one place",
+            "Spread across repos"
+          ],
+          [
+            "Cross-service change",
+            "One atomic commit",
+            "Coordinated PRs"
+          ],
+          [
+            "Access control",
+            "Coarse, needs path rules",
+            "Fine-grained per repo"
+          ],
+          [
+            "CI scope and history",
+            "Larger, noisier",
+            "Small and focused"
+          ],
+          [
+            "Team autonomy",
+            "Lower",
+            "Higher"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "tree -L 2 gitops-repo",
+          "note": "Inspect a layout such as environments/, applications/ and manifests/"
+        }
+      ],
+      "follow_ups": [
+        "Would you use branches or folders per environment, and why?"
+      ],
+      "pitfalls": [
+        "Using long-lived environment branches that drift apart and become painful to merge."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-repo-structure.html",
+        "title": "Monorepo versus multi-repo for GitOps",
+        "ratio": "1000/400"
+      }
+    },
+    {
+      "id": "ch11-helm-vs-kustomize-gitops",
+      "level": "mid",
+      "question": "How do you manage manifests in Git, and how do Helm and Kustomize compare in a GitOps setup?",
+      "say_first": "Keep declarative YAML modular and versioned, validate it in CI, and use Helm for packaged third-party apps and Kustomize overlays for your own per-environment variations.",
+      "explain": [
+        "Good manifests are declarative, split into reusable pieces, versioned in Git for an audit trail, and validated in the pipeline with tools such as kubeval, kubeconform or kube-score before they ever reach a cluster.",
+        "Helm is like a form letter with blanks: powerful templating and a huge ecosystem of ready-made charts, but values files can sprawl and templates get hard to read. Pin chart versions so syncs are deterministic. Kustomize is like a transparent overlay sheet placed over plain YAML: simple and predictable, but no real templating.",
+        "A pragmatic pattern: Helm for vendor charts and platform add-ons, Kustomize for your own services, or Kustomize wrapping a Helm chart per environment."
+      ],
+      "key_points": [
+        "Validate manifests in CI, not after deploy",
+        "Pin Helm chart versions for deterministic syncs",
+        "Kustomize overlays keep environment differences small and visible",
+        "Argo CD renders both natively"
+      ],
+      "table": {
+        "caption": "Helm versus Kustomize",
+        "headers": [
+          "Aspect",
+          "Helm",
+          "Kustomize"
+        ],
+        "rows": [
+          [
+            "Model",
+            "Charts with templates and values",
+            "Base plus overlays of plain YAML"
+          ],
+          [
+            "Strength",
+            "Packaging, sharing, ecosystem",
+            "Simplicity and clarity"
+          ],
+          [
+            "Weakness",
+            "Template and values complexity",
+            "No dynamic templating"
+          ],
+          [
+            "Best for",
+            "Third-party apps and add-ons",
+            "First-party services per environment"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl kustomize overlays/production",
+          "note": "Render an overlay to inspect the final YAML"
+        },
+        {
+          "cmd": "helm template web ./chart -f values-prod.yaml",
+          "note": "Render a chart locally without installing"
+        }
+      ],
+      "follow_ups": [
+        "Why does unpinned chart versioning hurt GitOps?"
+      ],
+      "pitfalls": [
+        "Treating the two as mutually exclusive when they are often combined."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-helm-vs-kustomize-gitops.html",
+        "title": "Helm versus Kustomize in GitOps",
+        "ratio": "1000/340"
+      }
+    },
+    {
+      "id": "ch11-promotion-strategies",
+      "level": "mid",
+      "question": "How do promotion and deployment strategies work in GitOps (branches, repos, pull requests, canary)?",
+      "say_first": "A change moves through environments by merging or by updating a version reference in Git, each step gated by pull-request review, and risky releases use progressive delivery such as canaries.",
+      "explain": [
+        "Branch-based promotion moves a change from develop to staging to main, validating at each stage. Separate repositories per environment add isolation and let you lock down production access, at the cost of more repos to manage.",
+        "Pull requests are the control point: peers review, automated checks run, and the merge is the approval. After merge, automation applies the change, which cuts manual effort and human error.",
+        "For progressive delivery, Argo Rollouts adds a Rollout resource that shifts traffic in steps via a mesh, Ingress or Gateway, and AnalysisTemplates query metrics (for example from Prometheus). If analysis fails, the rollout aborts and returns to the stable version automatically. Argo CD simply treats Rollouts like any other custom resource."
+      ],
+      "key_points": [
+        "Promotion = a Git change, not a manual deploy",
+        "Separate environment repos improve isolation and access control",
+        "PR review plus automated checks gate every merge",
+        "Canary and progressive delivery limit blast radius",
+        "Rollouts + AnalysisTemplates can roll back automatically"
+      ],
+      "table": {
+        "caption": "Common promotion approaches",
+        "headers": [
+          "Approach",
+          "How promotion happens",
+          "Trade-off"
+        ],
+        "rows": [
+          [
+            "Branch per stage",
+            "Merge develop to staging to main",
+            "Branches can drift"
+          ],
+          [
+            "Folder per environment",
+            "Edit overlay or version file in the next folder",
+            "Explicit and easy to diff"
+          ],
+          [
+            "Repo per environment",
+            "PR into the target environment repo",
+            "Strong isolation, more overhead"
+          ],
+          [
+            "Progressive (canary)",
+            "Rollout shifts traffic in steps based on metrics",
+            "Needs metrics and routing support"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "How would you automate bumping an image tag after CI builds it?"
+      ],
+      "pitfalls": [
+        "Promoting by rebuilding the image per environment. Promote the same immutable artifact."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-promotion-strategies.html",
+        "title": "Promotion through environments",
+        "ratio": "1000/440"
+      }
+    },
+    {
+      "id": "ch11-secrets-gitops",
+      "level": "senior",
+      "question": "How do you handle secrets in GitOps, and how do Sealed Secrets compare with the External Secrets Operator?",
+      "say_first": "Never commit plain secrets. Either encrypt them so only the cluster can decrypt (Sealed Secrets) or keep them in an external store and commit only a pointer (External Secrets Operator).",
+      "explain": [
+        "Git is built to share and keep history, which is the opposite of what you want for secrets. Once a credential is committed, it lives in history even after deletion, so the fix has to prevent it entering Git at all.",
+        "Sealed Secrets: a developer encrypts a Secret with the kubeseal CLI, commits the SealedSecret, and a controller in the cluster holds the private key and turns it back into a normal Secret. Think of a locked mailbox that only the cluster has the key to.",
+        "External Secrets Operator: you commit an ExternalSecret that names a secret in Vault, AWS Secrets Manager or Azure Key Vault. The operator authenticates, fetches the value and creates a native Secret. Git contains no secret material at all, not even encrypted.",
+        "Around either choice, apply RBAC to repos and pipelines, audit access logs, and keep non-sensitive settings in ConfigMaps."
+      ],
+      "key_points": [
+        "Secrets in Git history are very hard to remove",
+        "Sealed Secrets: encrypted in Git, decrypted in cluster",
+        "ESO: pointer in Git, value stays in an external store",
+        "Restrict and audit access to repos, pipelines and secrets",
+        "ConfigMaps are for non-sensitive configuration only"
+      ],
+      "table": {
+        "caption": "Sealed Secrets versus External Secrets Operator",
+        "headers": [
+          "Criteria",
+          "Sealed Secrets",
+          "External Secrets Operator"
+        ],
+        "rows": [
+          [
+            "Setup",
+            "Simpler: controller plus kubeseal CLI",
+            "More involved: operator plus a connected secret store"
+          ],
+          [
+            "What is in Git",
+            "Encrypted secret data",
+            "Only a reference to the secret"
+          ],
+          [
+            "Developer workflow",
+            "Encrypt with kubeseal before commit",
+            "Commit a manifest, no special CLI"
+          ],
+          [
+            "Separation of concerns",
+            "Lower, encrypted data sits with code",
+            "Higher, Git holds nothing sensitive"
+          ],
+          [
+            "Best for",
+            "Self-contained, everything in Git",
+            "Existing secret managers and strict policies"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubeseal --format yaml < secret.yaml > sealed-secret.yaml",
+          "note": "Encrypt a Secret for the target cluster"
+        },
+        {
+          "cmd": "kubectl get externalsecret -A",
+          "note": "List ExternalSecret resources and their sync status"
+        }
+      ],
+      "follow_ups": [
+        "What happens to Sealed Secrets if the controller's private key is lost?",
+        "How does secret handling affect disaster recovery?"
+      ],
+      "pitfalls": [
+        "Base64-encoding a Secret and committing it. That is encoding, not encryption.",
+        "Assuming deleting a commit removes a leaked secret. Rotate it."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-secrets-gitops.html",
+        "title": "Sealed Secrets versus External Secrets Operator",
+        "ratio": "1000/460"
+      }
+    },
+    {
+      "id": "ch11-argocd-architecture",
+      "level": "mid",
+      "question": "What is Argo CD and what are its main components?",
+      "say_first": "Argo CD is a declarative GitOps continuous delivery tool for Kubernetes, made of an application controller, a repo server and an API server.",
+      "explain": [
+        "The application controller is the heart. It follows the standard Kubernetes controller pattern: compare live state against the target state from Git and take corrective action when they differ.",
+        "The repo server keeps a local cache of your Git repositories and generates the Kubernetes manifests, running Helm, Kustomize or plain YAML rendering. The cache avoids constant fetches.",
+        "The API server fronts the web UI, CLI and external integrations, and handles authentication and RBAC. Other GitOps tools such as Flux exist, but Argo CD is popular for its feature set and community."
+      ],
+      "key_points": [
+        "Application controller: compares and reconciles",
+        "Repo server: caches Git and renders manifests",
+        "API server: UI, CLI, automation, auth and RBAC",
+        "Applications are stored in the cluster as a custom resource"
+      ],
+      "table": {
+        "caption": "Argo CD components",
+        "headers": [
+          "Component",
+          "Role",
+          "Talks to"
+        ],
+        "rows": [
+          [
+            "Application controller",
+            "Diff live versus target, sync",
+            "Repo server, Kubernetes API"
+          ],
+          [
+            "Repo server",
+            "Fetch Git, render manifests",
+            "Git repositories"
+          ],
+          [
+            "API server",
+            "Serve UI, CLI, API; enforce RBAC",
+            "Users, controller, repo server"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl get pods -n argocd",
+          "note": "See the Argo CD components running"
+        },
+        {
+          "cmd": "argocd app list",
+          "note": "List applications managed by Argo CD"
+        }
+      ],
+      "follow_ups": [
+        "Which component would you scale first if rendering became slow?"
+      ],
+      "pitfalls": [
+        "Thinking the API server does the syncing. That is the controller's job."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-argocd-architecture.html",
+        "title": "Argo CD components",
+        "ratio": "1000/460"
+      }
+    },
+    {
+      "id": "ch11-argocd-concepts-sync",
+      "level": "mid",
+      "question": "Explain live state, target state, refresh and sync, and walk through what happens after a Git merge.",
+      "say_first": "Target state is what Git says, live state is what the cluster has, refresh compares them, and sync applies the difference. After a merge nothing is pushed; Argo CD notices, renders, compares and, if auto-sync is on, applies.",
+      "explain": [
+        "An application in Argo CD is a group of Kubernetes resources treated as one unit. Target state is the desired condition from Git (image versions, replicas, config). Live state is the real condition in the cluster. A refresh fetches the latest target and compares it with live; it finds differences but does not change anything. A sync actually applies them.",
+        "After a PR merges, Argo CD learns of the commit by webhook or its next poll. The API server asks the repo server to fetch that revision and render the manifests. The application controller then diffs desired against live.",
+        "If auto-sync is on (and no sync window blocks it), changes are applied in order, respecting sync waves and hooks, optionally pruning removed resources and self-healing drift. Health checks then run until the app is Synced and Healthy, with retries and backoff on failure. If auto-sync is off, the app simply shows OutOfSync until someone syncs it."
+      ],
+      "key_points": [
+        "Refresh = compare, sync = apply",
+        "Detection by webhook or polling, never by CI pushing in",
+        "Repo server renders, controller diffs and applies",
+        "Prune removes resources deleted from Git; self-heal reverts manual edits",
+        "Without auto-sync the app waits at OutOfSync"
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-sync-sequence.html",
+        "title": "Argo CD detect and sync",
+        "ratio": "1000/540"
+      },
+      "commands": [
+        {
+          "cmd": "argocd app get web --refresh",
+          "note": "Force a refresh and show sync and health status"
+        },
+        {
+          "cmd": "argocd app diff web",
+          "note": "Show the difference between live and target state"
+        },
+        {
+          "cmd": "argocd app sync web",
+          "note": "Apply the target state manually"
+        }
+      ],
+      "follow_ups": [
+        "What is the difference between prune and self-heal?",
+        "What are sync waves and hooks for?"
+      ],
+      "pitfalls": [
+        "Saying the refresh deploys changes. It only detects them."
+      ]
+    },
+    {
+      "id": "ch11-argocd-features-security",
+      "level": "senior",
+      "question": "What features make Argo CD suitable for teams, and how does it handle multi-tenancy, authorization and least privilege?",
+      "say_first": "It supports Helm, Kustomize, Jsonnet and plain YAML, single sign-on, RBAC, rollback and health checks, and uses AppProjects to isolate teams within one instance.",
+      "explain": [
+        "Argo CD renders Helm charts, Kustomize overlays, Jsonnet and plain YAML. It integrates with identity providers through OIDC, OAuth2, LDAP and SAML 2.0, and provides a web UI plus a CLI. It shows resource health, and rolling back means returning to a previously committed state.",
+        "An AppProject is the multi-tenancy unit. It restricts which source repos an application may use, which clusters and namespaces it may deploy to, which cluster-scoped kinds are allowed, and it can define sync windows and project roles. It is like giving each team its own fenced yard inside a shared field.",
+        "Apply least privilege: do not hand Argo CD blanket cluster-admin in production. Limit it to the namespaces it must manage, and use projects plus RBAC to control who can deploy what and where."
+      ],
+      "key_points": [
+        "Multiple config tools supported out of the box",
+        "SSO via OIDC, OAuth2, LDAP, SAML",
+        "RBAC for fine-grained permissions",
+        "AppProject scopes repos, destinations, resource kinds and windows",
+        "Avoid cluster-admin for the Argo CD instance in production"
+      ],
+      "commands": [
+        {
+          "cmd": "argocd proj create team-a --src 'https://github.com/your-org/team-a.git' --dest https://kubernetes.default.svc,team-a",
+          "note": "Create a project restricted to one repo and namespace"
+        },
+        {
+          "cmd": "argocd app rollback web",
+          "note": "Roll back to a previous deployed revision"
+        }
+      ],
+      "follow_ups": [
+        "How do you stop a team's app from deploying into another team's namespace?"
+      ],
+      "pitfalls": [
+        "Putting every application in the default project with no restrictions."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-argocd-features-security.html",
+        "title": "AppProject boundaries and least privilege",
+        "ratio": "1000/380"
+      }
+    },
+    {
+      "id": "ch11-argocd-use-cases",
+      "level": "senior",
+      "question": "What real-world scenarios is Argo CD used for (add-ons, self-service, promotion, disaster recovery, multi-cluster)?",
+      "say_first": "Bootstrapping cluster add-ons at scale, developer self-service on shared clusters, promoting versions across environments, rebuilding clusters after a disaster, and managing many clusters from one place.",
+      "explain": [
+        "Add-ons: a platform team uses generators with cluster labels to roll out things like the Prometheus Operator to tens or thousands of clusters, targeting subsets by selector, with manifests versioned in Git.",
+        "Self-service: developers keep manifests in their own repos; projects and RBAC bound where they may deploy, so they ship without asking an admin each time.",
+        "Promotion: changes go from feature branch to main, auto-deploy to dev, then staging and production by pointing the application at the new version, using branches or tags. Rollback means pointing back.",
+        "Disaster recovery: provision a new cluster, install Argo CD, point it at the repos and let it sync everything. This only works if Git is highly available, secrets live in an external store, provisioning is automated, and you rehearse the process.",
+        "Multi-cluster: one Argo CD instance can deploy the same app to many regions or split components across clusters."
+      ],
+      "key_points": [
+        "Labels and selectors target subsets of clusters",
+        "Projects and RBAC make self-service safe",
+        "Promotion is moving a version reference, rollback is moving it back",
+        "DR needs HA Git, external secrets, IaC and practice",
+        "One instance can manage many clusters"
+      ],
+      "table": {
+        "caption": "Use cases and what each depends on",
+        "headers": [
+          "Scenario",
+          "Key mechanism",
+          "Prerequisite"
+        ],
+        "rows": [
+          [
+            "Cluster add-ons",
+            "Generators plus cluster selectors",
+            "Clusters registered and labelled"
+          ],
+          [
+            "Developer self-service",
+            "AppProjects and RBAC",
+            "Per-team repos and namespaces"
+          ],
+          [
+            "Promotion",
+            "Branch, tag or overlay update",
+            "Environment-per-folder or repo layout"
+          ],
+          [
+            "Disaster recovery",
+            "Bootstrap Argo CD, resync from Git",
+            "HA Git, external secrets, IaC"
+          ],
+          [
+            "Multi-cluster",
+            "Multiple destinations in one instance",
+            "Cluster credentials registered"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "argocd cluster add my-context",
+          "note": "Register another cluster as a deployment target"
+        },
+        {
+          "cmd": "argocd cluster list",
+          "note": "Show clusters known to Argo CD"
+        }
+      ],
+      "follow_ups": [
+        "Outline a GitOps disaster recovery plan for a managed cluster such as EKS.",
+        "What data is not restored by a GitOps resync?"
+      ],
+      "pitfalls": [
+        "Forgetting that persistent volume data and secrets are not in Git and need their own backup path."
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-argocd-use-cases.html",
+        "title": "Argo CD use cases",
+        "ratio": "1000/480"
+      }
+    },
+    {
+      "id": "ch11-app-of-apps",
+      "level": "senior",
+      "question": "What is the App-of-Apps pattern and when would you use it?",
+      "say_first": "A root Argo CD application points at a Git folder full of other Application manifests, so syncing one app creates and manages a whole set of child apps.",
+      "explain": [
+        "It answers the question 'how do I manage the Argo CD applications themselves with GitOps?'. The root app does not deploy a Deployment; it deploys Application resources. Each child application then points to a folder of real manifests and deploys the workloads.",
+        "Think of a table of contents that is itself a chapter: sync it and every listed chapter appears. It gives you one place to watch and sync, logical grouping, and a way to bootstrap an entire environment from a single starting point.",
+        "Use it for bootstrapping new clusters, grouping related apps, and putting application definitions under Git control. It suits a known, finite list of apps."
+      ],
+      "key_points": [
+        "Root app creates child Application resources",
+        "Children deploy the real manifests",
+        "One sync entry point for a whole environment",
+        "Best for a known, finite set of applications",
+        "The Argo CD CRDs are served at argoproj.io/v1alpha1, which is the long-standing stable version"
+      ],
+      "diagram": {
+        "file": "diagrams/ch11-app-of-apps.html",
+        "title": "App-of-Apps",
+        "ratio": "1000/420"
+      },
+      "commands": [
+        {
+          "cmd": "kubectl apply -n argocd -f root-app.yaml",
+          "note": "Create the root application once; Git drives everything after that"
+        },
+        {
+          "cmd": "argocd app list -o name",
+          "note": "Confirm the child applications were created"
+        }
+      ],
+      "follow_ups": [
+        "What happens when you delete a child manifest from the root's folder with prune enabled?"
+      ],
+      "pitfalls": [
+        "Creating the root application in a namespace other than the one Argo CD watches. Applications must live in the Argo CD namespace (argocd by default).",
+        "Confusing the root app's source (Application manifests) with a child's source (workload manifests)."
+      ]
+    },
+    {
+      "id": "ch11-applicationset",
+      "level": "senior",
+      "question": "What is an ApplicationSet, and how does it differ from App-of-Apps?",
+      "say_first": "An ApplicationSet generates Argo CD Applications from a template plus generators, ideal when the set of apps is dynamic, such as one per cluster or per pull request.",
+      "explain": [
+        "You write one ApplicationSet with a template containing placeholders and one or more generators (list, cluster, git and others) that supply parameter values. For every set of parameters, Argo CD stamps out an Application and reconciles it. It is a cookie cutter: one shape, many cookies.",
+        "App-of-Apps is a hand-written list of Application files; you add a file for each new app. An ApplicationSet derives the list from data, so adding a cluster to the registry or a folder to the repo creates its Application automatically.",
+        "Choose ApplicationSet for multi-cluster rollouts, monorepo layouts that map folders to apps, self-service across teams on one Argo CD, and ephemeral preview environments per pull request."
+      ],
+      "key_points": [
+        "Generators produce parameters, the template consumes them",
+        "One definition yields many Applications",
+        "Good for multi-cluster, monorepo folders and per-PR previews",
+        "Removing an element removes its generated Application",
+        "App-of-Apps for known sets, ApplicationSet for generated sets"
+      ],
+      "table": {
+        "caption": "App-of-Apps versus ApplicationSet",
+        "headers": [
+          "Aspect",
+          "App-of-Apps",
+          "ApplicationSet"
+        ],
+        "rows": [
+          [
+            "How apps are defined",
+            "One manifest per child, written by hand",
+            "Template plus generators"
+          ],
+          [
+            "Best fit",
+            "Known, finite set of applications",
+            "Dynamic sets: clusters, folders, PRs"
+          ],
+          [
+            "Adding a new target",
+            "Add another Application file",
+            "Add a generator element or folder"
+          ],
+          [
+            "Complexity",
+            "Lower",
+            "Higher but far less repetition"
+          ],
+          [
+            "Typical use",
+            "Bootstrapping an environment",
+            "Multi-cluster and preview environments"
+          ]
+        ]
+      },
+      "diagram": {
+        "file": "diagrams/ch11-applicationset.html",
+        "title": "ApplicationSet versus App-of-Apps",
+        "ratio": "1000/400"
+      },
+      "commands": [
+        {
+          "cmd": "kubectl get applicationset -n argocd",
+          "note": "List ApplicationSets"
+        },
+        {
+          "cmd": "kubectl get applications -n argocd",
+          "note": "See the Applications that were generated"
+        }
+      ],
+      "follow_ups": [
+        "How would you create a preview environment for every pull request?",
+        "Can the two patterns be combined?"
+      ],
+      "pitfalls": [
+        "Using an ApplicationSet for three static apps. App-of-Apps is simpler.",
+        "Forgetting that deleting an element can delete the generated app and its resources unless you set a deletion policy."
+      ]
+    }
+  ],
+  "diagrams": [
+    "diagrams/ch11-pull-model.html",
+    "diagrams/ch11-gitops-benefits.html",
+    "diagrams/ch11-declarative-immutable.html",
+    "diagrams/ch11-gitops-workflow-setup.html",
+    "diagrams/ch11-repo-structure.html",
+    "diagrams/ch11-helm-vs-kustomize-gitops.html",
+    "diagrams/ch11-promotion-strategies.html",
+    "diagrams/ch11-secrets-gitops.html",
+    "diagrams/ch11-argocd-architecture.html",
+    "diagrams/ch11-sync-sequence.html",
+    "diagrams/ch11-argocd-features-security.html",
+    "diagrams/ch11-argocd-use-cases.html",
+    "diagrams/ch11-app-of-apps.html",
+    "diagrams/ch11-applicationset.html"
+  ]
+}

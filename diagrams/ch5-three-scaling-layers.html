@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why scale the cluster too</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75; --color-accent:#eb6c36;
+      --font-sans:'Geist', system-ui, sans-serif; --font-serif:'Instrument Serif', serif; --font-mono:'Geist Mono', ui-monospace, monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1200px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:0.66rem; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:0.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight:400; letter-spacing:-0.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Autoscaling · Why nodes</p>
+    <h1>Why scale the cluster too</h1>
+    <svg viewBox="0 0 1000 368" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch5-three-scaling-layers-title ch5-three-scaling-layers-desc">
+      <title id="ch5-three-scaling-layers-title">Why scale the cluster too</title>
+      <desc id="ch5-three-scaling-layers-desc">HPA changes replica count and VPA changes Pod size, but Pods need nodes; when nodes are full Pods go Pending and the node autoscaler changes machine count.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M210,100 L304,100 Q312,100 312,108 L312,136 Q312,144 320,144 L415,144" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="223" y="83" width="78" height="12" rx="2" fill="#f5f5f5"/>
+<text x="262" y="92" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MORE REPLICAS</text>
+<path d="M210,212 L304,212 Q312,212 312,204 L312,176 Q312,168 320,168 L415,168" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="218" y="195" width="89" height="12" rx="2" fill="#f5f5f5"/>
+<text x="262" y="204" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BIGGER REQUESTS</text>
+<path d="M585,156 L790,156" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="637" y="139" width="100" height="12" rx="2" fill="#f5f5f5"/>
+<text x="687" y="148" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO ROOM = PENDING</text>
+<path d="M875,256 L875,192" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<rect x="880" y="219" width="84" height="12" rx="2" fill="#f5f5f5"/>
+<text x="884" y="228" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">ADDS / REMOVES</text>
+<rect x="40" y="64" width="170" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="64" width="170" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="125.0" y="98" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">HPA</text>
+<text x="125.0" y="114" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">changes Pod count</text>
+<rect x="40" y="176" width="170" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="176" width="170" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="125.0" y="210" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">VPA</text>
+<text x="125.0" y="226" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">changes Pod size</text>
+<rect x="415" y="120" width="170" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="415" y="120" width="170" height="72" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="500.0" y="154" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pods</text>
+<text x="500.0" y="170" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">need a node to run on</text>
+<rect x="790" y="120" width="170" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="790" y="120" width="170" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="875.0" y="154" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Nodes</text>
+<text x="875.0" y="170" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">fixed capacity</text>
+<rect x="790" y="256" width="170" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="790" y="256" width="170" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="875.0" y="290" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Node autoscaler</text>
+<text x="875.0" y="306" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">changes machine count</text>
+<line x1="30" y1="340" x2="970" y2="340" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="30" y="356" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<line x1="120" y1="353" x2="144" y2="353" stroke="#4f5d75" stroke-width="1.2"/>
+<text x="152" y="357" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text>
+<rect x="208" y="348" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36"/>
+<text x="240" y="357" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">focal node</text>
+    </svg>
+  </div>
+</body>
+</html>

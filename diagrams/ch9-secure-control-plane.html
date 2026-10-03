@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control plane: one guarded front door</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Cluster security</p>
+    <h1>Control plane: one guarded front door</h1>
+
+    <svg viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch9-secure-control-plane-title ch9-secure-control-plane-desc">
+      <title id="ch9-secure-control-plane-title">Control plane: one guarded front door</title>
+      <desc id="ch9-secure-control-plane-desc">Clients authenticate to the API server, which talks to etcd and the scheduler over TLS and writes an audit log.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M200 180 L320 180" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="219" y="162" width="82" height="12" rx="2" fill="#f5f5f5"/><text x="260" y="171" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">AUTHN + RBAC</text><path d="M520 164 L612 164 Q620 164 620 156 L620 100 Q620 92 628 92 L720 92" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="555.5" y="146" width="29" height="12" rx="2" fill="#f5f5f5"/><text x="570" y="155" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TLS</text><path d="M520 196 L612 196 Q620 196 620 204 L620 260 Q620 268 628 268 L720 268" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="555.5" y="178" width="29" height="12" rx="2" fill="#f5f5f5"/><text x="570" y="187" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TLS</text><path d="M420 228 L420 308" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="428" y="262" width="47" height="12" rx="2" fill="#f5f5f5"/><text x="451.5" y="271" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LOGGED</text><rect x="40" y="148" width="160" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="148" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="156" width="31" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="63.5" y="165" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USER</text><text x="120" y="176" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Client</text><text x="120" y="192" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">certs, tokens, OIDC</text><rect x="320" y="132" width="200" height="96" rx="6" fill="#f5f5f5"/><rect x="320" y="132" width="200" height="96" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="328" y="140" width="36" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="346" y="149" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ENTRY</text><text x="420" y="168" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">API server</text><text x="420" y="184" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">front door</text><text x="420" y="197" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">strictest access rules</text><rect x="720" y="52" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="720" y="52" width="240" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="728" y="60" width="36" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="746" y="69" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text><text x="840" y="88" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">etcd</text><text x="840" y="104" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">encrypted at rest, backed up</text><rect x="720" y="228" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="720" y="228" width="240" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="728" y="236" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="749" y="245" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ACTORS</text><text x="840" y="264" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Scheduler + controllers</text><text x="840" y="280" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">act on what records say</text><rect x="320" y="308" width="200" height="64" rx="6" fill="#f5f5f5"/><rect x="320" y="308" width="200" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="328" y="316" width="36" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="346" y="325" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">AUDIT</text><text x="420" y="336" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Audit log</text><text x="420" y="352" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">review after the fact</text><line x1="30" y1="404" x2="970" y2="404" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="420" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="416" x2="148" y2="416" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="419" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">protected path</text><rect x="266" y="410" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="302" y="419" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">API server: single entry point</text>
+    </svg>
+  </div>
+</body>
+</html>

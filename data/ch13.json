@@ -1,0 +1,880 @@
+{
+  "number": 13,
+  "title": "Ensuring High Availability and Reliability",
+  "part": "Part 5 · Reliability, Monitoring and Maintenance",
+  "tagline": "Keep the control plane, nodes and applications up through failures",
+  "overview": "This chapter separates high availability, reliability and resiliency, then applies them layer by layer. It covers a redundant control plane with a load balancer and an etcd cluster that keeps quorum, then protects workloads with node pools, autoscaling, affinity, taints, topology spread constraints and PodDisruptionBudgets, ending with a safe node maintenance routine.",
+  "topics": [
+    {
+      "id": "ch13-ha-vs-reliability-vs-resiliency",
+      "level": "junior",
+      "question": "What is the difference between high availability, reliability and resiliency?",
+      "say_first": "High availability means the service stays reachable when parts fail, reliability means it behaves correctly and consistently while it is up, and resiliency means it recovers quickly after something breaks.",
+      "explain": [
+        "Picture a shop. High availability is having several tills so the shop never has to close when one breaks. Reliability is whether the tills are fast and give the right change on a busy Saturday. Resiliency is how quickly the shop gets back to normal after a till, or the whole card reader, dies.",
+        "In Kubernetes terms, running three replicas spread over different nodes is availability. Sensible resource requests, probes and load testing so checkout does not crawl on a sale day is reliability. Self-healing restarts, a replicated database and fallbacks such as a cache is resiliency.",
+        "You can have one without the others: a site can be up around the clock yet slow and buggy (available, not reliable), or go down often but bounce back in seconds (resilient, not highly available)."
+      ],
+      "key_points": [
+        "Availability = is it reachable at all.",
+        "Reliability = does it work correctly and consistently over time.",
+        "Resiliency = how fast and how gracefully it recovers.",
+        "Kubernetes gives you building blocks for all three, but you must configure them.",
+        "Interviewers like a concrete example of one being present while another is missing."
+      ],
+      "table": {
+        "caption": "Three ideas side by side",
+        "headers": [
+          "Idea",
+          "Question it answers",
+          "Kubernetes tools that help"
+        ],
+        "rows": [
+          [
+            "High availability",
+            "Can users still reach it when something fails?",
+            "Replicas, multiple control plane nodes, spread across zones, PDBs"
+          ],
+          [
+            "Reliability",
+            "Does it work correctly and steadily under load?",
+            "Resource requests and limits, probes, autoscaling, load testing"
+          ],
+          [
+            "Resiliency",
+            "How quickly does it bounce back after a failure?",
+            "Self-healing restarts, rolling updates, replicated data, backups"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "How would you measure each of the three?",
+        "Which Kubernetes features map to each one?"
+      ],
+      "pitfalls": [
+        "Treating 'the Pods are Running' as proof the application is reliable.",
+        "Using the three words as synonyms."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-ha-vs-reliability-vs-resiliency.html",
+        "title": "Availability, reliability and resiliency",
+        "ratio": "960/388"
+      }
+    },
+    {
+      "id": "ch13-nines-of-availability",
+      "level": "junior",
+      "question": "What do 'three nines' and 'four nines' mean, and why is each extra nine so much harder?",
+      "say_first": "The nines describe the percentage of time a service is up; each extra nine cuts the allowed downtime by a factor of ten, so the engineering and cost needed grow steeply.",
+      "explain": [
+        "Availability is uptime divided by total time. Over a year, 99.9% leaves about 8.8 hours of downtime, while 99.99% leaves only about 53 minutes.",
+        "Going from 99% to 99.9% is not a 1% improvement; the allowed outage shrinks ten times. At that level a single human-paced recovery, like paging someone and restarting a node, already uses up the whole budget, so you need automation and redundancy at every layer.",
+        "The number also depends on the whole chain. If your app needs a load balancer, a database and the cluster, and each is 99.9%, the combined figure is lower than any one of them because the failure chances multiply."
+      ],
+      "key_points": [
+        "Allowed downtime per year: 90% is 36.5 days, 99% is 3.65 days, 99.9% is 8.77 hours, 99.99% is 52.6 minutes, 99.999% is 5.26 minutes.",
+        "Each nine is roughly 10x less downtime and much more cost.",
+        "Dependencies in series lower the overall availability.",
+        "Planned maintenance usually counts unless the target excludes it, so ask how the SLA is defined."
+      ],
+      "table": {
+        "caption": "Permitted downtime per year",
+        "headers": [
+          "Availability",
+          "Name",
+          "Downtime per year"
+        ],
+        "rows": [
+          [
+            "90%",
+            "one nine",
+            "36.5 days"
+          ],
+          [
+            "99%",
+            "two nines",
+            "3.65 days"
+          ],
+          [
+            "99.9%",
+            "three nines",
+            "8.77 hours"
+          ],
+          [
+            "99.99%",
+            "four nines",
+            "52.56 minutes"
+          ],
+          [
+            "99.999%",
+            "five nines",
+            "5.26 minutes"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "How would a serial chain of three 99.9% components perform overall?",
+        "What is the difference between an SLA, an SLO and an SLI?"
+      ],
+      "pitfalls": [
+        "Promising five nines without redundancy at every layer, including the network and the cloud region."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-nines-of-availability.html",
+        "title": "Each extra nine cuts downtime tenfold",
+        "ratio": "960/340"
+      }
+    },
+    {
+      "id": "ch13-control-plane-ha",
+      "level": "mid",
+      "question": "How do you make the Kubernetes control plane highly available?",
+      "say_first": "Run at least three control plane nodes behind a load balancer, with etcd clustered so it keeps quorum when one member fails.",
+      "explain": [
+        "The control plane is the cluster's brain: API server, scheduler, controller manager and etcd. If it is down, running Pods usually keep serving traffic, but nobody can deploy, scale, or heal anything, so a single control plane node is a single point of failure.",
+        "In a highly available setup every control plane node runs its own API server. The scheduler and controller manager run on each node too, but use leader election so only one instance is active at a time while the others wait as standbys.",
+        "Clients and kubelets do not talk to one node directly. They talk to a stable endpoint, normally a load balancer DNS name, configured in kubeadm as controlPlaneEndpoint. If a node dies, the load balancer stops sending traffic to it.",
+        "Spread the control plane nodes across failure zones where you can, and use an odd number so a majority always exists."
+      ],
+      "key_points": [
+        "Three control plane nodes tolerates one failure; five tolerates two.",
+        "All API servers are active at once; scheduler and controller manager use leader election.",
+        "Use a stable endpoint (controlPlaneEndpoint) in front of the API servers.",
+        "Running workloads survive a short control plane outage, but changes and self-healing stop.",
+        "On managed services (EKS, GKE, AKS) the provider runs this for you."
+      ],
+      "commands": [
+        {
+          "cmd": "kubeadm init --control-plane-endpoint \"lb.example.com:6443\" --upload-certs",
+          "note": "Initialise the first node against a load balancer endpoint and share certs for joiners"
+        },
+        {
+          "cmd": "kubectl get lease -n kube-system kube-scheduler kube-controller-manager",
+          "note": "See which instance currently holds each leader-election lease"
+        },
+        {
+          "cmd": "kubectl get nodes -l node-role.kubernetes.io/control-plane",
+          "note": "List the control plane nodes"
+        }
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-control-plane-ha.html",
+        "title": "Highly available control plane",
+        "ratio": "960/416"
+      },
+      "follow_ups": [
+        "Why an odd number of control plane nodes?",
+        "What still works when the whole control plane is down?"
+      ],
+      "pitfalls": [
+        "Saying all control plane components are active-active; two of them are leader-elected.",
+        "Pointing kubelets at one node's IP instead of a shared endpoint."
+      ]
+    },
+    {
+      "id": "ch13-api-server-load-balancing",
+      "level": "mid",
+      "question": "Why do you need a load balancer in front of the API servers, and how should it be configured?",
+      "say_first": "The load balancer gives clients one stable address and sends requests only to healthy API servers, so losing a control plane node is invisible to users and kubelets.",
+      "explain": [
+        "Without it, every client would have to know every API server and pick a working one by itself. That breaks kubeconfig files, kubelets and in-cluster components whenever a node is replaced.",
+        "A simple layer 4 (TCP) load balancer is enough. It forwards TCP traffic to port 6443 and leaves the TLS session untouched, so client certificate authentication still works end to end.",
+        "Configure a health check against each API server. A TCP check on 6443 is the minimum; an HTTPS check on /readyz is better because it tells you whether the server is actually ready, not just listening.",
+        "The load balancer itself must not become the new single point of failure, so use a managed, multi-zone one (a cloud network load balancer) or a redundant pair with a floating IP such as keepalived with HAProxy."
+      ],
+      "key_points": [
+        "Layer 4 TCP forwarding on port 6443 is the common choice.",
+        "Health-check the servers; prefer /readyz over a bare port check.",
+        "Put the stable DNS name in the certificate SANs and in controlPlaneEndpoint.",
+        "The load balancer must be redundant too.",
+        "Managed Kubernetes hides all of this."
+      ],
+      "commands": [
+        {
+          "cmd": "curl -k https://<api-server-ip>:6443/readyz?verbose",
+          "note": "Check readiness of one API server, the endpoint a health check should use"
+        },
+        {
+          "cmd": "kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'",
+          "note": "Confirm kubeconfig points at the load balancer, not a single node"
+        }
+      ],
+      "follow_ups": [
+        "What goes wrong if the API server certificate does not include the load balancer name?",
+        "Could you use DNS round robin instead of a load balancer?"
+      ],
+      "pitfalls": [
+        "Forgetting health checks, so traffic still goes to a dead node.",
+        "Terminating TLS at the load balancer and breaking client certificate authentication."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-api-server-load-balancing.html",
+        "title": "Load balancer in front of the API servers",
+        "ratio": "960/416"
+      }
+    },
+    {
+      "id": "ch13-etcd-quorum",
+      "level": "mid",
+      "question": "What is quorum in etcd, and how many members do you need?",
+      "say_first": "Quorum is the majority of members that must agree before a write is committed; with three members you need two, so you can lose one and keep working.",
+      "explain": [
+        "Think of a committee vote. A decision only counts if more than half the committee agrees. That rule stops two halves of a split committee from making opposite decisions, which in a database would corrupt data.",
+        "The formula is majority = floor(n / 2) + 1. Three members need two, five need three, seven need four. Fault tolerance is members minus quorum, so 3 members tolerate 1 failure, 5 tolerate 2, 7 tolerate 3.",
+        "A single member has quorum of 1 and tolerates zero failures, so it is fine for a lab but not for production.",
+        "An even number adds cost without adding tolerance: four members still need three for a majority, so they tolerate only one failure, the same as three. That is why clusters use odd numbers.",
+        "When quorum is lost, etcd stops accepting writes, so the API server can only serve stale reads or fails outright. Existing Pods keep running, but nothing can change."
+      ],
+      "key_points": [
+        "Quorum = floor(n/2) + 1.",
+        "Odd sizes are best: 3 or 5 in practice.",
+        "More members means slower writes because more must acknowledge.",
+        "Lose quorum and etcd stops accepting writes and cannot serve consistent reads, so the cluster cannot change.",
+        "Members must sit in separate failure domains or quorum protects you from nothing."
+      ],
+      "table": {
+        "caption": "etcd quorum and fault tolerance",
+        "headers": [
+          "Members",
+          "Quorum needed",
+          "Failures tolerated"
+        ],
+        "rows": [
+          [
+            "1",
+            "1",
+            "0"
+          ],
+          [
+            "3",
+            "2",
+            "1"
+          ],
+          [
+            "4",
+            "3",
+            "1"
+          ],
+          [
+            "5",
+            "3",
+            "2"
+          ],
+          [
+            "7",
+            "4",
+            "3"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "etcdctl endpoint status --cluster -w table",
+          "note": "Show each member, who is the leader and the DB size"
+        },
+        {
+          "cmd": "etcdctl member list -w table",
+          "note": "List members and their peer URLs"
+        }
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-etcd-quorum.html",
+        "title": "Three-member etcd with one member down",
+        "ratio": "960/476"
+      },
+      "follow_ups": [
+        "Why not use four or six members?",
+        "What do you do if quorum is permanently lost?"
+      ],
+      "pitfalls": [
+        "Thinking 1 member tolerates 1 failure; it tolerates none.",
+        "Spreading members across only two zones, where one zone outage can take the majority."
+      ]
+    },
+    {
+      "id": "ch13-etcd-backup-topology",
+      "level": "senior",
+      "question": "How do you protect etcd data, and should etcd be stacked or external?",
+      "say_first": "Take regular snapshots and keep them off the cluster, test restoring them, and pick stacked etcd for simplicity or external etcd when you want to fail control plane nodes and etcd independently.",
+      "explain": [
+        "Replication is not a backup. If someone deletes a namespace, that deletion is replicated to every member instantly. Only a snapshot taken earlier lets you go back.",
+        "Use etcdctl snapshot save on a schedule, with the endpoint and the client certificates, and copy the file to object storage in another location. Check it with a status command and, more importantly, practise a restore.",
+        "Topology is a trade-off. In a stacked topology, each control plane node also runs an etcd member. It is simple and needs fewer machines, but losing a node loses both a control plane instance and an etcd member together. In an external topology etcd runs on its own machines, so the two tiers fail and scale separately, at the cost of more servers to run and secure.",
+        "External is not required for high availability. A three-node stacked cluster is a common and valid setup; choose external when your failure-isolation or performance needs justify the extra machines."
+      ],
+      "key_points": [
+        "Snapshots are your protection against mistakes and corruption; replication is not.",
+        "Store backups off-cluster and test restores regularly.",
+        "Restores use etcdutl snapshot restore in current releases (etcdctl's restore command is deprecated).",
+        "Stacked = fewer nodes, coupled failures. External = independent tiers, more to operate.",
+        "Managed services back up etcd for you, but check retention."
+      ],
+      "table": {
+        "caption": "Stacked versus external etcd",
+        "headers": [
+          "Aspect",
+          "Stacked",
+          "External"
+        ],
+        "rows": [
+          [
+            "Machines needed",
+            "Fewer, etcd shares control plane nodes",
+            "More, a separate etcd group"
+          ],
+          [
+            "Failure coupling",
+            "Node loss removes an API server and an etcd member",
+            "Each tier fails independently"
+          ],
+          [
+            "Operational effort",
+            "Lower, kubeadm handles it",
+            "Higher, you manage etcd lifecycle and certs"
+          ],
+          [
+            "Typical use",
+            "Most clusters",
+            "Very large or strict isolation needs"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "ETCDCTL_API=3 etcdctl snapshot save /backup/etcd.db \\\n  --endpoints=https://127.0.0.1:2379 \\\n  --cacert=/etc/kubernetes/pki/etcd/ca.crt \\\n  --cert=/etc/kubernetes/pki/etcd/server.crt \\\n  --key=/etc/kubernetes/pki/etcd/server.key",
+          "note": "Save a snapshot on a kubeadm control plane node"
+        },
+        {
+          "cmd": "etcdutl snapshot status /backup/etcd.db -w table",
+          "note": "Verify the snapshot hash, revision and size"
+        },
+        {
+          "cmd": "etcdutl snapshot restore /backup/etcd.db --data-dir /var/lib/etcd-restored",
+          "note": "Restore into a fresh data directory"
+        }
+      ],
+      "follow_ups": [
+        "How do you restore from a snapshot on a kubeadm cluster?",
+        "Does a snapshot capture Persistent Volume data?"
+      ],
+      "pitfalls": [
+        "Assuming a three-member cluster does not need backups.",
+        "Never testing the restore until the real outage.",
+        "Expecting an etcd snapshot to include application data in volumes; it holds only API objects."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-etcd-backup-topology.html",
+        "title": "Stacked versus external etcd, and backups",
+        "ratio": "960/400"
+      }
+    },
+    {
+      "id": "ch13-node-pools",
+      "level": "junior",
+      "question": "What are node pools and how do they help availability and performance?",
+      "say_first": "A node pool is a group of nodes with the same machine type and labels, so you can put each kind of workload on hardware that suits it and scale each group separately.",
+      "explain": [
+        "Think of teams in a company. You would not put the number-crunching team and the caching team in one room fighting over the same desks. Node pools give each workload type its own room.",
+        "Typical pools are general purpose, memory-heavy, GPU, and spot or preemptible for cheap, interruptible work. Cloud providers call them node groups or node pools; on your own hardware the same idea is just consistent labels.",
+        "You target a pool from a Pod with a nodeSelector, node affinity, or taints and tolerations. Separation stops a noisy batch job from starving a latency-sensitive service, and each pool can have its own autoscaling limits."
+      ],
+      "key_points": [
+        "A pool is a set of nodes with identical shape and labels.",
+        "Separate pools avoid resource contention between different workload types.",
+        "Pools scale independently, which keeps costs predictable.",
+        "Use several pools across zones so one zone loss does not empty a pool.",
+        "Target pools with nodeSelector, affinity, or taints."
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl label node node1 workload=compute",
+          "note": "Label a node as part of the compute pool"
+        },
+        {
+          "cmd": "kubectl get nodes -L workload,topology.kubernetes.io/zone",
+          "note": "Show pool and zone labels as columns"
+        },
+        {
+          "cmd": "kubectl run cache --image=redis --overrides='{\"spec\":{\"nodeSelector\":{\"workload\":\"memory\"}}}'",
+          "note": "Pin a Pod to the memory pool with a nodeSelector"
+        }
+      ],
+      "follow_ups": [
+        "How would you keep general workloads off a GPU pool?",
+        "Why run system add-ons in their own pool?"
+      ],
+      "pitfalls": [
+        "Mixing CPU-bound and memory-bound workloads on one pool and then wondering about noisy neighbours."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-node-pools.html",
+        "title": "Node pools for each kind of workload",
+        "ratio": "960/388"
+      }
+    },
+    {
+      "id": "ch13-autoscaling-for-ha",
+      "level": "mid",
+      "question": "How does autoscaling contribute to availability, and how do HPA, Cluster Autoscaler and Karpenter fit together?",
+      "say_first": "HPA adds Pod replicas when load rises, and a node autoscaler adds machines when those Pods have nowhere to run, so capacity follows demand instead of running out.",
+      "explain": [
+        "There are two layers. The Horizontal Pod Autoscaler changes the replica count of a Deployment based on metrics such as CPU. If the new Pods cannot fit, they sit Pending.",
+        "That Pending state is the trigger for the node layer. The Cluster Autoscaler notices unschedulable Pods and grows a node group; Karpenter does the same but picks suitable instance types directly instead of being tied to pre-defined groups, and it can consolidate underused nodes.",
+        "Scale-down is where availability can suffer, so pair autoscaling with PDBs. The autoscaler respects PDBs when it drains a node, which stops it removing too many replicas at once.",
+        "Autoscaling takes time. Node start-up can take minutes, so keep some headroom, set sensible minimum replicas, and do not treat it as instant protection from a spike."
+      ],
+      "key_points": [
+        "HPA scales Pods; Cluster Autoscaler or Karpenter scales nodes.",
+        "Pending Pods caused by lack of capacity are the signal for node scale-up.",
+        "PDBs make scale-down safe.",
+        "Resource requests must be set, or HPA percentage targets and scheduling make no sense.",
+        "Keep a minimum replica count of at least two for anything important."
+      ],
+      "table": {
+        "caption": "Scaling tools compared",
+        "headers": [
+          "Tool",
+          "Scales",
+          "Trigger",
+          "Notes"
+        ],
+        "rows": [
+          [
+            "HPA",
+            "Pod replicas",
+            "Metrics such as CPU, memory, custom",
+            "Needs resource requests for utilisation targets"
+          ],
+          [
+            "Cluster Autoscaler",
+            "Nodes in a pre-defined group",
+            "Pending Pods, idle nodes",
+            "Works through cloud node groups"
+          ],
+          [
+            "Karpenter",
+            "Nodes, chosen on demand",
+            "Pending Pods, consolidation",
+            "Picks instance types itself, fast provisioning"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl autoscale deployment web --min=3 --max=10 --cpu-percent=70",
+          "note": "Create an HPA with a safe minimum replica count"
+        },
+        {
+          "cmd": "kubectl get hpa",
+          "note": "Watch current versus target metrics and replica counts"
+        }
+      ],
+      "follow_ups": [
+        "Why might HPA scale Pods but the app still fail?",
+        "How does Karpenter differ from the Cluster Autoscaler?"
+      ],
+      "pitfalls": [
+        "Expecting autoscaling to react instantly to a sudden spike.",
+        "Setting HPA on CPU percentage without defining CPU requests."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-autoscaling-for-ha.html",
+        "title": "Pod and node autoscaling working together",
+        "ratio": "960/352"
+      }
+    },
+    {
+      "id": "ch13-node-affinity",
+      "level": "mid",
+      "question": "What is node affinity and how does it differ from a nodeSelector?",
+      "say_first": "Node affinity lets a Pod say which nodes it may or prefers to run on, based on node labels, with richer operators than a simple nodeSelector match.",
+      "explain": [
+        "A nodeSelector is a single yes-or-no match such as disktype=ssd. Node affinity is the more expressive version: you can use In, NotIn, Exists, Gt and Lt, and you can make a rule either a hard requirement or a soft preference.",
+        "requiredDuringSchedulingIgnoredDuringExecution is the hard rule: if no node matches, the Pod stays Pending. preferredDuringSchedulingIgnoredDuringExecution is a weighted hint: the scheduler tries to honour it but will place the Pod elsewhere if it must.",
+        "'IgnoredDuringExecution' means the rule is checked only at scheduling time. If a node's label changes later, Pods already running are not evicted."
+      ],
+      "key_points": [
+        "Required = hard rule, Pod stays Pending if unmet.",
+        "Preferred = weighted preference, scheduler may ignore it.",
+        "Rules are evaluated only when scheduling, not for running Pods.",
+        "Operators: In, NotIn, Exists, DoesNotExist, Gt, Lt.",
+        "Affinity attracts Pods to nodes; it does not stop other Pods using those nodes, that is what taints do."
+      ],
+      "table": {
+        "caption": "Required versus preferred node affinity",
+        "headers": [
+          "Type",
+          "Behaviour if no node matches",
+          "Typical use"
+        ],
+        "rows": [
+          [
+            "requiredDuringSchedulingIgnoredDuringExecution",
+            "Pod stays Pending",
+            "Must have SSD or GPU"
+          ],
+          [
+            "preferredDuringSchedulingIgnoredDuringExecution",
+            "Scheduled elsewhere",
+            "Prefer a cheaper pool but allow others"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "affinity:\n  nodeAffinity:\n    requiredDuringSchedulingIgnoredDuringExecution:\n      nodeSelectorTerms:\n      - matchExpressions:\n        - key: disktype\n          operator: In\n          values: [\"ssd\"]",
+          "note": "Pod spec fragment: run only on SSD nodes"
+        },
+        {
+          "cmd": "kubectl get nodes -l disktype=ssd",
+          "note": "Check which nodes would match"
+        }
+      ],
+      "follow_ups": [
+        "How would you combine node affinity with taints for a GPU pool?",
+        "What happens to a running Pod if the node label it required is removed?"
+      ],
+      "pitfalls": [
+        "Using a required rule when a preferred one would do, leaving Pods Pending.",
+        "Forgetting that affinity does not keep other Pods away from a node."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-node-affinity.html",
+        "title": "Required versus preferred node affinity",
+        "ratio": "960/388"
+      }
+    },
+    {
+      "id": "ch13-pod-anti-affinity",
+      "level": "mid",
+      "question": "How do you stop all replicas of a service from landing on the same node?",
+      "say_first": "Use Pod anti-affinity with a label selector and the hostname topology key, so replicas with the same label repel each other across nodes.",
+      "explain": [
+        "By default the scheduler balances load but does not promise to spread replicas by node. Several replicas may share one machine, and if that machine fails the whole service goes with it.",
+        "Pod anti-affinity says: do not schedule me on a node, or zone, where a Pod matching this selector already runs. The topologyKey defines what 'same place' means. kubernetes.io/hostname means same node; topology.kubernetes.io/zone means same zone.",
+        "A hard (required) anti-affinity rule with more replicas than nodes leaves the extra Pods Pending. For most services the preferred form is safer, because it spreads when it can and still schedules when it cannot.",
+        "Pod affinity is the mirror image: it pulls Pods together, for example a web server next to its cache, to cut latency. Use it sparingly because it reduces flexibility."
+      ],
+      "key_points": [
+        "Anti-affinity spreads; affinity co-locates.",
+        "topologyKey decides whether 'together' means node, zone or region.",
+        "Required anti-affinity can leave Pods Pending once replicas exceed domains.",
+        "Inter-Pod rules are more expensive for the scheduler on very large clusters.",
+        "For even spread, topology spread constraints are usually a better fit."
+      ],
+      "commands": [
+        {
+          "cmd": "affinity:\n  podAntiAffinity:\n    preferredDuringSchedulingIgnoredDuringExecution:\n    - weight: 100\n      podAffinityTerm:\n        labelSelector:\n          matchLabels:\n            app: web-store\n        topologyKey: kubernetes.io/hostname",
+          "note": "Prefer different nodes for web-store replicas"
+        },
+        {
+          "cmd": "kubectl get pods -l app=web-store -o wide",
+          "note": "Confirm the replicas landed on different nodes"
+        }
+      ],
+      "follow_ups": [
+        "What happens with 5 replicas, required anti-affinity and 3 nodes?",
+        "When would you want Pod affinity?"
+      ],
+      "pitfalls": [
+        "Using required anti-affinity by reflex and blocking rollouts or scale-ups.",
+        "Putting the wrong label in the selector so the rule never matches anything."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-pod-anti-affinity.html",
+        "title": "Anti-affinity spreads replicas across nodes",
+        "ratio": "960/384"
+      }
+    },
+    {
+      "id": "ch13-taints-and-tolerations",
+      "level": "mid",
+      "question": "Explain taints and tolerations, and how they differ from affinity.",
+      "say_first": "A taint on a node repels Pods unless they carry a matching toleration; affinity pulls Pods towards nodes, taints push unwanted Pods away.",
+      "explain": [
+        "Picture a reserved car park: a sign on the gate (the taint) keeps everyone out, and only cars with a permit (the toleration) may enter. A permit does not force a car to park there; it only allows it. To make the GPU jobs actually choose the GPU nodes, add node affinity or a nodeSelector as well.",
+        "A taint has a key, an optional value and an effect. NoSchedule stops new Pods, PreferNoSchedule is a soft version, and NoExecute also evicts running Pods that do not tolerate it.",
+        "Kubernetes uses NoExecute itself. When a node becomes unreachable, the control plane adds not-ready and unreachable taints, and Pods are evicted after their tolerationSeconds, which defaults to 300 seconds, so workloads move off a dead node.",
+        "Common uses: dedicate GPU or high-memory nodes, keep workloads off control plane nodes, and cordon-like isolation for maintenance."
+      ],
+      "key_points": [
+        "Taints go on nodes; tolerations go on Pods.",
+        "A toleration permits but does not attract.",
+        "Pair taints with node affinity for truly dedicated nodes.",
+        "NoExecute evicts existing Pods; NoSchedule affects only new ones.",
+        "Remove a taint with a trailing minus sign."
+      ],
+      "table": {
+        "caption": "Taint effects",
+        "headers": [
+          "Effect",
+          "New Pods",
+          "Running Pods"
+        ],
+        "rows": [
+          [
+            "NoSchedule",
+            "Blocked unless tolerated",
+            "Left alone"
+          ],
+          [
+            "PreferNoSchedule",
+            "Avoided if possible",
+            "Left alone"
+          ],
+          [
+            "NoExecute",
+            "Blocked unless tolerated",
+            "Evicted unless tolerated"
+          ]
+        ]
+      },
+      "commands": [
+        {
+          "cmd": "kubectl taint nodes node1 gpu=true:NoSchedule",
+          "note": "Dedicate node1 to tolerating Pods"
+        },
+        {
+          "cmd": "kubectl taint nodes node1 gpu=true:NoSchedule-",
+          "note": "Remove that taint"
+        },
+        {
+          "cmd": "tolerations:\n- key: \"gpu\"\n  operator: \"Equal\"\n  value: \"true\"\n  effect: \"NoSchedule\"",
+          "note": "Pod spec fragment that tolerates the taint"
+        },
+        {
+          "cmd": "kubectl describe node node1 | grep -i taints",
+          "note": "Show the taints on a node"
+        }
+      ],
+      "follow_ups": [
+        "Why do control plane nodes normally have a taint?",
+        "What is the difference between kubectl cordon and a NoSchedule taint?"
+      ],
+      "pitfalls": [
+        "Thinking a toleration forces a Pod onto the tainted node.",
+        "Using NoExecute by accident and evicting running workloads."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-taints-and-tolerations.html",
+        "title": "A taint repels, a toleration only permits",
+        "ratio": "960/400"
+      }
+    },
+    {
+      "id": "ch13-topology-spread-constraints",
+      "level": "senior",
+      "question": "What are topology spread constraints and why are they good for availability?",
+      "say_first": "They tell the scheduler to keep the number of matching Pods roughly even across failure domains such as zones and nodes, so one zone outage cannot take out most of your replicas.",
+      "explain": [
+        "Imagine dealing cards to players so everyone has nearly the same number. The constraint measures the skew, the difference between the fullest and the emptiest domain, and refuses placements that make it larger than allowed.",
+        "maxSkew is that allowed difference. With maxSkew 1 across two zones, five replicas split 3 and 2. topologyKey names the node label that defines a domain, for example topology.kubernetes.io/zone or kubernetes.io/hostname. whenUnsatisfiable is DoNotSchedule (hard) or ScheduleAnyway (soft), and you must set it.",
+        "You can stack several constraints, for instance spread evenly over zones first and over nodes second, as in the example. The labelSelector says which Pods are counted.",
+        "Note that skew is only checked when a Pod is scheduled. After scale-downs or node failures the spread can drift, and nothing rebalances it unless you redeploy or use a descheduler."
+      ],
+      "key_points": [
+        "maxSkew = largest allowed Pod count difference between domains.",
+        "topologyKey defines the domain: zone, node, region.",
+        "DoNotSchedule is hard; ScheduleAnyway is soft.",
+        "Use labelSelector so only your app's Pods are counted.",
+        "Spread is enforced at scheduling time only."
+      ],
+      "commands": [
+        {
+          "cmd": "topologySpreadConstraints:\n- maxSkew: 1\n  topologyKey: topology.kubernetes.io/zone\n  whenUnsatisfiable: DoNotSchedule\n  labelSelector:\n    matchLabels:\n      app: my-app\n- maxSkew: 1\n  topologyKey: kubernetes.io/hostname\n  whenUnsatisfiable: ScheduleAnyway\n  labelSelector:\n    matchLabels:\n      app: my-app",
+          "note": "Pod template fragment: hard spread over zones, soft spread over nodes"
+        },
+        {
+          "cmd": "kubectl get pods -l app=my-app -o wide",
+          "note": "See the actual spread across nodes"
+        }
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-zone-spread.html",
+        "title": "Six replicas spread across three zones",
+        "ratio": "960/400"
+      },
+      "follow_ups": [
+        "What happens when a zone has no eligible nodes?",
+        "How do you rebalance after a zone recovers?"
+      ],
+      "pitfalls": [
+        "Forgetting that skew counts only eligible domains and matching Pods.",
+        "Using a hard constraint with too few nodes and leaving Pods Pending."
+      ]
+    },
+    {
+      "id": "ch13-spread-vs-anti-affinity",
+      "level": "senior",
+      "question": "When would you choose topology spread constraints over Pod anti-affinity?",
+      "say_first": "Choose topology spread for even, tunable distribution of many replicas across zones and nodes; choose anti-affinity for a strict 'never together' rule.",
+      "explain": [
+        "Anti-affinity is binary. It can say 'no two of these on one node', but it cannot say 'balance eight replicas evenly across three zones'. Once replicas outnumber domains, the hard version simply fails.",
+        "Spread constraints express a tolerance. Allow a skew of 1 and the scheduler fills domains in turn, so adding replicas just keeps working. You can also choose hard or soft, and combine zone and node levels.",
+        "Anti-affinity is still the right tool for a small set of Pods that must never share a node, such as the members of a quorum-based database. For stateless replicated services, spread constraints are now the usual first choice."
+      ],
+      "key_points": [
+        "Spread = balance with a tolerance; anti-affinity = exclusion.",
+        "Spread scales smoothly past the number of domains; required anti-affinity does not.",
+        "Both use labelSelector and topologyKey.",
+        "They can be used together.",
+        "Neither moves Pods that are already running."
+      ],
+      "table": {
+        "caption": "Pod anti-affinity versus topology spread",
+        "headers": [
+          "Aspect",
+          "Pod anti-affinity",
+          "Topology spread"
+        ],
+        "rows": [
+          [
+            "Rule shape",
+            "Not with matching Pods in a domain",
+            "Keep counts within maxSkew"
+          ],
+          [
+            "Many replicas, few domains",
+            "Hard rule leaves extras Pending",
+            "Keeps distributing evenly"
+          ],
+          [
+            "Multi-level (zone then node)",
+            "Awkward",
+            "Native, several constraints"
+          ],
+          [
+            "Best for",
+            "Strict separation of a few Pods",
+            "Even spread of replicated services"
+          ]
+        ]
+      },
+      "follow_ups": [
+        "How would you protect a three-member etcd or database StatefulSet?",
+        "Can both be set on the same Deployment?"
+      ],
+      "pitfalls": [
+        "Claiming spread constraints replace anti-affinity in every case."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-spread-vs-anti-affinity.html",
+        "title": "Topology spread or Pod anti-affinity",
+        "ratio": "960/496"
+      }
+    },
+    {
+      "id": "ch13-pod-disruption-budgets",
+      "level": "mid",
+      "question": "What is a PodDisruptionBudget and what does it protect against?",
+      "say_first": "A PDB limits how many Pods of an application may be taken down at once by voluntary disruptions such as node drains and upgrades, so a minimum stays available.",
+      "explain": [
+        "Voluntary disruptions are the ones you or the platform cause on purpose: draining a node, upgrading a node pool, or the autoscaler removing a node. A PDB makes those operations wait rather than evicting every replica together.",
+        "You set either minAvailable or maxUnavailable, as a number or a percentage, and a selector for the Pods. With five replicas and minAvailable 3, at most two Pods can be evicted at any moment.",
+        "Eviction requests that would break the budget are refused with a 429 response and retried, so a drain proceeds gradually as replacements become ready elsewhere.",
+        "A PDB does not help with involuntary disruptions such as a node crash or kernel panic, and it cannot create replicas. Spreading Pods across nodes is what makes a budget achievable."
+      ],
+      "key_points": [
+        "Covers voluntary disruptions only: drain, upgrade, eviction API.",
+        "Use minAvailable or maxUnavailable, not both.",
+        "Needs more replicas than the minimum, or drains block forever.",
+        "Drain and the autoscaler honour PDBs.",
+        "Does not protect from node crashes or direct kubectl delete pod."
+      ],
+      "commands": [
+        {
+          "cmd": "apiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata:\n  name: my-app-pdb\nspec:\n  minAvailable: 2\n  selector:\n    matchLabels:\n      app: my-app",
+          "note": "PDB keeping at least two my-app Pods up"
+        },
+        {
+          "cmd": "kubectl get pdb",
+          "note": "Shows allowed disruptions right now"
+        },
+        {
+          "cmd": "kubectl create pdb my-app-pdb --selector=app=my-app --min-available=2",
+          "note": "Create the same budget from the CLI"
+        }
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-pdb-drain.html",
+        "title": "How a PDB gates a node drain",
+        "ratio": "960/480"
+      },
+      "follow_ups": [
+        "What happens if minAvailable equals the replica count?",
+        "Does a PDB stop a rolling update?"
+      ],
+      "pitfalls": [
+        "Setting minAvailable equal to replicas, which makes nodes impossible to drain.",
+        "Thinking PDBs guard against hardware failure."
+      ]
+    },
+    {
+      "id": "ch13-safe-node-maintenance",
+      "level": "senior",
+      "question": "Walk me through taking a node out for maintenance without causing downtime.",
+      "say_first": "Cordon the node, drain it so Pods are evicted gracefully through the eviction API where PDBs are honoured, do the work, then uncordon it.",
+      "explain": [
+        "Cordon marks the node unschedulable so nothing new lands on it. Drain does a cordon and then evicts the Pods one by one; because it uses the eviction API, PDBs are respected and each Pod gets its termination grace period.",
+        "Drain needs flags for things it will not touch by default: --ignore-daemonsets because DaemonSet Pods would be recreated at once, and --delete-emptydir-data for Pods using emptyDir volumes, which lose that data.",
+        "Before you start, check that the workloads can be rescheduled: enough spare capacity, spread across other nodes, and a PDB with at least one allowed disruption. If a drain hangs, kubectl get pdb usually shows ALLOWED DISRUPTIONS at 0.",
+        "When done, uncordon. Pods do not move back automatically, so capacity rebalances only as new Pods are created."
+      ],
+      "key_points": [
+        "Cordon = stop new Pods; drain = cordon plus evict.",
+        "Eviction honours PDBs and grace periods; deleting Pods directly does not.",
+        "Single-replica apps still see downtime; give important ones at least two replicas.",
+        "Check spare capacity and spread before draining.",
+        "Uncordon afterwards; nothing rebalances by itself."
+      ],
+      "commands": [
+        {
+          "cmd": "kubectl cordon node1",
+          "note": "Mark the node unschedulable"
+        },
+        {
+          "cmd": "kubectl drain node1 --ignore-daemonsets --delete-emptydir-data",
+          "note": "Evict Pods gracefully, honouring PDBs"
+        },
+        {
+          "cmd": "kubectl get pdb -A",
+          "note": "Find budgets that block eviction (ALLOWED DISRUPTIONS 0)"
+        },
+        {
+          "cmd": "kubectl uncordon node1",
+          "note": "Return the node to service after maintenance"
+        }
+      ],
+      "follow_ups": [
+        "A drain is stuck forever. How do you debug it?",
+        "How is a NoExecute taint different from drain?"
+      ],
+      "pitfalls": [
+        "Draining without a PDB or spare capacity and expecting zero downtime.",
+        "Using --force or --disable-eviction and bypassing the safety net."
+      ],
+      "diagram": {
+        "file": "diagrams/ch13-safe-node-maintenance.html",
+        "title": "Taking a node out without downtime",
+        "ratio": "960/352"
+      }
+    }
+  ],
+  "diagrams": [
+    "diagrams/ch13-control-plane-ha.html",
+    "diagrams/ch13-etcd-quorum.html",
+    "diagrams/ch13-zone-spread.html",
+    "diagrams/ch13-pdb-drain.html",
+    "diagrams/ch13-ha-vs-reliability-vs-resiliency.html",
+    "diagrams/ch13-nines-of-availability.html",
+    "diagrams/ch13-api-server-load-balancing.html",
+    "diagrams/ch13-etcd-backup-topology.html",
+    "diagrams/ch13-node-pools.html",
+    "diagrams/ch13-autoscaling-for-ha.html",
+    "diagrams/ch13-node-affinity.html",
+    "diagrams/ch13-pod-anti-affinity.html",
+    "diagrams/ch13-taints-and-tolerations.html",
+    "diagrams/ch13-spread-vs-anti-affinity.html",
+    "diagrams/ch13-safe-node-maintenance.html"
+  ]
+}

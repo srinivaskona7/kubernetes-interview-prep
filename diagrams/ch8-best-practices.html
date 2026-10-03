@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Best practices in three layers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Layers · Practices</p>
+    <h1>Best practices in three layers</h1>
+
+    <svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch8-best-practices-title ch8-best-practices-desc">
+<title id="ch8-best-practices-title">Best practices in three layers</title>
+<desc id="ch8-best-practices-desc">Stateful apps are built in layers: tested StorageClasses first, then the StatefulSet workload with probes and limits, then monitoring, backups and security.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<polyline points="240,64 380,64" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="240,176 380,176" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="240,288 380,288" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="670,88 670,152" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="670,200 670,264" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="40" y="40" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="40" width="200" height="48" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="140" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Storage layer</text>
+<text x="140" y="80" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">StorageClass</text>
+<rect x="380" y="40" width="580" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="40" width="580" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="670" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">SSD or HDD, WaitForFirstConsumer, Retain, expansion</text>
+<rect x="40" y="152" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="152" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="140" y="176" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Workload layer</text>
+<text x="140" y="192" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">StatefulSet</text>
+<rect x="380" y="152" width="580" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="152" width="580" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="670" y="176" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Headless Service, probes, requests and limits, PDB</text>
+<rect x="40" y="264" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="264" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="140" y="288" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Operations layer</text>
+<text x="140" y="304" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">monitor and protect</text>
+<rect x="380" y="264" width="580" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="264" width="580" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="670" y="288" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Alerts, backups with restore tests, encryption, access</text>
+<text x="40" y="396" fill="#4f5d75" font-size="16" font-style="italic" font-family="'Instrument Serif', serif">The aim is no surprises: each layer rests on the one above it.</text>
+    </svg>
+  </div>
+</body>
+</html>

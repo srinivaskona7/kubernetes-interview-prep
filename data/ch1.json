@@ -1,0 +1,847 @@
+{
+ "number": 1,
+ "title": "From Containers to Orchestration",
+ "part": "Part 1 · Introduction",
+ "tagline": "Why containers exist, what Kubernetes adds, and the pieces of a cluster",
+ "overview": "This chapter starts with the problem containers solve, compares them with virtual machines, and shows how an image is built and run. It then explains what Kubernetes does on top of containers, when it is the wrong tool, how it differs from Docker Swarm, and the main parts of a cluster.",
+ "topics": [
+  {
+   "id": "ch1-what-is-a-container",
+   "level": "junior",
+   "question": "What is a container, and what problem does it solve?",
+   "say_first": "A container is a packaged, isolated process that carries its code, runtime and libraries with it, so it behaves the same on a laptop, in test and in production.",
+   "explain": [
+    "Think of a shipping container. The crane does not care whether it holds shoes or engines, because the box is a standard size and sealed. A software container does the same for an application: whatever is inside, every machine knows how to run the box.",
+    "The classic pain is 'it works on my machine'. The app depended on a library version or setting that only existed on the developer's laptop. Packing the app together with those dependencies removes the difference between environments.",
+    "The packaged form is called an image. A container is a running instance of that image, and it normally runs one main process (the entrypoint) isolated from the host and from other containers."
+   ],
+   "key_points": [
+    "Image = the package; container = a running copy of it.",
+    "Contains code, runtime, system libraries and settings, not a whole operating system.",
+    "Same image runs identically from development to production.",
+    "Usually one main process per container.",
+    "Isolation keeps one container from interfering with its neighbours."
+   ],
+   "commands": [
+    {
+     "cmd": "docker run --rm -p 8080:80 nginx:1.27",
+     "note": "Start a container from the nginx image and map host port 8080 to container port 80"
+    },
+    {
+     "cmd": "docker ps",
+     "note": "List running containers"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between an image and a container?",
+    "Can a container hold more than one process?"
+   ],
+   "pitfalls": [
+    "Calling a container 'a small VM'. It shares the host kernel and is just an isolated process.",
+    "Saying the image is the running thing. The image is read-only; the container is the running instance."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-container-image-vs-running.html",
+    "title": "Image and containers",
+    "ratio": "1000/380"
+   }
+  },
+  {
+   "id": "ch1-image-layers",
+   "level": "junior",
+   "question": "How are container images built, and why are they made of layers?",
+   "say_first": "Each Dockerfile instruction adds a read-only layer, so images are built and shipped incrementally and unchanged layers are reused from cache.",
+   "explain": [
+    "A Dockerfile is a recipe. Every step (choose a base, copy files, install packages) produces a new layer stacked on the previous one, like transparent sheets laid over each other.",
+    "If you change only your application code, only the top layers are rebuilt and re-uploaded. The base layers are already cached locally and in the registry, so builds and pulls are fast.",
+    "When a container starts, a thin writable layer is placed on top of the read-only image layers. Writes go there (copy-on-write) and disappear when the container is removed."
+   ],
+   "key_points": [
+    "One layer per instruction; layers are immutable and shareable.",
+    "Order instructions from least to most frequently changed to maximise cache hits.",
+    "Many containers can share the same image layers on one host.",
+    "The writable container layer is temporary storage."
+   ],
+   "commands": [
+    {
+     "cmd": "docker history nginx:1.27",
+     "note": "Show the layers an image is made from and their sizes"
+    },
+    {
+     "cmd": "docker build -t myapp:1.0 .",
+     "note": "Build an image from the Dockerfile in the current directory"
+    }
+   ],
+   "follow_ups": [
+    "Why copy package manifests before source code in a Dockerfile?",
+    "Where does data written inside a container go?"
+   ],
+   "pitfalls": [
+    "Expecting files written inside a container to survive a restart of a new container.",
+    "Putting frequently changing files early in the Dockerfile and losing the cache."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-image-layers.html",
+    "title": "Image layers and cache",
+    "ratio": "1000/420"
+   }
+  },
+  {
+   "id": "ch1-containers-vs-vms",
+   "level": "junior",
+   "question": "What is the difference between containers and virtual machines?",
+   "say_first": "A VM virtualises hardware and runs a full guest OS; a container virtualises the operating system and shares the host kernel, so it is far lighter and starts in seconds.",
+   "explain": [
+    "A VM is a pretend computer. A hypervisor carves one physical server into several virtual ones, and each gets its own complete operating system, which is heavy.",
+    "A container is more like a separate apartment in one building. Everyone shares the same plumbing (the host kernel) but has their own locked door and rooms (isolated processes, filesystem and network).",
+    "That sharing is why containers are small, boot quickly and pack densely. It is also why isolation is weaker than with VMs: a kernel flaw affects every container on the host."
+   ],
+   "key_points": [
+    "VM: hypervisor plus a guest kernel per VM; GBs and slow boot.",
+    "Container: shared host kernel; MBs and near-instant start.",
+    "Containers need the same kernel type as the host (Linux containers need a Linux kernel).",
+    "VMs give stronger isolation and can run different operating systems side by side."
+   ],
+   "table": {
+    "caption": "Containers compared with virtual machines",
+    "headers": [
+     "Aspect",
+     "Virtual machine",
+     "Container"
+    ],
+    "rows": [
+     [
+      "Abstraction level",
+      "Hardware (via hypervisor)",
+      "Operating system (shared kernel)"
+     ],
+     [
+      "Contains",
+      "Full guest OS, libraries, app",
+      "App and its libraries only"
+     ],
+     [
+      "Typical size",
+      "Gigabytes",
+      "Megabytes to a few hundred MB"
+     ],
+     [
+      "Start time",
+      "Tens of seconds to minutes",
+      "Seconds or less"
+     ],
+     [
+      "Isolation",
+      "Strong, separate kernels",
+      "Process-level, shared kernel"
+     ],
+     [
+      "Mixed OS types on one host",
+      "Yes",
+      "No, kernel must match"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch1-vm-vs-container.html",
+    "title": "VMs vs containers: the stacks side by side",
+    "ratio": "1000/368"
+   },
+   "follow_ups": [
+    "Which is more secure and why?",
+    "Can you run containers inside a VM?"
+   ],
+   "pitfalls": [
+    "Claiming containers are always more secure. They trade isolation strength for efficiency.",
+    "Forgetting that on macOS or Windows a Linux container still runs on a hidden Linux VM."
+   ]
+  },
+  {
+   "id": "ch1-kernel-features",
+   "level": "mid",
+   "question": "Which Linux kernel features make containers possible?",
+   "say_first": "Namespaces for isolation, cgroups for resource limits, and a union (overlay) filesystem for layered, copy-on-write images.",
+   "explain": [
+    "A container is not a kernel object. It is a normal Linux process that the kernel has been told to restrict using three tools.",
+    "Namespaces control what the process can see: its own process IDs, network stack, mount points, hostname, IPC and user IDs. It feels like having its own machine.",
+    "Control groups (cgroups) control what it can use: CPU, memory, I/O. This is what Kubernetes limits translate into. Overlay filesystems stitch image layers into a single view with a writable top."
+   ],
+   "key_points": [
+    "Namespaces: pid, net, mnt, ipc, uts, user.",
+    "cgroups: cap and account CPU, memory and I/O.",
+    "overlayfs: stacks read-only layers with a writable layer using copy-on-write.",
+    "Exceeding a memory cgroup limit gets the process OOM-killed."
+   ],
+   "table": {
+    "caption": "The three building blocks",
+    "headers": [
+     "Feature",
+     "Controls",
+     "Everyday effect"
+    ],
+    "rows": [
+     [
+      "Namespaces",
+      "What a process can see",
+      "Own PID 1, own network interfaces, own mounts"
+     ],
+     [
+      "cgroups",
+      "What a process can use",
+      "CPU shares and memory limits per container"
+     ],
+     [
+      "Union filesystem",
+      "How image layers are combined",
+      "Shared read-only layers plus writable top"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "docker run --rm --memory=128m --cpus=0.5 alpine sleep 60",
+     "note": "Apply cgroup memory and CPU limits to a container"
+    },
+    {
+     "cmd": "lsns",
+     "note": "List namespaces on a Linux host"
+    }
+   ],
+   "follow_ups": [
+    "What happens when a container exceeds its memory limit?",
+    "Which namespace gives each container its own IP address?"
+   ],
+   "pitfalls": [
+    "Answering with 'Docker' as if it were a kernel feature.",
+    "Naming namespaces but forgetting cgroups, which is the resource-control half."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-kernel-features.html",
+    "title": "Kernel features behind containers",
+    "ratio": "1000/380"
+   }
+  },
+  {
+   "id": "ch1-containerizing-an-app",
+   "level": "junior",
+   "question": "How do you containerize an application?",
+   "say_first": "Write a Dockerfile, build it into an image, then run containers from that image; the same image is promoted unchanged through every environment.",
+   "explain": [
+    "Step one is the Dockerfile: the commands you would have typed by hand to prepare the app (pick a base, copy code, install dependencies, set the start command) written down once.",
+    "Step two is the build, producing an image. Step three is running a container from it. To share it across machines you push the image to a registry and pull it elsewhere.",
+    "The key idea for interviews is that you build once and run anywhere; you do not rebuild per environment, you change configuration instead."
+   ],
+   "key_points": [
+    "Dockerfile, build, run is the core loop.",
+    "Registries (Docker Hub, ECR, GCR) distribute images.",
+    "Use small base images and a non-root user.",
+    "Keep configuration out of the image; inject it at runtime."
+   ],
+   "commands": [
+    {
+     "cmd": "docker build -t registry.example.com/shop/api:1.0 .",
+     "note": "Build and tag the image"
+    },
+    {
+     "cmd": "docker push registry.example.com/shop/api:1.0",
+     "note": "Publish it to a registry"
+    },
+    {
+     "cmd": "docker run -d -p 3000:3000 registry.example.com/shop/api:1.0",
+     "note": "Run it detached with a port mapping"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-containerize-flow.html",
+    "title": "From Dockerfile to a running container",
+    "ratio": "1000/184"
+   },
+   "follow_ups": [
+    "What is a multi-stage build and why use one?",
+    "How do you pass secrets to a container?"
+   ],
+   "pitfalls": [
+    "Baking environment-specific config or secrets into the image.",
+    "Using the latest tag in production so nobody knows what is running."
+   ]
+  },
+  {
+   "id": "ch1-container-benefits-vs-vm-use",
+   "level": "junior",
+   "question": "When would you choose containers, and when would you still choose VMs?",
+   "say_first": "Choose containers for fast, consistent, scalable microservice deployments; choose VMs when you need full OS isolation, a different OS, or an app that expects a whole machine.",
+   "explain": [
+    "Containers win on consistency, density, speed and easy scaling. Because they are small, you can start dozens in the time a VM boots.",
+    "VMs still make sense when workloads need a different kernel or OS, strict tenant separation, or legacy software that assumes it owns the whole server.",
+    "In practice the two combine: containers usually run on top of VMs, which are the nodes of a cloud Kubernetes cluster."
+   ],
+   "key_points": [
+    "Containers: consistency, efficiency, isolation per service, quick scale and deploy.",
+    "VMs: different OS types, complete isolation, whole-machine workloads.",
+    "Not either/or; most clusters run containers on VM nodes."
+   ],
+   "table": {
+    "caption": "Choosing between the two",
+    "headers": [
+     "Situation",
+     "Better fit",
+     "Why"
+    ],
+    "rows": [
+     [
+      "Many small microservices that scale often",
+      "Containers",
+      "Fast start and high density"
+     ],
+     [
+      "Need Windows and Linux workloads together",
+      "VMs",
+      "Each OS needs its own kernel"
+     ],
+     [
+      "Hostile multi-tenant isolation",
+      "VMs",
+      "Separate kernels reduce blast radius"
+     ],
+     [
+      "Legacy app expecting a full server",
+      "VMs",
+      "Assumes OS-level control"
+     ],
+     [
+      "CI jobs that start and stop constantly",
+      "Containers",
+      "Seconds to create, cheap to discard"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Why do cloud Kubernetes nodes run on VMs?",
+    "What are sandboxed container runtimes?"
+   ],
+   "pitfalls": [
+    "Presenting containers as a replacement for VMs everywhere."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-containers-or-vms.html",
+    "title": "Containers or VMs",
+    "ratio": "1000/380"
+   }
+  },
+  {
+   "id": "ch1-what-is-kubernetes",
+   "level": "junior",
+   "question": "What is Kubernetes and why do we need it?",
+   "say_first": "Kubernetes is an open source orchestrator that deploys, scales, heals and updates containerized applications across a group of machines, driven by a declared desired state.",
+   "explain": [
+    "Running one container is easy. Running hundreds across many servers, keeping them healthy, updating them without downtime and scaling with traffic is not. Kubernetes is the conductor that keeps all those players in time.",
+    "You do not tell it every step. You describe what you want (for example, three copies of this app, version 2) and it keeps working until reality matches that description.",
+    "It handles placement, restarts, rollouts and rollbacks, service discovery, load distribution, autoscaling and attaching storage."
+   ],
+   "key_points": [
+    "Often shortened to k8s.",
+    "Deploys the same app consistently across many locations or nodes.",
+    "Rolls out updates to many containers gradually and can roll back.",
+    "Scales up under load and down when quiet.",
+    "Works from desired state rather than step-by-step scripts."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl create deployment web --image=nginx:1.27 --replicas=3",
+     "note": "Declare three copies of an nginx app"
+    },
+    {
+     "cmd": "kubectl get deployment web",
+     "note": "Compare desired and ready replica counts"
+    }
+   ],
+   "follow_ups": [
+    "What does declarative mean in Kubernetes?",
+    "Is Kubernetes a container runtime?"
+   ],
+   "pitfalls": [
+    "Saying Kubernetes runs containers itself. It delegates that to a container runtime."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-what-is-kubernetes.html",
+    "title": "What Kubernetes does",
+    "ratio": "1000/380"
+   }
+  },
+  {
+   "id": "ch1-key-features",
+   "level": "mid",
+   "question": "What are the key features of Kubernetes?",
+   "say_first": "Self-healing, load balancing, automated rollouts and rollbacks, autoscaling, a declarative model, persistent storage and extensibility through operators.",
+   "explain": [
+    "Self-healing: failed containers are restarted and Pods are replaced, with no human paged for routine failures.",
+    "Rollouts and rollbacks: updates go in phases, and if a new version misbehaves you can return to the last good one. You can also pause and resume a rollout.",
+    "Autoscaling and load balancing spread traffic over healthy Pods and add or remove capacity. Storage can be attached dynamically so data outlives a container, and operators extend the API with application-specific automation."
+   ],
+   "key_points": [
+    "Declarative desired state continuously enforced.",
+    "Rolling updates, pause, resume and rollback.",
+    "Horizontal scaling by metrics such as CPU.",
+    "Operators are controllers that encode operational knowledge for an app.",
+    "Persistent volumes keep data beyond a container's life."
+   ],
+   "table": {
+    "caption": "Feature to problem it solves",
+    "headers": [
+     "Feature",
+     "Problem solved"
+    ],
+    "rows": [
+     [
+      "Self-healing",
+      "Crashes and node failures need manual recovery"
+     ],
+     [
+      "Rolling update and rollback",
+      "Releases cause downtime or are hard to undo"
+     ],
+     [
+      "Autoscaling",
+      "Traffic spikes and idle waste"
+     ],
+     [
+      "Service load balancing",
+      "Clients should not track individual instances"
+     ],
+     [
+      "Persistent storage",
+      "Data lost when containers are replaced"
+     ],
+     [
+      "Operators",
+      "Complex apps need repeated manual operations"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl rollout status deployment/web",
+     "note": "Watch a rollout progress"
+    },
+    {
+     "cmd": "kubectl rollout undo deployment/web",
+     "note": "Revert to the previous revision"
+    },
+    {
+     "cmd": "kubectl autoscale deployment web --min=2 --max=10 --cpu-percent=70",
+     "note": "Create a CPU-based horizontal autoscaler"
+    }
+   ],
+   "follow_ups": [
+    "Explain the difference between self-healing and autoscaling.",
+    "What is an operator?"
+   ],
+   "pitfalls": [
+    "Listing features without tying each to a problem."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-key-features.html",
+    "title": "Kubernetes key features",
+    "ratio": "1000/420"
+   }
+  },
+  {
+   "id": "ch1-self-healing-loop",
+   "level": "mid",
+   "question": "How does Kubernetes self-heal? Walk through what happens when a Pod crashes.",
+   "say_first": "A controller continuously compares desired state with actual state; when a Pod disappears it creates a replacement through the API server, the scheduler places it and a kubelet starts it.",
+   "explain": [
+    "Picture a thermostat. You set 21 degrees; it measures the room and switches heating on or off until they match. Kubernetes controllers do the same with Pods. This control loop is called reconciliation.",
+    "Say a Deployment wants three replicas and one Pod dies. The kubelet reports the failure to the API server. The controller manager sees two out of three and asks the API server to create a new Pod.",
+    "The new Pod has no node yet, so the scheduler picks one and records it. The kubelet on that node notices a Pod assigned to it and asks the runtime to start it. Nobody typed a command."
+   ],
+   "key_points": [
+    "Everything flows through the API server; components watch it, they do not call each other directly.",
+    "Desired state is stored in etcd; actual state is reported by kubelets.",
+    "The loop never stops, so it also fixes drift, not only crashes.",
+    "Node failure triggers the same loop, with Pods rescheduled elsewhere."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl delete pod <pod-name>",
+     "note": "Kill a Pod on purpose and watch a replacement appear"
+    },
+    {
+     "cmd": "kubectl get pods -w",
+     "note": "Stream Pod changes as the loop repairs the gap"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-self-healing.html",
+    "title": "How Kubernetes replaces a crashed Pod",
+    "ratio": "1000/440"
+   },
+   "follow_ups": [
+    "Which component notices that a Pod is missing?",
+    "What if the whole node is lost?"
+   ],
+   "pitfalls": [
+    "Saying the kubelet creates the replacement Pod. The controller creates the object; the scheduler and kubelet place and start it.",
+    "Assuming a bare Pod, not owned by a controller, is recreated. It is not."
+   ]
+  },
+  {
+   "id": "ch1-when-not-k8s",
+   "level": "mid",
+   "question": "When should you not use Kubernetes?",
+   "say_first": "When the cost and complexity outweigh the benefit: small teams, simple stable apps, tight budgets, or workloads that do not need scaling or high availability.",
+   "explain": [
+    "Kubernetes brings many moving parts and a real learning curve. If you run three containers for a small team, the platform can cost more effort than the application.",
+    "A stable monolith that rarely changes gains little from rolling updates and autoscaling, and moving it may be hard. Leaving it where it is can be the right engineering call.",
+    "Managed offerings such as EKS, GKE or AKS take the control plane off your hands, which narrows the gap. You still own application, networking and security decisions."
+   ],
+   "key_points": [
+    "Steep learning curve and operational overhead.",
+    "Overkill for small teams or few services with no scaling needs.",
+    "Legacy monoliths may be hard to migrate and gain little.",
+    "Managed control planes reduce, but do not remove, the burden."
+   ],
+   "table": {
+    "caption": "Signals for and against Kubernetes",
+    "headers": [
+     "Signal",
+     "Leans toward",
+     "Reason"
+    ],
+    "rows": [
+     [
+      "Dozens of services, frequent releases",
+      "Kubernetes",
+      "Automation pays for the complexity"
+     ],
+     [
+      "Spiky traffic needing autoscale",
+      "Kubernetes",
+      "Built-in horizontal scaling"
+     ],
+     [
+      "Two or three services, small team",
+      "Simpler tooling",
+      "Overhead exceeds benefit"
+     ],
+     [
+      "Stable monolith, rare changes",
+      "Leave as is",
+      "Little to gain, migration risk"
+     ],
+     [
+      "No platform skills, want focus on apps",
+      "Managed Kubernetes",
+      "Provider runs the control plane"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch1-should-you-use-k8s.html",
+    "title": "Decision flow: should you adopt Kubernetes",
+    "ratio": "1000/416"
+   },
+   "follow_ups": [
+    "What would you use instead for a small app?",
+    "What does managed Kubernetes actually manage?"
+   ],
+   "pitfalls": [
+    "Answering that Kubernetes is always the right choice.",
+    "Believing a managed service removes all operational work."
+   ]
+  },
+  {
+   "id": "ch1-swarm-vs-k8s",
+   "level": "mid",
+   "question": "How does Kubernetes differ from Docker Swarm?",
+   "say_first": "Swarm is simpler and quicker to set up, built into Docker; Kubernetes is more complex but far more featureful, runtime-agnostic and richer in scaling, rollback and networking.",
+   "explain": [
+    "Swarm comes with Docker and starts with a couple of commands. That simplicity is its main selling point, along with fast scaling of services.",
+    "Kubernetes needs extra pieces such as a network plugin and an ingress controller, but gives you autoscaling, automatic rollbacks, a flat Pod network, and a large ecosystem.",
+    "Runtime flexibility is another difference: Swarm requires Docker Engine on its nodes, while Kubernetes talks to any runtime that implements the Container Runtime Interface, such as containerd or CRI-O."
+   ],
+   "key_points": [
+    "Swarm: easy setup, Docker-only, fewer features.",
+    "Kubernetes: steeper setup, pluggable runtime, large ecosystem.",
+    "Kubernetes has a distributed, highly available control plane option.",
+    "Swarm lacks automatic rollback on failed updates."
+   ],
+   "table": {
+    "caption": "Docker Swarm versus Kubernetes",
+    "headers": [
+     "Property",
+     "Docker Swarm",
+     "Kubernetes"
+    ],
+    "rows": [
+     [
+      "Setup",
+      "Very simple, few components",
+      "More involved, add-ons needed"
+     ],
+     [
+      "Scaling",
+      "Fast manual scaling, no native autoscaler",
+      "Autoscaling on CPU and other metrics"
+     ],
+     [
+      "Load balancing",
+      "Automatic by default",
+      "Powerful but needs configuration"
+     ],
+     [
+      "Monitoring and logging",
+      "External tools such as the ELK stack",
+      "Metrics APIs and rich ecosystem integrations"
+     ],
+     [
+      "Service discovery",
+      "DNS with a name per service",
+      "Service IPs, Pod IPs and cluster DNS"
+     ],
+     [
+      "Updates and rollbacks",
+      "Rolling updates, no automatic rollback",
+      "Rolling updates with rollback"
+     ],
+     [
+      "Networking",
+      "Overlay network with embedded DNS",
+      "Flat model, every Pod reaches every Pod"
+     ],
+     [
+      "Container runtime",
+      "Docker Engine required",
+      "Any CRI runtime, e.g. containerd"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Why has Kubernetes become the standard?",
+    "Is Swarm ever the right choice?"
+   ],
+   "pitfalls": [
+    "Dismissing Swarm as useless. It is fine for small, simple clusters."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-swarm-vs-k8s.html",
+    "title": "Swarm versus Kubernetes",
+    "ratio": "1000/420"
+   }
+  },
+  {
+   "id": "ch1-cluster-architecture",
+   "level": "junior",
+   "question": "What are the main components of a Kubernetes cluster?",
+   "say_first": "A cluster has a control plane that decides (API server, scheduler, controller manager, etcd) and worker nodes that run workloads (kubelet, kube-proxy, container runtime).",
+   "explain": [
+    "Imagine a restaurant. The control plane is the front-of-house manager and kitchen board: it takes orders, decides who cooks what and remembers everything. Worker nodes are the cooking stations that actually prepare the dishes.",
+    "The API server is the single front door that validates and handles all requests. etcd stores the cluster data. The scheduler assigns new Pods to nodes. The controller manager runs the loops that keep reality matching your declarations.",
+    "On each worker the kubelet is the local agent managing Pods, kube-proxy programs network rules so Services work, and a container runtime such as containerd runs the containers."
+   ],
+   "key_points": [
+    "Control plane = brain; worker nodes = muscle.",
+    "Only the API server talks to etcd.",
+    "Kubelet manages Pods on its node and reports status.",
+    "Kube-proxy implements Service networking on the node.",
+    "A cloud controller manager links the cluster to cloud APIs for load balancers and volumes."
+   ],
+   "table": {
+    "caption": "Component responsibilities",
+    "headers": [
+     "Component",
+     "Where",
+     "Job"
+    ],
+    "rows": [
+     [
+      "API server",
+      "Control plane",
+      "Validates and serves every request"
+     ],
+     [
+      "etcd",
+      "Control plane",
+      "Consistent key-value store of cluster state"
+     ],
+     [
+      "Scheduler",
+      "Control plane",
+      "Chooses a node for each new Pod"
+     ],
+     [
+      "Controller manager",
+      "Control plane",
+      "Runs reconcile loops toward desired state"
+     ],
+     [
+      "Cloud controller manager",
+      "Control plane",
+      "Talks to cloud provider APIs"
+     ],
+     [
+      "Kubelet",
+      "Worker node",
+      "Runs and monitors Pods on the node"
+     ],
+     [
+      "Kube-proxy",
+      "Worker node",
+      "Maintains Service network rules"
+     ],
+     [
+      "Container runtime",
+      "Worker node",
+      "Pulls images and runs containers"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get nodes -o wide",
+     "note": "List nodes with roles, versions and runtimes"
+    },
+    {
+     "cmd": "kubectl get pods -n kube-system",
+     "note": "See control plane and system components that run as Pods"
+    },
+    {
+     "cmd": "kubectl cluster-info",
+     "note": "Show the API server and DNS endpoints"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-architecture.html",
+    "title": "Control plane and worker node components",
+    "ratio": "1000/472"
+   },
+   "follow_ups": [
+    "Which component stores cluster state?",
+    "Does the scheduler start the Pod?"
+   ],
+   "pitfalls": [
+    "Putting kubelet in the control plane.",
+    "Saying the scheduler starts containers. It only chooses a node."
+   ]
+  },
+  {
+   "id": "ch1-cri-containerd",
+   "level": "senior",
+   "question": "Why did Kubernetes move away from Docker Engine, and what runs containers now?",
+   "say_first": "The kubelet speaks the Container Runtime Interface; Docker Engine did not implement it natively and needed a shim, so Kubernetes standardised on CRI runtimes such as containerd and CRI-O.",
+   "explain": [
+    "Kubernetes wanted to be runtime-neutral, so it defined a standard API, the CRI, that the kubelet uses to ask for pods and containers to be created.",
+    "Docker Engine predates it and needed an adapter called dockershim inside the kubelet. Maintaining that adapter was costly, and Docker adds extra layers Kubernetes does not need.",
+    "containerd, which Docker itself uses internally, and CRI-O implement CRI directly and follow the OCI standards for images and runtimes. Images built with Docker still run fine, because the image format is standard."
+   ],
+   "key_points": [
+    "CRI is the contract between kubelet and runtime.",
+    "dockershim was removed from Kubernetes in version 1.24.",
+    "containerd and CRI-O are the common choices.",
+    "Docker-built images keep working since they follow OCI."
+   ],
+   "table": {
+    "caption": "Runtime options",
+    "headers": [
+     "Runtime",
+     "CRI support",
+     "Note"
+    ],
+    "rows": [
+     [
+      "containerd",
+      "Native",
+      "Default in most distributions and managed services"
+     ],
+     [
+      "CRI-O",
+      "Native",
+      "Built specifically for Kubernetes, used by OpenShift"
+     ],
+     [
+      "Docker Engine",
+      "Via cri-dockerd adapter only",
+      "Extra layer, not recommended as a node runtime"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get nodes -o jsonpath='{.items[*].status.nodeInfo.containerRuntimeVersion}'",
+     "note": "Show which runtime and version each node uses"
+    },
+    {
+     "cmd": "crictl ps",
+     "note": "List containers directly through the CRI on a node"
+    }
+   ],
+   "follow_ups": [
+    "Do I need to rebuild my Docker images?",
+    "What does OCI standardise?"
+   ],
+   "pitfalls": [
+    "Saying Kubernetes dropped Docker images. It dropped Docker Engine as a runtime, not the image format."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-cri-containerd.html",
+    "title": "Kubelet, CRI and runtimes",
+    "ratio": "1000/420"
+   }
+  },
+  {
+   "id": "ch1-minimum-cluster",
+   "level": "mid",
+   "question": "What is the smallest valid Kubernetes cluster, and what does managed Kubernetes take off your plate?",
+   "say_first": "A cluster needs at least a control plane; with zero workers it runs, but cannot host ordinary workloads. Managed services run and patch the control plane for you.",
+   "explain": [
+    "The control plane alone is a working cluster in the sense that the API answers. But Pods need a node to run on, so applications stay Pending until a worker joins. Single-node dev clusters get around this by letting the control plane node also run workloads.",
+    "With managed Kubernetes (EKS, GKE, AKS) the provider operates the API server, etcd and other control plane parts, handles upgrades and availability, and integrates with cloud load balancers and storage.",
+    "You still choose node sizes, upgrade timing for workers, networking, access control and what runs on the cluster."
+   ],
+   "key_points": [
+    "Control plane required; workers needed to run apps.",
+    "Pods without a node stay Pending.",
+    "Managed offerings remove control plane operations only.",
+    "Dev tools like kind or minikube bundle everything in one node."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get nodes",
+     "note": "Check that nodes have joined and are Ready"
+    },
+    {
+     "cmd": "kubectl describe pod <pod-name>",
+     "note": "Look for a FailedScheduling event when no node fits"
+    }
+   ],
+   "follow_ups": [
+    "What does Pending mean for a Pod?",
+    "Who patches worker nodes on a managed service?"
+   ],
+   "pitfalls": [
+    "Believing managed Kubernetes means you no longer manage anything."
+   ],
+   "diagram": {
+    "file": "diagrams/ch1-minimum-cluster.html",
+    "title": "The smallest valid cluster",
+    "ratio": "1000/440"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch1-vm-vs-container.html",
+  "diagrams/ch1-containerize-flow.html",
+  "diagrams/ch1-self-healing.html",
+  "diagrams/ch1-should-you-use-k8s.html",
+  "diagrams/ch1-architecture.html",
+  "diagrams/ch1-container-image-vs-running.html",
+  "diagrams/ch1-image-layers.html",
+  "diagrams/ch1-kernel-features.html",
+  "diagrams/ch1-containers-or-vms.html",
+  "diagrams/ch1-what-is-kubernetes.html",
+  "diagrams/ch1-key-features.html",
+  "diagrams/ch1-swarm-vs-k8s.html",
+  "diagrams/ch1-cri-containerd.html",
+  "diagrams/ch1-minimum-cluster.html"
+ ]
+}

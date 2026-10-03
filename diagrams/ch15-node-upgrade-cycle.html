@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upgrading one worker node</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; color: var(--color-ink); margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Maintenance</p>
+    <h1>Upgrading one worker node</h1>
+
+    <svg viewBox="0 0 1000 352" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="node-upgrade-cycle-title node-upgrade-cycle-desc">
+      <title id="node-upgrade-cycle-title">Upgrading one worker node</title>
+      <desc id="node-upgrade-cycle-desc">Each worker node goes through cordon, drain, upgrade and uncordon, with a PodDisruptionBudget limiting evictions, then the cycle repeats for the next node.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M240 200 H280" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M480 200 H520" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M720 200 H760" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M380 92 V160" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><path d="M860 240 V280 Q860 288 852 288 H148 Q140 288 140 280 V240" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><rect x="467" y="268" width="66" height="12" rx="2" fill="#f5f5f5"/><text x="500" y="277" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NEXT NODE</text><rect x="40" y="160" width="200" height="80" rx="6" fill="#f5f5f5"/><rect x="40" y="160" width="200" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="168" width="48" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="72" y="177" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORDON</text><text x="140" y="208" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cordon</text><text x="140" y="224" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">stop new Pods</text><rect x="280" y="160" width="200" height="80" rx="6" fill="#f5f5f5"/><rect x="280" y="160" width="200" height="80" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="288" y="168" width="42" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="309" y="177" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DRAIN</text><text x="380" y="208" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Drain</text><text x="380" y="224" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">evict and reschedule</text><rect x="520" y="160" width="200" height="80" rx="6" fill="#f5f5f5"/><rect x="520" y="160" width="200" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="528" y="168" width="54" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="555" y="177" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">UPGRADE</text><text x="620" y="208" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Upgrade</text><text x="620" y="224" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">kubelet, OS, reboot</text><rect x="760" y="160" width="200" height="80" rx="6" fill="#f5f5f5"/><rect x="760" y="160" width="200" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="768" y="168" width="60" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="798" y="177" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">UNCORDON</text><text x="860" y="208" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Uncordon</text><text x="860" y="224" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">accept Pods again</text><rect x="280" y="28" width="200" height="64" rx="6" fill="#f5f5f5"/><rect x="280" y="28" width="200" height="64" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/><rect x="288" y="36" width="36" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-opacity="0.4" stroke-width="0.8"/><text x="306" y="45" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GATE</text><text x="380" y="72" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PodDisruptionBudget</text><line x1="30" y1="320" x2="970" y2="320" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="336" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="332" x2="148" y2="332" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="335" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">sequence</text><line x1="244" y1="332" x2="272" y2="332" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4"/><text x="280" y="335" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">gate / repeat</text>
+    </svg>
+  </div>
+</body>
+</html>

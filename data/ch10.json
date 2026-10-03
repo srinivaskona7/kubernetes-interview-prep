@@ -1,0 +1,856 @@
+{
+ "number": 10,
+ "title": "Real-World Deployment Scenarios and Continuous Deployment",
+ "part": "Part 4 · Deployment, Application Management, and GitOps",
+ "tagline": "Rollout strategies, Kustomize overlays and Helm charts for shipping safely",
+ "overview": "This chapter covers how to update a live application on Kubernetes, from the simple Recreate and rolling update through blue-green, canary, A/B and shadow releases, and how to choose between them. It then shows how to manage the YAML across dev, staging and production with Kustomize overlays and Helm charts.",
+ "topics": [
+  {
+   "id": "ch10-recreate-strategy",
+   "level": "junior",
+   "question": "What is the Recreate deployment strategy, and when is it acceptable to use it despite the downtime?",
+   "say_first": "Recreate stops every old Pod first, then starts the new ones, so there is a gap with no running app. It is fine for dev, test and other places where a short outage hurts nobody.",
+   "explain": [
+    "Picture closing a shop completely, swapping all the shelves, and only then reopening. Nothing is ever half old and half new, but customers find a locked door in between.",
+    "Kubernetes does exactly that: it scales the old ReplicaSet to zero, waits for those Pods to terminate, and only then creates the new Pods. A rollback needs the same stop-and-start dance, so it causes a second outage.",
+    "The upside is simplicity. Two versions never run together, which means no schema or API compatibility headaches and very easy debugging."
+   ],
+   "key_points": [
+    "Downtime equals the time to stop old Pods plus start and ready the new ones",
+    "Never two versions at once, so no mixed-version bugs",
+    "Rollback repeats the outage",
+    "Good fit: dev, test, staging, batch apps that tolerate a pause, or apps that cannot run two versions side by side",
+    "Wrong fit: critical user-facing production services"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl patch deployment web -p '{\"spec\":{\"strategy\":{\"type\":\"Recreate\",\"rollingUpdate\":null}}}'",
+     "note": "Switch an existing Deployment to Recreate (rollingUpdate settings must be cleared)"
+    },
+    {
+     "cmd": "kubectl rollout status deployment/web",
+     "note": "Watch the rollout finish"
+    }
+   ],
+   "follow_ups": [
+    "Which kind of app genuinely cannot run two versions at once?",
+    "How would you shorten the outage window?"
+   ],
+   "pitfalls": [
+    "Saying Recreate is never useful",
+    "Forgetting that rollback also means downtime"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-recreate-gap.html",
+    "title": "Recreate",
+    "ratio": "1000/260"
+   }
+  },
+  {
+   "id": "ch10-rolling-update-surge-unavailable",
+   "level": "junior",
+   "question": "How does a rolling update work, and what do maxSurge and maxUnavailable control?",
+   "say_first": "A rolling update swaps Pods a few at a time, only moving on when new Pods pass their readiness probe. maxSurge caps how many extra Pods may exist, and maxUnavailable caps how many may be missing during the swap.",
+   "explain": [
+    "Think of replacing the tyres on a moving bus one at a time: you never take off so many that the bus stops, and you only continue once the new tyre is fitted and holding.",
+    "The Deployment controller grows a new ReplicaSet and shrinks the old one in small steps. Readiness probes are the gate: a new Pod only counts as available, and lets the old one go, once it reports ready.",
+    "The two knobs trade speed against capacity and cost. A larger surge is faster and keeps capacity high but briefly needs more cluster resources. A larger unavailable allowance is faster and cheaper but lowers serving capacity mid-update."
+   ],
+   "key_points": [
+    "Both values accept an absolute number or a percentage",
+    "Defaults are 25 percent for each",
+    "maxSurge 0 with maxUnavailable 1 gives a slow, resource-neutral update",
+    "maxUnavailable 0 with maxSurge 1 never drops below desired capacity",
+    "A wrong readiness probe makes the gate meaningless"
+   ],
+   "table": {
+    "caption": "Tuning the two rolling update knobs (10 replicas)",
+    "headers": [
+     "Setting",
+     "Effect",
+     "Best when"
+    ],
+    "rows": [
+     [
+      "maxSurge 3, maxUnavailable 0",
+      "Up to 13 Pods, never under 10 ready",
+      "Capacity must never dip and spare resources exist"
+     ],
+     [
+      "maxSurge 0, maxUnavailable 2",
+      "Never above 10 Pods, down to 8 ready",
+      "Cluster is tight on quota or nodes"
+     ],
+     [
+      "maxSurge 25%, maxUnavailable 25%",
+      "Default balance of speed and safety",
+      "General purpose services"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl set image deployment/web web=web:v2",
+     "note": "Trigger a rolling update by changing the image"
+    },
+    {
+     "cmd": "kubectl rollout status deployment/web",
+     "note": "Follow progress until complete"
+    },
+    {
+     "cmd": "kubectl rollout undo deployment/web",
+     "note": "Return to the previous ReplicaSet"
+    },
+    {
+     "cmd": "kubectl get deployment web -o jsonpath='{.spec.strategy}'",
+     "note": "Show the configured strategy block"
+    }
+   ],
+   "follow_ups": [
+    "What happens if the new Pods never become ready?",
+    "How do progressDeadlineSeconds and minReadySeconds fit in?"
+   ],
+   "pitfalls": [
+    "Setting both maxSurge and maxUnavailable to 0, which is rejected because no progress is possible",
+    "Treating a readiness probe as a test of correctness rather than of readiness to take traffic"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-rolling-knobs.html",
+    "title": "Rolling update",
+    "ratio": "1000/340"
+   }
+  },
+  {
+   "id": "ch10-rolling-update-limits",
+   "level": "mid",
+   "question": "Rolling updates give zero downtime, so why do teams still reach for other strategies?",
+   "say_first": "Because a rolling update mixes old and new code in production for a while and rolls back slowly. When you need instant reversal, a small trial audience, or load testing without user risk, you need a more deliberate pattern.",
+   "explain": [
+    "During a rolling update, some requests hit v1 and others v2. If the two disagree on an API shape or database schema, users see odd behaviour, and it is hard to tell which version caused it.",
+    "Rolling back is just another rolling update in reverse, so it takes as long as the rollout did, while the bad version keeps serving traffic.",
+    "Advanced strategies each answer one question: how do I revert in one step (blue-green), how do I expose only a sliver of users (canary), how do I compare business outcomes (A/B), and how do I test under real load with no user impact (shadow)."
+   ],
+   "key_points": [
+    "Mixed versions mean compatibility must hold in both directions",
+    "Rollback speed equals rollout speed",
+    "No built-in way to pick which users see the new version",
+    "Advanced patterns often need an Ingress, Gateway API or service mesh for fine traffic control"
+   ],
+   "follow_ups": [
+    "How would you make a schema change safe during a rolling update?",
+    "Which strategy would you choose for a payment service?"
+   ],
+   "pitfalls": [
+    "Claiming rolling updates are risk free because they have no downtime"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-rolling-limits.html",
+    "title": "Rolling update limits and the pattern for each",
+    "ratio": "1000/400"
+   }
+  },
+  {
+   "id": "ch10-blue-green",
+   "level": "mid",
+   "question": "Explain blue-green deployment and how you would implement it with plain Kubernetes objects.",
+   "say_first": "Run two full copies of the app, blue (live) and green (new), and point the Service at one of them. Releasing means flipping the Service selector from blue to green, and rolling back means flipping it back.",
+   "explain": [
+    "Imagine two identical stages in a theatre. The audience watches stage one while the crew rehearses on stage two; when ready, the spotlight swings over in one move.",
+    "In Kubernetes you create two Deployments whose Pods carry a version label, and one Service whose selector names the live version. Because the Service is just a label match, patching the selector moves all traffic at once.",
+    "The green side can be tested thoroughly, even with a separate test Service, before any real user touches it. The old blue Pods stay running, which is why rollback is nearly instant."
+   ],
+   "key_points": [
+    "Two environments, one active at a time",
+    "Cut-over is one selector change",
+    "Rollback is the same change in reverse",
+    "Requires roughly double the capacity during the release",
+    "Existing long-lived connections or sessions may be dropped at cut-over"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f blue-green-deployment.yml",
+     "note": "Create the app-blue and app-green Deployments"
+    },
+    {
+     "cmd": "kubectl patch service my-app-service -p '{\"spec\":{\"selector\":{\"app\":\"my-app\",\"version\":\"green\"}}}'",
+     "note": "Cut traffic over to green"
+    },
+    {
+     "cmd": "kubectl patch service my-app-service -p '{\"spec\":{\"selector\":{\"app\":\"my-app\",\"version\":\"blue\"}}}'",
+     "note": "Roll back to blue"
+    },
+    {
+     "cmd": "kubectl get endpointslices -l kubernetes.io/service-name=my-app-service",
+     "note": "Confirm which Pod IPs the Service now targets"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-blue-green.html",
+    "title": "Blue-green traffic switch",
+    "ratio": "1000/376"
+   },
+   "follow_ups": [
+    "What happens to in-flight requests at the switch?",
+    "Why keep blue running after the cut-over?"
+   ],
+   "pitfalls": [
+    "Forgetting the second label in the selector so the Service matches both versions",
+    "Deleting blue immediately after the switch"
+   ]
+  },
+  {
+   "id": "ch10-blue-green-tradeoffs",
+   "level": "mid",
+   "question": "You switched to green and error rates spike. What do you do, and what are the real costs and hazards of blue-green?",
+   "say_first": "Point the Service selector back at blue; it is still running, so recovery takes seconds. The costs are double infrastructure and the hard problem of shared data.",
+   "explain": [
+    "Rollback needs no rebuild, no redeploy and no waiting for Pods: blue never stopped. You then investigate green offline, away from users.",
+    "The price is paying for two environments at once, and keeping them genuinely identical in configuration, resources and dependencies, otherwise the green test proves nothing.",
+    "The application layer flips easily, but the database does not. If green ran a schema migration or wrote new-format data, blue may not understand it after a rollback. Use backward-compatible, expand-then-contract migrations."
+   ],
+   "key_points": [
+    "Automate tests against green before the switch",
+    "Monitor error rate and latency immediately after the cut-over",
+    "Keep schema changes backward compatible across both colours",
+    "Cost is the main reason teams pick canary instead",
+    "A DNS or external load balancer switch can drop sessions; a Service selector change affects new connections"
+   ],
+   "follow_ups": [
+    "How do you handle a database migration in blue-green?",
+    "Can you do the switch gradually instead of all at once?"
+   ],
+   "pitfalls": [
+    "Ignoring the data layer when promising instant rollback"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-blue-green-rollback.html",
+    "title": "Blue-green",
+    "ratio": "1000/380"
+   }
+  },
+  {
+   "id": "ch10-canary-plain-kubernetes",
+   "level": "mid",
+   "question": "What is a canary release, and how can you build one with only Deployments and a Service?",
+   "say_first": "A canary sends a small slice of real traffic to the new version first, and widens it only if the numbers look healthy. With plain Kubernetes you share one Service across two Deployments and let pod counts set the ratio.",
+   "explain": [
+    "The name comes from miners who carried canaries underground: a small, sensitive early-warning signal that protects everyone else.",
+    "Create a stable Deployment with nine replicas and a canary Deployment with one replica. Both carry the labels the Service selects on, and only a version label differs. The Service spreads connections roughly evenly over all ten Pods, so about 10 percent hit the canary.",
+    "To widen the exposure, scale the canary up and the stable down. If the canary misbehaves, scale it to zero. The limits are that the split is only approximate and cannot target specific users; for exact weights you need an Ingress controller, Gateway API or mesh."
+   ],
+   "key_points": [
+    "Typical first exposure is 5 to 10 percent of traffic",
+    "Service selector must omit the version label",
+    "Traffic share follows pod count, not a configured percentage",
+    "Needs real monitoring (error rate, latency, saturation) to decide to promote or abort",
+    "Cheaper than blue-green because only a few extra Pods run"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl scale deployment frontend-app-canary --replicas=3",
+     "note": "Increase canary exposure"
+    },
+    {
+     "cmd": "kubectl scale deployment frontend-app --replicas=7",
+     "note": "Reduce stable Pods to keep the total at ten"
+    },
+    {
+     "cmd": "kubectl scale deployment frontend-app-canary --replicas=0",
+     "note": "Abort the canary"
+    },
+    {
+     "cmd": "kubectl get pods -l app=interview-app -L version",
+     "note": "Show how many Pods exist per version"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-canary.html",
+    "title": "Canary traffic split by pod count",
+    "ratio": "1000/376"
+   },
+   "follow_ups": [
+    "How would you get an exact 1 percent split?",
+    "What metrics decide whether to promote?"
+   ],
+   "pitfalls": [
+    "Putting the version label in the Service selector, which stops it spanning both Deployments",
+    "Believing pod counts give precise percentages under keep-alive connections"
+   ]
+  },
+  {
+   "id": "ch10-canary-istio",
+   "level": "senior",
+   "question": "How do you get exact canary weights, independent of pod counts, using Istio?",
+   "say_first": "Define a DestinationRule that names subsets by version label, then a VirtualService that assigns weights to those subsets, for example 90 to stable and 10 to canary.",
+   "explain": [
+    "The DestinationRule says what the groups are: the stable subset is Pods labelled version=stable, the canary subset is version=canary.",
+    "The VirtualService says how requests are divided among those groups. Because the sidecar proxies enforce the weights, one canary Pod can receive 10 percent or 1 percent regardless of how many stable Pods exist.",
+    "Promotion is then just editing weights while watching Prometheus and Grafana, and abort is setting the canary weight to zero."
+   ],
+   "key_points": [
+    "Routing logic lives in the mesh, not in replica counts",
+    "Weights must add up to 100",
+    "Both subsets sit behind the same Kubernetes Service",
+    "Tools such as Flagger can automate the weight steps from metrics"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f canary-deploy-istio-destination-rule.yml",
+     "note": "Create the subsets and the weighted route"
+    },
+    {
+     "cmd": "kubectl get virtualservice,destinationrule",
+     "note": "Check the Istio routing objects exist"
+    },
+    {
+     "cmd": "kubectl patch virtualservice interview-app-virtualservice --type=json -p='[{\"op\":\"replace\",\"path\":\"/spec/http/0/route/1/weight\",\"value\":25},{\"op\":\"replace\",\"path\":\"/spec/http/0/route/0/weight\",\"value\":75}]'",
+     "note": "Shift to a 75 and 25 split"
+    }
+   ],
+   "follow_ups": [
+    "How can routing depend on a header or cookie instead of a weight?",
+    "What does Flagger add on top?"
+   ],
+   "pitfalls": [
+    "Changing only one weight so the total is not 100",
+    "Applying routes before the subsets they reference exist"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-canary-istio-weights.html",
+    "title": "Istio canary",
+    "ratio": "1000/360"
+   }
+  },
+  {
+   "id": "ch10-ab-vs-canary",
+   "level": "mid",
+   "question": "How does an A/B deployment differ from a canary, and who cares about the results?",
+   "say_first": "The difference is intent. A canary asks whether the new build is technically healthy; an A/B test asks whether the new behaviour is better for the business. Product and marketing teams care most about A/B results.",
+   "explain": [
+    "Canary is a smoke detector, A/B is a taste test. In a canary you hope nothing interesting happens; in an A/B test you want a measurable difference.",
+    "A/B deliberately splits users by rules (region, header, cohort, or random buckets) and measures conversions, engagement or performance per variant.",
+    "Kubernetes gives you the plumbing: labels, Services, Ingress rules and mesh CRDs. The analytics, segmentation and statistical judgement come from extra tools such as Istio, Flagger, or feature management and experimentation platforms."
+   ],
+   "key_points": [
+    "Needs careful user segmentation and a predefined success metric",
+    "Runs two versions in parallel, so costs more",
+    "Users may see inconsistent experiences, so keep assignment sticky",
+    "One of the most complex strategies to run well"
+   ],
+   "table": {
+    "caption": "Canary versus A/B",
+    "headers": [
+     "Aspect",
+     "Canary",
+     "A/B test"
+    ],
+    "rows": [
+     [
+      "Question answered",
+      "Is it stable and fast?",
+      "Is it better for the business?"
+     ],
+     [
+      "Audience choice",
+      "Small random slice",
+      "Chosen segments or buckets"
+     ],
+     [
+      "Success signal",
+      "Error rate, latency, saturation",
+      "Conversion, engagement, revenue"
+     ],
+     [
+      "Typical owners",
+      "Platform and SRE",
+      "Product, marketing, UX"
+     ],
+     [
+      "Outcome",
+      "Promote or roll back",
+      "Pick the winning variant"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "How do you keep a user on the same variant between requests?",
+    "Why is statistical significance relevant here?"
+   ],
+   "pitfalls": [
+    "Calling any percentage-based rollout an A/B test"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-ab-vs-canary.html",
+    "title": "Canary checks health, A/B checks value",
+    "ratio": "1000/400"
+   }
+  },
+  {
+   "id": "ch10-shadow-deployment",
+   "level": "senior",
+   "question": "What is a shadow deployment, and when would you pick it over a canary?",
+   "say_first": "A shadow deployment mirrors a copy of live traffic to the new version and throws away its responses. Choose it to test performance and stability under real load with zero user exposure; choose a canary when you need real users to exercise the feature.",
+   "explain": [
+    "It is a flight simulator fed with live cockpit data: the pilots never rely on the simulator's output, but you learn exactly how it copes with real conditions.",
+    "The stable version answers the user as always. The proxy or mesh quietly forks the request to v2 and ignores whatever comes back, so even a crashing v2 cannot hurt anyone.",
+    "Because no user sees v2 responses, shadowing cannot validate user-facing behaviour or collect feedback. It validates non-functional qualities: latency, memory, error behaviour, and capacity."
+   ],
+   "key_points": [
+    "Goal: non-functional validation under production load",
+    "Responses from the shadow are always discarded",
+    "Fire-and-forget, so the user is not delayed by the mirror",
+    "Usually requires a mesh such as Istio or Linkerd",
+    "After enough evidence, promote with rolling or blue-green"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-shadow.html",
+    "title": "Traffic mirroring to a shadow version",
+    "ratio": "1000/376"
+   },
+   "follow_ups": [
+    "Why can a canary and a shadow be combined in sequence?",
+    "What would you monitor on the shadow version?"
+   ],
+   "pitfalls": [
+    "Expecting a shadow to reveal user reactions",
+    "Mirroring without checking what the service writes"
+   ]
+  },
+  {
+   "id": "ch10-shadow-risks-istio",
+   "level": "senior",
+   "question": "What is the biggest risk of shadow deployments, and how do you configure mirroring in Istio?",
+   "say_first": "The biggest risk is side effects: the shadow executes real writes, payments or emails too. Mitigate by mirroring only read-only endpoints or by pointing the shadow at stubbed downstream services. In Istio you add a mirror block to the VirtualService.",
+   "explain": [
+    "A mirrored request is a real request. If the service charges a card or inserts a row, the shadow will do it a second time unless you prevent it.",
+    "Safe options include read-only endpoints, a separate test database, mocked payment and email providers, and mirroring only a percentage of traffic.",
+    "In the VirtualService, the route sends 100 percent to the stable subset and the mirror field names the shadow subset, with mirrorPercentage to control how much gets copied. The DestinationRule defines the subsets by label."
+   ],
+   "key_points": [
+    "Never mirror state-changing calls to production dependencies",
+    "Use mirrorPercentage to limit load on the shadow",
+    "Mirrored requests carry a shadow suffix on the Host header so services can recognise them",
+    "Watch cost: the shadow needs capacity to handle mirrored volume"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f shadow-virtualservice.yaml",
+     "note": "Apply the VirtualService with a mirror block and the matching DestinationRule"
+    },
+    {
+     "cmd": "kubectl get virtualservice my-app-virtualservice -o yaml",
+     "note": "Inspect the mirror and mirrorPercentage fields"
+    },
+    {
+     "cmd": "kubectl logs -l version=v2 -c my-app --tail=50",
+     "note": "See what the shadow Pods received"
+    }
+   ],
+   "follow_ups": [
+    "How would you stub a payment provider for the shadow?",
+    "How would you limit mirrored traffic to 10 percent?"
+   ],
+   "pitfalls": [
+    "Forgetting that the shadow's database writes are real",
+    "Assuming mirroring works without a mesh or capable ingress"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-shadow-mirror-risk.html",
+    "title": "Shadow mirroring",
+    "ratio": "1000/360"
+   }
+  },
+  {
+   "id": "ch10-choosing-a-strategy",
+   "level": "mid",
+   "question": "An interviewer asks, 'Which deployment strategy is best?' How do you answer?",
+   "say_first": "It depends on the constraint that matters most: downtime tolerance, rollback speed, cost, risk appetite, and what you need to learn. I would name the trade-offs and pick per situation.",
+   "explain": [
+    "There is no universal winner; each strategy buys one benefit by paying for it elsewhere. A good answer shows you can map a requirement to a strategy.",
+    "Start with the cheapest option that meets the need. Use Recreate where downtime is fine, rolling for everyday zero-downtime releases, and add heavier patterns only where their special benefit is worth the cost.",
+    "You can also chain them: shadow to prove performance, canary to prove behaviour with a few users, then a rolling update or blue-green for the full release."
+   ],
+   "key_points": [
+    "Ask about downtime, rollback time, budget, data compatibility and tooling",
+    "Rolling is the sensible default",
+    "Blue-green buys instant rollback with double cost",
+    "Canary limits blast radius cheaply",
+    "Shadow and A/B need mesh-grade traffic control"
+   ],
+   "table": {
+    "caption": "Strategy comparison",
+    "headers": [
+     "Strategy",
+     "Downtime",
+     "Rollback speed",
+     "Extra cost",
+     "Best for"
+    ],
+    "rows": [
+     [
+      "Recreate",
+      "Yes",
+      "Slow, another outage",
+      "None",
+      "Dev and test"
+     ],
+     [
+      "Rolling",
+      "None",
+      "Moderate",
+      "Small surge",
+      "Default production"
+     ],
+     [
+      "Blue-green",
+      "Near zero",
+      "Instant",
+      "Double capacity",
+      "Critical releases needing quick revert"
+     ],
+     [
+      "Canary",
+      "None",
+      "Fast",
+      "Small",
+      "Validating stability with real users"
+     ],
+     [
+      "A/B",
+      "None",
+      "Fast",
+      "Medium to high",
+      "Comparing business outcomes"
+     ],
+     [
+      "Shadow",
+      "None",
+      "Not applicable",
+      "Medium",
+      "Load and stability tests with no user impact"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch10-strategy-chooser.html",
+    "title": "Decision flow for rollout strategy",
+    "ratio": "720/628"
+   },
+   "follow_ups": [
+    "What would you choose for a stateful database-backed service?",
+    "How do feature flags change the picture?"
+   ],
+   "pitfalls": [
+    "Naming one strategy as always best"
+   ]
+  },
+  {
+   "id": "ch10-kustomize-base-overlay",
+   "level": "junior",
+   "question": "What problem does Kustomize solve, and how do bases and overlays work?",
+   "say_first": "Kustomize manages per-environment differences without templates: you keep one base set of plain YAML and layer small overlays on top for dev, staging and production.",
+   "explain": [
+    "Hand-editing copies of manifests for each environment drifts apart and invites mistakes. Think of a master recipe with sticky-note tweaks per kitchen: the recipe is never rewritten.",
+    "The base holds the shared Deployment, Service and ConfigMap. Each overlay directory has a kustomization.yaml pointing at the base plus patches, such as a higher replica count or tighter limits for production.",
+    "Because it is built into kubectl, you can preview with kubectl kustomize and apply with kubectl apply -k, with no extra install and no templating language."
+   ],
+   "key_points": [
+    "Template-free and declarative",
+    "Patches are strategic merge or JSON patches",
+    "Generators create ConfigMaps and Secrets, adding a hash so changes trigger rollouts",
+    "Transformers add name prefixes or suffixes, labels and annotations to everything"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl kustomize overlays/prod",
+     "note": "Render the final manifests without applying"
+    },
+    {
+     "cmd": "kubectl apply -k overlays/prod",
+     "note": "Build and apply the production overlay"
+    },
+    {
+     "cmd": "kubectl diff -k overlays/prod",
+     "note": "Preview what would change in the cluster"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-kustomize-overlays.html",
+    "title": "Kustomize base and overlays",
+    "ratio": "960/452"
+   },
+   "follow_ups": [
+    "When would you use a JSON patch instead of a strategic merge patch?",
+    "How do generators trigger rolling updates?"
+   ],
+   "pitfalls": [
+    "Editing the base for one environment's needs",
+    "Confusing overlays with Helm values files"
+   ]
+  },
+  {
+   "id": "ch10-kustomization-file-and-cd",
+   "level": "mid",
+   "question": "What is the role of kustomization.yaml, and how would you plug Kustomize into a CD pipeline?",
+   "say_first": "kustomization.yaml is the instruction file: it lists the resources, patches, generators and name or label transforms that produce the final manifests. In a pipeline you check out Git, run kustomize build for the target overlay, apply it, test, and gate promotion to production.",
+   "explain": [
+    "Think of it as a build recipe pointing at ingredients. You change this one file per environment rather than the underlying manifests.",
+    "A typical pipeline has stages: checkout, build staging manifests, apply to staging, run tests, wait for approval, then build and apply production. All inputs live in version control so every change is reviewable.",
+    "Rollback comes from Git: revert the commit, or deploy a tagged earlier directory or revision, and re-apply."
+   ],
+   "key_points": [
+    "Key fields: resources, patches, configMapGenerator, secretGenerator, namePrefix, commonLabels",
+    "Repository layout: base/, overlays/<env>/, optionally release folders or tags",
+    "Validate manifests in CI before apply",
+    "Prefer generators for ConfigMaps and Secrets so config changes roll Pods",
+    "Keep patches few and small"
+   ],
+   "commands": [
+    {
+     "cmd": "kustomize build overlays/staging > staging-manifest.yaml",
+     "note": "Render the staging overlay to a file"
+    },
+    {
+     "cmd": "kubectl apply -f staging-manifest.yaml",
+     "note": "Apply the rendered manifests"
+    },
+    {
+     "cmd": "kubectl rollout status deployment/web -n staging",
+     "note": "Gate the pipeline on a successful rollout"
+    },
+    {
+     "cmd": "kubectl kustomize overlays/prod | kubectl apply -f -",
+     "note": "One-line build and apply with only kubectl"
+    }
+   ],
+   "follow_ups": [
+    "Where would the manual approval step sit?",
+    "How do you validate manifests before apply?"
+   ],
+   "pitfalls": [
+    "Applying production straight from a developer laptop",
+    "Skipping a post-deploy test stage"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-kustomize-cd-pipeline.html",
+    "title": "kustomization.yaml inside a CD pipeline",
+    "ratio": "1000/340"
+   }
+  },
+  {
+   "id": "ch10-helm-architecture-tiller",
+   "level": "mid",
+   "question": "How is Helm structured, and what major change did Helm 3 make compared with Helm 2?",
+   "say_first": "Helm is a client that renders chart templates with your values and sends the result to the Kubernetes API as a tracked release. Helm 3 removed Tiller, the in-cluster server of Helm 2, so Helm now acts with your own RBAC permissions.",
+   "explain": [
+    "A chart is a parameterised blueprint, values are the order form, and a release is one installed instance of that blueprint in a cluster.",
+    "In Helm 2, the CLI talked to Tiller inside the cluster, which often held broad rights and was a security risk and single point of failure. Helm 3 talks straight to the API server, exactly like kubectl.",
+    "Release history is stored as Secrets in the release's namespace, which makes upgrades and rollbacks possible without a server component."
+   ],
+   "key_points": [
+    "Helm client plus a library that renders and installs",
+    "No Tiller in Helm 3",
+    "Permissions equal the caller's RBAC",
+    "Releases are versioned, so helm rollback works",
+    "Charts can be shared through repositories"
+   ],
+   "table": {
+    "caption": "Helm 2 versus Helm 3",
+    "headers": [
+     "Aspect",
+     "Helm 2",
+     "Helm 3"
+    ],
+    "rows": [
+     [
+      "Server component",
+      "Tiller inside the cluster",
+      "None"
+     ],
+     [
+      "Permissions used",
+      "Tiller's, often cluster-wide",
+      "The caller's own RBAC"
+     ],
+     [
+      "Security posture",
+      "Broad shared privilege",
+      "Least privilege per user"
+     ],
+     [
+      "Release storage",
+      "ConfigMaps in the Tiller namespace",
+      "Secrets in the release namespace"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "helm install my-release ./mychart -f prod-values.yaml",
+     "note": "Install a chart with custom values"
+    },
+    {
+     "cmd": "helm upgrade my-release ./mychart --set replicas=4",
+     "note": "Upgrade an existing release"
+    },
+    {
+     "cmd": "helm history my-release",
+     "note": "List revisions of the release"
+    },
+    {
+     "cmd": "helm rollback my-release 1",
+     "note": "Return to revision 1"
+    }
+   ],
+   "follow_ups": [
+    "Where does Helm 3 keep release history?",
+    "How would you restrict what a team can install with Helm?"
+   ],
+   "pitfalls": [
+    "Describing Helm as a server you install in the cluster"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-helm-tiller-removed.html",
+    "title": "Helm 3 removed Tiller",
+    "ratio": "1000/370"
+   }
+  },
+  {
+   "id": "ch10-helm-chart-templates",
+   "level": "mid",
+   "question": "What does a Helm chart contain, and how do templates, values and hooks work?",
+   "say_first": "A chart is a folder with Chart.yaml for metadata, values.yaml for defaults, templates for Kubernetes manifests written in Go template syntax, and optionally charts for dependencies. Hooks and tests run extra jobs at defined release moments.",
+   "explain": [
+    "Scaffold with helm create. Templates pull in data through built-in objects: .Values for your settings, .Release for the install name and namespace, and .Chart for chart metadata.",
+    "Pipelines and functions such as default and quote shape values, while if and range give conditionals and loops. Named templates in _helpers.tpl avoid repeating snippets.",
+    "Hooks run tasks like database migrations before an upgrade; tests verify a release after install; dependencies compose bigger apps from smaller charts."
+   ],
+   "key_points": [
+    "Chart.yaml, values.yaml, templates/, charts/",
+    "{{ .Values.image.tag | default \"latest\" | quote }} style pipelines",
+    "Use helm lint and helm template before shipping",
+    "Override defaults with -f file or --set",
+    "Avoid latest as a default image tag in real charts"
+   ],
+   "commands": [
+    {
+     "cmd": "helm create mychart",
+     "note": "Scaffold a new chart"
+    },
+    {
+     "cmd": "helm lint ./mychart",
+     "note": "Check chart for errors"
+    },
+    {
+     "cmd": "helm template my-release ./mychart -f values-prod.yaml",
+     "note": "Render manifests locally without installing"
+    },
+    {
+     "cmd": "helm test my-release",
+     "note": "Run the chart's test hooks"
+    }
+   ],
+   "follow_ups": [
+    "How do you run a migration Job before upgrades?",
+    "How do chart dependencies get pinned?"
+   ],
+   "pitfalls": [
+    "Putting secrets in values.yaml committed to Git",
+    "Overcomplicated templates that nobody can debug"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-helm-chart-anatomy.html",
+    "title": "Helm chart anatomy",
+    "ratio": "1000/400"
+   }
+  },
+  {
+   "id": "ch10-helm-vs-kustomize",
+   "level": "mid",
+   "question": "Compare Helm and Kustomize. When would you choose each, and what is the trade-off?",
+   "say_first": "Helm templates and packages apps for reuse and sharing; Kustomize patches plain YAML for per-environment variation. Helm is more flexible and heavier, Kustomize is simpler and more predictable, and some teams use both.",
+   "explain": [
+    "Helm lets logic live in your manifests, such as adding a sidecar only if a value is true. That power costs readability: complex templates are hard to read and debug.",
+    "Kustomize stays declarative. What you see is nearly what you get, but it cannot express arbitrary logic and has no packaging or versioned distribution idea.",
+    "A common pairing is to consume third-party software as Helm charts and manage your own apps and per-environment differences with Kustomize, or to post-process rendered Helm output with a Kustomize overlay."
+   ],
+   "key_points": [
+    "Choose Helm for distributing apps, release versioning and complex parametrisation",
+    "Choose Kustomize for simple environment differences and native kubectl support",
+    "Helm requires its own CLI; Kustomize ships in kubectl",
+    "The trade-off is flexibility versus simplicity"
+   ],
+   "table": {
+    "caption": "Kustomize versus Helm",
+    "headers": [
+     "Property",
+     "Kustomize",
+     "Helm"
+    ],
+    "rows": [
+     [
+      "Approach",
+      "Overlays patch a base",
+      "Go templates generate manifests"
+     ],
+     [
+      "Learning curve",
+      "Gentle",
+      "Steeper"
+     ],
+     [
+      "Packaging and sharing",
+      "No packaging concept",
+      "Charts and repositories"
+     ],
+     [
+      "Tooling",
+      "Built into kubectl",
+      "Separate CLI"
+     ],
+     [
+      "Logic",
+      "Declarative only",
+      "Conditionals, loops, functions"
+     ],
+     [
+      "Release tracking",
+      "None, rely on Git",
+      "Versioned releases and rollback"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "How would you use both together?",
+    "What do you lose with templates when debugging?"
+   ],
+   "pitfalls": [
+    "Declaring one tool always superior",
+    "Using Helm templating where a small patch would do"
+   ],
+   "diagram": {
+    "file": "diagrams/ch10-helm-vs-kustomize.html",
+    "title": "Helm versus Kustomize",
+    "ratio": "1000/470"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch10-blue-green.html",
+  "diagrams/ch10-canary.html",
+  "diagrams/ch10-shadow.html",
+  "diagrams/ch10-strategy-chooser.html",
+  "diagrams/ch10-kustomize-overlays.html",
+  "diagrams/ch10-recreate-gap.html",
+  "diagrams/ch10-rolling-knobs.html",
+  "diagrams/ch10-rolling-limits.html",
+  "diagrams/ch10-blue-green-rollback.html",
+  "diagrams/ch10-canary-istio-weights.html",
+  "diagrams/ch10-ab-vs-canary.html",
+  "diagrams/ch10-shadow-mirror-risk.html",
+  "diagrams/ch10-kustomize-cd-pipeline.html",
+  "diagrams/ch10-helm-tiller-removed.html",
+  "diagrams/ch10-helm-chart-anatomy.html",
+  "diagrams/ch10-helm-vs-kustomize.html"
+ ]
+}

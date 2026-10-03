@@ -1,0 +1,1557 @@
+{
+ "number": 16,
+ "title": "Real-World Troubleshooting Scenarios",
+ "part": "Part 6 · Troubleshooting and Best Practices",
+ "tagline": "A repeatable method and case files for the failures that page you",
+ "overview": "This chapter builds a repeatable troubleshooting method: check the layers from application to control plane, triage bottom-up along the traffic path, and let dashboards point you at the right component first. It then applies the method to Pod lifecycle failures (Pending, image pulls, crash loops, probes, stuck termination), network failures (Services, DNS, NetworkPolicy, Ingress) and performance problems (OOM kills, CPU throttling, autoscaling, observability), each with symptom, commands, root cause and fix.",
+ "topics": [
+  {
+   "id": "ch16-layered-debugging",
+   "level": "junior",
+   "question": "A user says the app is broken but gives you nothing else. How do you decide where to look first?",
+   "say_first": "I treat the cluster as a stack of layers, from the application down to the control plane, and I test them one at a time so I can say exactly which layer is at fault instead of guessing.",
+   "explain": [
+    "Think of a plumber tracing a leak. They do not rip up the whole house; they check the tap, then the pipe behind it, then the mains. Each layer depends on the one below it, so a fault low in the stack shows up as a confusing symptom high in the stack.",
+    "The usual layers are the application code, the Pod and its configuration, the node it runs on, the network, storage, and finally the control plane. A full disk on a node, for example, can surface as a Pod that will not start, which in turn surfaces as a 503 for the user.",
+    "In practice you combine two moves: start from the symptom to guess the likely layer, then confirm with one cheap command per layer before going deeper. Stating the layer out loud is what makes the answer sound senior."
+   ],
+   "key_points": [
+    "Each layer depends on the one below; symptoms bubble upward.",
+    "Name the layer before you run the deep command.",
+    "One cheap check per layer beats one deep dive into the wrong layer.",
+    "Most everyday incidents live in the Pod and network layers.",
+    "Control plane problems affect everything at once; check them when many unrelated things fail together."
+   ],
+   "table": {
+    "caption": "The layers and the first question for each",
+    "headers": [
+     "Layer",
+     "First question",
+     "First command"
+    ],
+    "rows": [
+     [
+      "Application",
+      "Is the code throwing errors or running slowly?",
+      "kubectl logs POD"
+     ],
+     [
+      "Pod and config",
+      "Is the Pod Running and Ready? Right image, env, mounts?",
+      "kubectl describe pod POD"
+     ],
+     [
+      "Node",
+      "Does the node have CPU, memory and disk left? Is the kubelet healthy?",
+      "kubectl describe node NODE"
+     ],
+     [
+      "Network",
+      "Do DNS, the Service, policies and Ingress route the traffic?",
+      "kubectl get endpointslices"
+     ],
+     [
+      "Storage",
+      "Did the PVC bind and is the backend healthy?",
+      "kubectl get pvc"
+     ],
+     [
+      "Control plane",
+      "Does the API server answer, is etcd healthy?",
+      "kubectl get --raw='/readyz?verbose'"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch16-layer-stack.html",
+    "title": "The layers to check, top to bottom",
+    "ratio": "776/452"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get pods -A -o wide",
+     "note": "Cluster-wide snapshot: status, restarts and the node for each Pod"
+    },
+    {
+     "cmd": "kubectl get events -A --sort-by=.lastTimestamp",
+     "note": "Recent cluster events in time order, useful across layers"
+    },
+    {
+     "cmd": "kubectl get --raw='/readyz?verbose'",
+     "note": "Control plane readiness checks"
+    }
+   ],
+   "follow_ups": [
+    "How would you tell a node problem from a Pod problem?",
+    "When do you suspect the control plane rather than the app?"
+   ],
+   "pitfalls": [
+    "Listing kubectl commands without saying which layer each one tests.",
+    "Jumping into application logs before confirming the Pod is even Ready."
+   ]
+  },
+  {
+   "id": "ch16-bottom-up-triage",
+   "level": "junior",
+   "question": "A web application is not reachable from outside the cluster. What is your quick triage order?",
+   "say_first": "I go bottom-up along the path of the traffic: first the Pods, then the Service in front of them, then the Ingress in front of that. If the Pods are unhealthy, nothing above them matters.",
+   "explain": [
+    "Picture a restaurant. Before checking the front door sign (Ingress) or the waiter (Service), confirm the kitchen (Pods) is actually cooking. Starting at the kitchen saves you from chasing problems that are only echoes.",
+    "Step one is Pods: are they Running and Ready? Step two is the Service: does its selector match those Pods and does it list endpoints? Step three is the Ingress: do the host, path and backend point at the right Service and port?",
+    "This simple order resolves most day-to-day deployment failures, and each step is a single command, so it fits in the first minutes of an incident."
+   ],
+   "key_points": [
+    "Order: Pods, then Service, then Ingress.",
+    "A Service with no endpoints is a selector or readiness problem, not a network problem.",
+    "Test each hop separately so you know which one failed.",
+    "The same order works in reverse from the browser: DNS, load balancer, Ingress, Service, Pod."
+   ],
+   "table": {
+    "caption": "Bottom-up triage",
+    "headers": [
+     "Step",
+     "Check",
+     "Healthy looks like"
+    ],
+    "rows": [
+     [
+      "1. Pods",
+      "kubectl get pods -l app=web",
+      "Running and READY 1/1"
+     ],
+     [
+      "2. Service",
+      "kubectl get endpointslices -l kubernetes.io/service-name=web",
+      "Pod IPs listed"
+     ],
+     [
+      "3. Ingress",
+      "kubectl describe ingress web",
+      "Correct host, path, backend and port"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get pods -l app=web",
+     "note": "Step 1: are the Pods Running and Ready?"
+    },
+    {
+     "cmd": "kubectl describe service web",
+     "note": "Step 2: selector and Endpoints fields"
+    },
+    {
+     "cmd": "kubectl describe ingress web",
+     "note": "Step 3: rules and backend mapping"
+    }
+   ],
+   "follow_ups": [
+    "Which step would you skip if the error were a 404 from the Ingress controller?",
+    "How do you test a Service without going through the Ingress?"
+   ],
+   "pitfalls": [
+    "Starting at the Ingress because that is where the user sees the error."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-bottom-up-triage.html",
+    "title": "Bottom-up triage",
+    "ratio": "824/264"
+   }
+  },
+  {
+   "id": "ch16-first-five-minutes",
+   "level": "senior",
+   "question": "You are paged with the alert 'Application X is down'. Walk me through your first five minutes.",
+   "say_first": "I first size the blast radius from dashboards, then narrow with metrics, logs and traces to one component, and only then run targeted kubectl commands on that component. I do not start by logging into machines.",
+   "explain": [
+    "Think of a doctor's triage. First a quick look at vital signs (who is affected, how badly), then tests for the suspicious area, then a close examination of one organ.",
+    "Minute one, look wide: open the service dashboard. Is it all users or some? Are 5xx errors rising, is latency spiking, or are requests not arriving? Form a one-line hypothesis, for example a jump in 503s suggests an availability or routing problem.",
+    "Next two minutes, zoom in with the three pillars of observability: metrics for what changed, logs for the error text, traces for which downstream call is slow or failing. The goal is to go from 'app is down' to 'the auth service is timing out'.",
+    "Last two minutes, go deep on that one component: kubectl get pods for status, describe for events such as OOM kills or probe failures, logs for the application message. Then you fix, or roll back if the cause was a recent change."
+   ],
+   "key_points": [
+    "Wide, then narrow, then deep: dashboards, then metrics/logs/traces, then kubectl.",
+    "Metrics say what changed, logs say why, traces say where.",
+    "Check recent deploys early; rolling back is often the fastest fix.",
+    "Say your hypothesis out loud and what would disprove it.",
+    "Communicate status while you work; incidents are also a people problem."
+   ],
+   "table": {
+    "caption": "The three passes of an investigation",
+    "headers": [
+     "Pass",
+     "Tools",
+     "Outcome"
+    ],
+    "rows": [
+     [
+      "Wide",
+      "Dashboards and alerts",
+      "Blast radius and a rough hypothesis"
+     ],
+     [
+      "Narrow",
+      "Metrics, logs, traces",
+      "One suspicious component"
+     ],
+     [
+      "Deep",
+      "kubectl describe, logs, YAML",
+      "Confirmed root cause"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl rollout history deployment/web",
+     "note": "Was there a recent change worth rolling back?"
+    },
+    {
+     "cmd": "kubectl rollout undo deployment/web",
+     "note": "Fast mitigation when the latest release is the cause"
+    }
+   ],
+   "follow_ups": [
+    "When would you roll back instead of debugging in place?",
+    "What would you put on an SLO dashboard for this service?"
+   ],
+   "pitfalls": [
+    "Opening a shell on a node first and poking around with no hypothesis.",
+    "Fixing the symptom without finding the trigger."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-first-five-minutes.html",
+    "title": "First five minutes",
+    "ratio": "1024/304"
+   }
+  },
+  {
+   "id": "ch16-pod-pending",
+   "level": "junior",
+   "question": "A Pod stays in Pending. What could cause it and how do you find out which?",
+   "say_first": "Pending means the API server accepted the Pod but the scheduler has not placed it on a node. I run kubectl describe pod and read the FailedScheduling event, which names the reason.",
+   "explain": [
+    "The scheduler is like a hotel reception matching guests to rooms. If no room fits the booking (size, floor preference, accessibility, a paid-up deposit), the guest waits in the lobby. The event tells you which requirement nobody could meet.",
+    "The usual culprits are insufficient CPU or memory for the Pod's requests, a nodeSelector or affinity that no node satisfies, a taint the Pod does not tolerate, or a PersistentVolumeClaim that is not bound yet. Less often it is a hostPort already used on every node, a ResourceQuota, or a priority problem.",
+    "Fix the specific cause: lower requests or add nodes, correct labels, add a toleration, repair the storage class, or stop using hostPort and expose the Pod with a Service instead."
+   ],
+   "key_points": [
+    "Pending is a scheduling state; the container has not started.",
+    "The message in Events is the answer: read it before guessing.",
+    "0/3 nodes are available tells you how many nodes were rejected and why.",
+    "Requests, not actual usage, decide whether a Pod fits.",
+    "A PVC that waits for a consumer is normal with WaitForFirstConsumer."
+   ],
+   "table": {
+    "caption": "Pending causes and the event you will see",
+    "headers": [
+     "Cause",
+     "Typical event text",
+     "Fix"
+    ],
+    "rows": [
+     [
+      "Not enough resources",
+      "Insufficient cpu / Insufficient memory",
+      "Reduce requests, add nodes, free capacity"
+     ],
+     [
+      "Node selector or affinity",
+      "node(s) didn't match Pod's node affinity/selector",
+      "Fix labels or the selector"
+     ],
+     [
+      "Taint not tolerated",
+      "node(s) had untolerated taint",
+      "Add a toleration or remove the taint"
+     ],
+     [
+      "Unbound volume",
+      "pod has unbound immediate PersistentVolumeClaims",
+      "Fix the PVC, StorageClass or provisioner"
+     ],
+     [
+      "hostPort conflict",
+      "node(s) didn't have free ports",
+      "Remove hostPort; use a Service"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch16-pending-tree.html",
+    "title": "Why is my Pod stuck in Pending?",
+    "ratio": "800/760"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pod web-7d9 | sed -n '/Events/,$p'",
+     "note": "Show only the Events section with the scheduler message"
+    },
+    {
+     "cmd": "kubectl get nodes --show-labels",
+     "note": "Compare node labels with the Pod's nodeSelector"
+    },
+    {
+     "cmd": "kubectl describe node NODE | grep -A5 Taints",
+     "note": "Check taints on a node"
+    },
+    {
+     "cmd": "kubectl get pvc",
+     "note": "Is the claim Bound or Pending?"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between Pending and ContainerCreating?",
+    "Why can a Pod be Pending even when kubectl top shows free memory?"
+   ],
+   "pitfalls": [
+    "Checking actual usage instead of requested resources.",
+    "Deleting the Pod repeatedly instead of reading the event."
+   ]
+  },
+  {
+   "id": "ch16-case-over-requested",
+   "level": "junior",
+   "question": "A new service asks for 4 Gi of memory and stays Pending on a cluster where each node has 2 Gi allocatable. Diagnose and fix.",
+   "say_first": "The scheduler needs one node whose free allocatable memory covers the full request, and none has 4 Gi, so the Pod can never fit. The event says Insufficient memory, and the fix is to right-size the request or add bigger nodes.",
+   "explain": [
+    "Symptom: the Pod sits in Pending forever. Diagnosis: describe shows FailedScheduling with '0/3 nodes are available: 3 Insufficient memory'. Three nodes with 2 Gi each do not add up to one 4 Gi slot, because a Pod must fit on a single node.",
+    "Resolution: measure what the service really needs, then lower the request, for example to 1 Gi, and re-apply. The scheduler finds a node immediately and the Pod moves on to ContainerCreating. If the service truly needs 4 Gi, you need larger nodes, not more small ones.",
+    "Allocatable is less than node capacity because the system and kubelet reserve some, so compare with allocatable, not with the machine size."
+   ],
+   "key_points": [
+    "A Pod must fit on one node; free memory summed over nodes does not count.",
+    "Compare requests against allocatable, not raw node size.",
+    "Requests should come from measured usage, not guesses.",
+    "Cluster autoscaler only helps if a bigger node type can satisfy the request."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl describe node NODE | grep -A8 Allocatable",
+     "note": "What the scheduler can actually hand out"
+    },
+    {
+     "cmd": "kubectl describe node NODE | grep -A12 'Allocated resources'",
+     "note": "Requests already committed on the node"
+    },
+    {
+     "cmd": "kubectl set resources deployment/svc --requests=memory=1Gi",
+     "note": "Lower the request and trigger a new rollout"
+    }
+   ],
+   "follow_ups": [
+    "How would you choose a realistic request value?",
+    "What does the cluster autoscaler do when a Pod is unschedulable?"
+   ],
+   "pitfalls": [
+    "Adding more small nodes when a single Pod cannot fit on any of them."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-over-requested.html",
+    "title": "Over-requested memory",
+    "ratio": "824/456"
+   }
+  },
+  {
+   "id": "ch16-image-pull-errors",
+   "level": "junior",
+   "question": "What is the difference between ErrImagePull and ImagePullBackOff, and how do you fix an image that will not pull?",
+   "say_first": "ErrImagePull is the failed attempt; ImagePullBackOff is the waiting period before the next retry. I read the event in kubectl describe to see why the pull failed, usually a wrong name or tag, missing registry credentials, or an unreachable registry.",
+   "explain": [
+    "Imagine ordering a parcel that keeps failing to be delivered. Each failed delivery attempt is ErrImagePull; the courier then waits longer each time before trying again, which is ImagePullBackOff. The real reason is written on the failed-delivery slip, the Events section.",
+    "Wrong name or tag is the most frequent cause: a typo, or a tag that does not exist, such as asking for latest when the pipeline only publishes version tags. A private registry needs a Secret of type kubernetes.io/dockerconfigjson referenced by imagePullSecrets on the Pod or its ServiceAccount. A firewall, proxy or registry outage shows up as timeouts.",
+    "Case: a team deployed myapp:latest. Events showed 'not found' for docker.io/library/myapp:latest. The registry only held tags like v1.2.0. They pointed the Deployment at myapp:v1.2.0 and the next retry succeeded. A pinned version tag also makes rollbacks deterministic."
+   ],
+   "key_points": [
+    "ErrImagePull is the error; ImagePullBackOff is the backoff wait.",
+    "The reason is in Events, not in the status column.",
+    "Private registries need imagePullSecrets in the same namespace as the Pod.",
+    "Pin explicit tags or digests; avoid latest in production.",
+    "If you can reach the node, crictl pull reproduces the failure."
+   ],
+   "table": {
+    "caption": "Image pull failures",
+    "headers": [
+     "Message clue",
+     "Likely cause",
+     "Fix"
+    ],
+    "rows": [
+     [
+      "not found / manifest unknown",
+      "Wrong name or missing tag",
+      "Correct the image reference"
+     ],
+     [
+      "unauthorized / pull access denied",
+      "No or wrong credentials",
+      "Create a docker-registry Secret and set imagePullSecrets"
+     ],
+     [
+      "i/o timeout / no such host",
+      "Node cannot reach the registry",
+      "Check egress, proxy, DNS, registry health"
+     ],
+     [
+      "toomanyrequests",
+      "Registry rate limit",
+      "Authenticate or mirror the image"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pod web | grep -A10 Events",
+     "note": "The exact pull error"
+    },
+    {
+     "cmd": "kubectl create secret docker-registry regcred --docker-server=registry.example.com --docker-username=USER --docker-password=PASS",
+     "note": "Create pull credentials (type kubernetes.io/dockerconfigjson)"
+    },
+    {
+     "cmd": "kubectl patch serviceaccount default -p '{\"imagePullSecrets\":[{\"name\":\"regcred\"}]}'",
+     "note": "Attach the secret to the default ServiceAccount of the namespace"
+    },
+    {
+     "cmd": "crictl pull registry.example.com/myapp:v1.2.0",
+     "note": "Run on the node to test the pull directly"
+    }
+   ],
+   "follow_ups": [
+    "How does imagePullPolicy affect what you see?",
+    "How would you avoid rate limits from a public registry?"
+   ],
+   "pitfalls": [
+    "Creating the pull secret in a different namespace than the Pod.",
+    "Treating ImagePullBackOff as the root cause instead of a symptom."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-image-pull-errors.html",
+    "title": "Image pull errors",
+    "ratio": "736/384"
+   }
+  },
+  {
+   "id": "ch16-crashloopbackoff",
+   "level": "mid",
+   "question": "A Pod is in CrashLoopBackOff. How do you debug it, including when there are no logs?",
+   "say_first": "CrashLoopBackOff means the container starts, exits, and the kubelet restarts it with growing delays. I read the last state and exit code from describe, then the previous container's logs, and if there are none I debug a copy of the Pod with a shell.",
+   "explain": [
+    "Like a car that starts, stalls and is restarted with a longer wait each time, the status is a waiting state, not the error. The error is whatever made the process exit.",
+    "Step 1, kubectl describe pod: look at Last State for the terminated container, its reason and exit code. Step 2, kubectl logs POD --previous, because the current container may be too new to have output. Step 3, map the evidence to a cause: application bug, missing config or mount, OOM kill, or a liveness probe killing a healthy but slow app.",
+    "If the process dies before printing anything, use kubectl debug with --copy-to to run a clone with a shell instead of the real command. There you can list files, check environment variables and run the binary by hand. The copy is a real Pod, so delete it afterwards."
+   ],
+   "key_points": [
+    "CrashLoopBackOff is a symptom; the exit code and previous logs are the evidence.",
+    "Exit 1 usually means an application error; 137 means SIGKILL, often an OOM kill.",
+    "Always use --previous to read the crashed instance's logs.",
+    "A liveness probe failure event means the kubelet killed the container.",
+    "kubectl debug --copy-to leaves a Pod behind; clean it up."
+   ],
+   "table": {
+    "caption": "Reading the exit code",
+    "headers": [
+     "Exit code",
+     "Meaning",
+     "Where to look next"
+    ],
+    "rows": [
+     [
+      "0",
+      "Process finished normally",
+      "Wrong command for a long-running service, or a Job-style image"
+     ],
+     [
+      "1",
+      "General application error",
+      "Previous logs, stack trace"
+     ],
+     [
+      "126 / 127",
+      "Command not executable / not found",
+      "Image entrypoint, args, PATH"
+     ],
+     [
+      "137",
+      "SIGKILL, commonly OOMKilled",
+      "Last State reason, memory limit"
+     ],
+     [
+      "143",
+      "SIGTERM received",
+      "Rollout, eviction, or a probe-driven stop"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch16-crashloop-flow.html",
+    "title": "Reading a CrashLoopBackOff",
+    "ratio": "800/760"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pod broken-app",
+     "note": "Last State, Reason, Exit Code and probe events"
+    },
+    {
+     "cmd": "kubectl logs broken-app --previous",
+     "note": "Logs of the last crashed container instance"
+    },
+    {
+     "cmd": "kubectl debug -it broken-app --copy-to=broken-app-debug --container=app -- sh",
+     "note": "Run a copy of the Pod with a shell instead of the crashing command"
+    },
+    {
+     "cmd": "kubectl delete pod broken-app-debug",
+     "note": "Remove the debug copy when finished"
+    }
+   ],
+   "follow_ups": [
+    "How do you tell a liveness-probe restart from an application crash?",
+    "Why does the delay between restarts keep growing?"
+   ],
+   "pitfalls": [
+    "Reading current logs of a container that just restarted and seeing nothing.",
+    "Forgetting the debug Pod exists after the investigation."
+   ]
+  },
+  {
+   "id": "ch16-case-missing-config",
+   "level": "mid",
+   "question": "A microservice crash-loops with 'FileNotFound: /etc/config/config.yaml' in its logs. What do you check?",
+   "say_first": "The app expects a file that is not where it looks, so I compare the Pod's volumeMounts and ConfigMap or Secret references with the path the app reads. In the case here it was a typo in a mountPath.",
+   "explain": [
+    "Symptom: CrashLoopBackOff. The previous logs name the missing file, which turns a vague status into a concrete path to verify.",
+    "Diagnosis: dump the live Pod YAML and read the volumes and volumeMounts. Check that the mountPath matches the path the application opens, that the volume name matches a declared volume, that the ConfigMap or Secret exists in the same namespace, and that subPath and key names are correct. A missing ConfigMap normally shows as ContainerCreating with a mount error instead, so a crash here points at a wrong path or key.",
+    "Fix: correct the mountPath in the Deployment and re-apply. The new Pod finds the file and starts. Note that ConfigMap edits are not seen by env vars or subPath mounts until the Pod restarts."
+   ],
+   "key_points": [
+    "The previous logs usually name the missing file.",
+    "Compare mountPath, volume name, ConfigMap name and key.",
+    "Config objects must live in the Pod's namespace.",
+    "subPath mounts and env vars do not auto-refresh when the ConfigMap changes."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl logs web-7d9 --previous",
+     "note": "Find the missing path in the error"
+    },
+    {
+     "cmd": "kubectl get pod web-7d9 -o yaml",
+     "note": "Read volumes and volumeMounts as actually applied"
+    },
+    {
+     "cmd": "kubectl get configmap app-config -o yaml",
+     "note": "Confirm the key name that becomes the file name"
+    },
+    {
+     "cmd": "kubectl exec web-7d9 -- ls /etc/config",
+     "note": "Check the mounted directory in a running container"
+    }
+   ],
+   "follow_ups": [
+    "What would you see if the referenced ConfigMap did not exist?",
+    "How do you roll out a ConfigMap change safely?"
+   ],
+   "pitfalls": [
+    "Editing the ConfigMap when the real bug is the mount path."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-missing-config.html",
+    "title": "Missing config file",
+    "ratio": "784/336"
+   }
+  },
+  {
+   "id": "ch16-liveness-vs-readiness",
+   "level": "mid",
+   "question": "Explain liveness versus readiness probes and how a wrong probe shows up as a production problem.",
+   "say_first": "Liveness asks whether the container is stuck and should be restarted; readiness asks whether it can take traffic right now and, if not, removes it from Service endpoints without restarting it. Confusing them causes restart storms or traffic to Pods that are not ready.",
+   "explain": [
+    "Liveness is a smoke alarm that calls the fire brigade to rebuild the house: drastic. Readiness is a 'back in five minutes' sign on a shop door: customers are sent elsewhere, nothing is destroyed.",
+    "A failing liveness probe gives periodic restarts even when the app logs look clean, and describe shows 'Liveness probe failed'. A failing readiness probe gives a Pod that is Running but shows READY 0/1 and receives no traffic.",
+    "To debug: read the events for the exact probe failure, then test the endpoint from inside the container, for example with curl against localhost. Then review the timing fields: initialDelaySeconds, periodSeconds, timeoutSeconds and failureThreshold. For slow starters, a startupProbe holds off the other probes until the app is up, which is cleaner than a huge initial delay on liveness."
+   ],
+   "key_points": [
+    "Liveness failure means restart; readiness failure means no traffic.",
+    "Add readiness to almost everything; add liveness only for real hang conditions.",
+    "Use startupProbe for slow-starting applications.",
+    "Probes should check the app, not every downstream dependency, or one outage restarts everything.",
+    "timeoutSeconds defaults to 1 second, which is tight under load."
+   ],
+   "table": {
+    "caption": "Liveness versus readiness versus startup",
+    "headers": [
+     "",
+     "Liveness",
+     "Readiness",
+     "Startup"
+    ],
+    "rows": [
+     [
+      "Question",
+      "Is it hung?",
+      "Can it serve now?",
+      "Has it finished starting?"
+     ],
+     [
+      "On failure",
+      "Container restarted",
+      "Removed from endpoints",
+      "Container restarted"
+     ],
+     [
+      "Visible as",
+      "Restarts, CrashLoopBackOff",
+      "READY 0/1, no traffic",
+      "Restarts during boot"
+     ],
+     [
+      "Runs",
+      "Whole lifetime",
+      "Whole lifetime",
+      "Only until first success"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pod web-7d9 | grep -iE 'liveness|readiness'",
+     "note": "Probe settings and failure events"
+    },
+    {
+     "cmd": "kubectl exec web-7d9 -- curl -s -o /dev/null -w '%{http_code}' localhost:8080/health",
+     "note": "Test the probe endpoint from inside the container"
+    },
+    {
+     "cmd": "kubectl get pod web-7d9 -o jsonpath='{.spec.containers[0].livenessProbe}'",
+     "note": "Print the live probe definition"
+    }
+   ],
+   "follow_ups": [
+    "Should a readiness probe check the database?",
+    "When is a startupProbe better than initialDelaySeconds?"
+   ],
+   "pitfalls": [
+    "Using the same aggressive check for liveness and readiness.",
+    "A liveness probe that depends on a downstream service, which turns one outage into many restarts."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-liveness-vs-readiness.html",
+    "title": "Liveness vs readiness",
+    "ratio": "832/320"
+   }
+  },
+  {
+   "id": "ch16-case-aggressive-liveness",
+   "level": "mid",
+   "question": "Web pods restart every few minutes at peak traffic, yet logs show no errors. What is going on?",
+   "say_first": "The kubelet is probably killing healthy but briefly slow containers because the liveness probe has a timeout of one second. I confirm with the 'Liveness probe failed' events and loosen the probe.",
+   "explain": [
+    "Symptom: periodic restarts at peak, clean logs. That combination points away from an app crash and toward something outside the process killing it.",
+    "Diagnosis: describe shows repeated Liveness probe failed events (a timeout), and the probe has timeoutSeconds 1. Under load the /health call sometimes takes longer, so consecutive failures accumulate and the kubelet restarts the container, which makes the load worse for the remaining Pods.",
+    "Resolution: raise timeoutSeconds to about 5, keep failureThreshold at 3 or higher, and make the health endpoint cheap. Consider a startupProbe for slow boots, and verify that liveness does not call slow dependencies."
+   ],
+   "key_points": [
+    "Clean logs plus restarts suggests the kubelet, not the app, is stopping the container.",
+    "Probe timeouts under load are a classic cause of restart storms.",
+    "Restarts shift load onto the survivors, amplifying the problem.",
+    "Make health endpoints cheap and local."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get events --field-selector involvedObject.name=web-7d9",
+     "note": "Probe failure events for one Pod"
+    },
+    {
+     "cmd": "kubectl patch deployment web --type=json -p='[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/livenessProbe/timeoutSeconds\",\"value\":5}]'",
+     "note": "Raise the liveness timeout"
+    }
+   ],
+   "follow_ups": [
+    "How would you confirm the fix with metrics?",
+    "What would you change if restarts only happen right after deploy?"
+   ],
+   "pitfalls": [
+    "Removing the liveness probe entirely instead of making it tolerant."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-aggressive-liveness.html",
+    "title": "Aggressive liveness probe",
+    "ratio": "784/336"
+   }
+  },
+  {
+   "id": "ch16-terminating-finalizers",
+   "level": "senior",
+   "question": "A Pod has been stuck in Terminating for an hour. What are the causes and what do you do?",
+   "say_first": "Deletion only completes once the grace period ends and every finalizer is cleared. If it is stuck far longer than the grace period, a finalizer whose controller is gone, or a stuck volume unmount, is the usual cause.",
+   "explain": [
+    "A finalizer is a pre-departure checklist attached to an object: the object is not removed until each named controller ticks its item. If that controller crashed or was uninstalled, nobody ticks the box and the object waits forever.",
+    "Inspect with kubectl get pod -o yaml and look for metadata.finalizers and deletionTimestamp. Also consider an unresponsive node (the kubelet cannot confirm the container stopped), a storage backend that will not detach a volume, or an app that ignores SIGTERM. The last one is bounded by the grace period (default 30 seconds), after which SIGKILL is sent.",
+    "As a last resort you can clear the finalizer by patching it to null, or force delete with grace period zero. Both skip cleanup, so only do it when you know the external resource is handled; forcing deletion of a StatefulSet Pod on a partitioned node can risk two writers on the same data."
+   ],
+   "key_points": [
+    "Terminating means deletionTimestamp is set but something still blocks removal.",
+    "Stuck much longer than terminationGracePeriodSeconds points to finalizers or infrastructure.",
+    "Fix the owning controller first; remove the finalizer only as a last resort.",
+    "Force deletion skips cleanup and can leave orphaned external resources."
+   ],
+   "table": {
+    "caption": "Why a Pod will not go away",
+    "headers": [
+     "Cause",
+     "How to spot it",
+     "Action"
+    ],
+    "rows": [
+     [
+      "Finalizer from a dead controller",
+      "metadata.finalizers is non-empty",
+      "Restore the controller, or patch finalizers to null"
+     ],
+     [
+      "App ignores SIGTERM",
+      "Stuck for about the grace period, then disappears",
+      "Handle SIGTERM; tune terminationGracePeriodSeconds"
+     ],
+     [
+      "Volume cannot detach",
+      "Kubelet or CSI errors in events/logs",
+      "Fix storage backend, then retry"
+     ],
+     [
+      "Node unreachable",
+      "Node is NotReady",
+      "Recover the node or delete the node object after checking"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get pod web-7d9 -o jsonpath='{.metadata.finalizers}{\"\\n\"}{.metadata.deletionTimestamp}'",
+     "note": "Show blocking finalizers and when deletion started"
+    },
+    {
+     "cmd": "kubectl patch pod web-7d9 -p '{\"metadata\":{\"finalizers\":null}}'",
+     "note": "Last resort: clear finalizers (skips the controller's cleanup)"
+    },
+    {
+     "cmd": "kubectl delete pod web-7d9 --grace-period=0 --force",
+     "note": "Force removal from the API; use with care"
+    }
+   ],
+   "follow_ups": [
+    "Why is force-deleting a StatefulSet Pod risky?",
+    "What does a preStop hook change here?"
+   ],
+   "pitfalls": [
+    "Patching out finalizers as the first move instead of asking which controller owns them."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-terminating-finalizers.html",
+    "title": "Stuck Terminating",
+    "ratio": "888/360"
+   }
+  },
+  {
+   "id": "ch16-service-no-endpoints",
+   "level": "mid",
+   "question": "Requests to a Service time out and describe shows Endpoints: <none>. What is wrong?",
+   "say_first": "The Service selector matches no Ready Pods. I compare the selector with the Pod labels, check that the Pods are Ready, and confirm targetPort matches what the container listens on.",
+   "explain": [
+    "A Service is a stable phone number that forwards calls to whichever employees currently wear a certain badge (label). If nobody wears exactly that badge, or everyone is marked 'not ready', the call rings into nothing.",
+    "Run kubectl describe service and read Selector and Endpoints. Then run kubectl get pods with the same selector. No Pods means a label mismatch. Pods listed but not Ready means a failing readiness probe. Endpoints present but traffic still fails usually means targetPort differs from the container's real port.",
+    "Case: a payments Service selected app=payments while the Deployment labelled its Pods app=pay. Endpoints was empty and callers timed out. Correcting the Pod template label populated the endpoints within seconds. Behind the scenes modern clusters store these addresses in EndpointSlice objects; the older Endpoints view still works but is being phased out."
+   ],
+   "key_points": [
+    "Service to Pod matching is by label selector only.",
+    "Only Ready Pods become endpoints.",
+    "Empty endpoints equals selector mismatch or no Ready Pods.",
+    "targetPort must match the port the process listens on.",
+    "Changing a Deployment's Pod template labels causes a rollout; the selector of the Deployment itself is immutable."
+   ],
+   "table": {
+    "caption": "Three reasons a Service has no working backend",
+    "headers": [
+     "Cause",
+     "Evidence",
+     "Fix"
+    ],
+    "rows": [
+     [
+      "Label mismatch",
+      "get pods --selector returns nothing",
+      "Fix labels on the Pod template or the Service selector"
+     ],
+     [
+      "Pods not Ready",
+      "Pods Running but READY 0/1",
+      "Fix the readiness probe or the app"
+     ],
+     [
+      "Wrong targetPort",
+      "Endpoints listed, connection refused",
+      "Set targetPort to the real container port"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch16-service-trace.html",
+    "title": "Tracing a Service with no endpoints",
+    "ratio": "784/336"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe service payments",
+     "note": "Selector, port, targetPort and Endpoints"
+    },
+    {
+     "cmd": "kubectl get pods --selector=app=payments --show-labels",
+     "note": "Which Pods the selector really finds"
+    },
+    {
+     "cmd": "kubectl get endpointslices -l kubernetes.io/service-name=payments",
+     "note": "Current backend addresses for the Service"
+    },
+    {
+     "cmd": "kubectl port-forward svc/payments 8080:80",
+     "note": "Test the Service from your laptop, bypassing Ingress"
+    }
+   ],
+   "follow_ups": [
+    "Why does a failing readiness probe remove a Pod from the Service?",
+    "How does kube-proxy use these endpoints?"
+   ],
+   "pitfalls": [
+    "Assuming a Running Pod is automatically behind the Service.",
+    "Blaming the CNI before looking at labels."
+   ]
+  },
+  {
+   "id": "ch16-dns-failures",
+   "level": "mid",
+   "question": "Pods report 'could not resolve host' or 'temporary failure in name resolution'. How do you troubleshoot DNS in Kubernetes?",
+   "say_first": "I follow the lookup path: confirm the failure with nslookup from a client Pod, check that the CoreDNS Pods are healthy, check the kube-dns Service, then look for a NetworkPolicy blocking port 53.",
+   "explain": [
+    "DNS is the cluster's phone book. If it fails, every app that uses names fails, even though Pods and Services are fine, so the blast radius is wide and the first job is to prove it is DNS.",
+    "Start inside the cluster: run a throwaway Pod with nslookup against a Service name and against an external name. If internal names fail, check kubectl get pods -n kube-system -l k8s-app=kube-dns and their logs; a bad Corefile ConfigMap often shows up here. Then confirm the kube-dns Service has a ClusterIP and endpoints.",
+    "If CoreDNS is healthy but queries time out, suspect a NetworkPolicy that denies egress on port 53 from the client namespace, or a node-level network problem. Also check the Pod's /etc/resolv.conf and its dnsPolicy, and remember that short names rely on search domains and ndots."
+   ],
+   "key_points": [
+    "Test from inside a Pod; your laptop's DNS tells you nothing.",
+    "Internal names resolve to ClusterIPs; external names are forwarded upstream.",
+    "A timeout usually means blocked or dead; NXDOMAIN means the name does not exist.",
+    "CoreDNS is normally labelled k8s-app=kube-dns, and its Service is still called kube-dns.",
+    "Restrictive egress policies must allow DNS."
+   ],
+   "table": {
+    "caption": "DNS symptoms",
+    "headers": [
+     "Result",
+     "Likely meaning",
+     "Check"
+    ],
+    "rows": [
+     [
+      "Timed out, no servers reached",
+      "Cannot reach CoreDNS",
+      "NetworkPolicy, kube-dns Service, CoreDNS Pods"
+     ],
+     [
+      "NXDOMAIN",
+      "Name does not exist",
+      "Spelling, namespace, Service name"
+     ],
+     [
+      "Internal works, external fails",
+      "Upstream forwarding broken",
+      "Corefile forward block, node resolver"
+     ],
+     [
+      "Intermittent slow lookups",
+      "Overload or ndots overhead",
+      "CoreDNS load, use fully qualified names"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch16-dns-path.html",
+    "title": "Following a DNS lookup",
+    "ratio": "1032/296"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl run dns-test --image=busybox:stable -it --rm --restart=Never -- nslookup payments-api",
+     "note": "Throwaway client Pod doing a lookup"
+    },
+    {
+     "cmd": "kubectl get pods -n kube-system -l k8s-app=kube-dns",
+     "note": "Are the CoreDNS Pods Running?"
+    },
+    {
+     "cmd": "kubectl logs -n kube-system -l k8s-app=kube-dns",
+     "note": "CoreDNS errors, such as a bad Corefile"
+    },
+    {
+     "cmd": "kubectl get svc -n kube-system kube-dns",
+     "note": "The Service every Pod uses as its resolver"
+    },
+    {
+     "cmd": "kubectl exec web-7d9 -- cat /etc/resolv.conf",
+     "note": "Nameserver and search domains the Pod uses"
+    }
+   ],
+   "follow_ups": [
+    "What does the ndots setting change?",
+    "Why might lookups be slow but not failing?"
+   ],
+   "pitfalls": [
+    "Restarting CoreDNS before checking whether traffic can reach it."
+   ]
+  },
+  {
+   "id": "ch16-network-policy-block",
+   "level": "senior",
+   "question": "Pod A suddenly cannot reach Pod B with a connection timeout, and DNS and the Service look fine. How do you debug a NetworkPolicy block?",
+   "say_first": "Once any policy selects a Pod, that Pod becomes default-deny for the traffic directions the policy covers. I list policies in both namespaces, read which pods they select and which sources they allow, and prove the block with a test Pod.",
+   "explain": [
+    "By default every Pod can talk to every Pod. A NetworkPolicy works like a guest list: as soon as a list exists for a Pod, only named guests get in, and silence is a refusal. Packets are dropped, not rejected, so you see a timeout, not an error.",
+    "Workflow: list policies with kubectl get networkpolicy in the destination and source namespaces. If none exist, policy is not your problem. Otherwise describe them and check podSelector (who is protected), the ingress rules (who may enter) and egress rules (where it may go). Compare the source Pod's labels and namespace labels with the from selectors.",
+    "Case: payment-service could not call user-service. The user-service policy allowed ingress only from Pods labelled role=frontend. Adding another from entry for the payment-service label restored traffic. Always remember policies are enforced by the CNI plugin; without one that supports them, they do nothing.",
+    "When writing restrictive egress policies, include DNS, or the Pod cannot even resolve names."
+   ],
+   "key_points": [
+    "Policy is additive allow-lists; there are no deny rules in the core API.",
+    "A policy affects only directions listed in policyTypes.",
+    "Timeouts, not refusals, are the classic sign.",
+    "Check both sides: egress from the source and ingress to the destination.",
+    "A test Pod with netshoot proves the block quickly."
+   ],
+   "table": {
+    "caption": "What an empty or missing rule means",
+    "headers": [
+     "Policy state",
+     "Effect on selected Pods"
+    ],
+    "rows": [
+     [
+      "No policy selects the Pod",
+      "All traffic allowed"
+     ],
+     [
+      "Policy with policyTypes Ingress and no ingress rules",
+      "All incoming traffic denied"
+     ],
+     [
+      "Policy with policyTypes Egress and no egress rules",
+      "All outgoing traffic denied, including DNS"
+     ],
+     [
+      "Rule with from.podSelector",
+      "Only matching Pods in the same namespace allowed"
+     ],
+     [
+      "Rule with namespaceSelector and podSelector together",
+      "Pods matching both, in matching namespaces"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get networkpolicy -n user-namespace",
+     "note": "Which policies exist in the destination namespace"
+    },
+    {
+     "cmd": "kubectl describe networkpolicy allow-frontend -n user-namespace",
+     "note": "Selected Pods and allowed sources"
+    },
+    {
+     "cmd": "kubectl run tmp-netshoot --rm -it --image=nicolaka/netshoot -- bash",
+     "note": "Debug Pod to test connections from inside the cluster"
+    },
+    {
+     "cmd": "nc -zv -w 3 10.244.1.15 8080",
+     "note": "Inside netshoot: times out if a policy blocks the port"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between podSelector and namespaceSelector in the from list?",
+    "How do you write a default-deny policy for a namespace?"
+   ],
+   "pitfalls": [
+    "Believing a policy denies only what it lists; it denies everything else for selected Pods.",
+    "Testing from a Pod that is in a different namespace than the real client."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-network-policy-block.html",
+    "title": "NetworkPolicy block",
+    "ratio": "824/404"
+   }
+  },
+  {
+   "id": "ch16-case-policy-breaks-dns",
+   "level": "senior",
+   "question": "After a security hardening change, many apps fail to find their database by name. What happened and how do you fix it?",
+   "say_first": "A new default-deny egress policy almost certainly blocked DNS queries to CoreDNS. I prove it with nslookup timing out, then add an egress rule for port 53 to the kube-system namespace.",
+   "explain": [
+    "Symptom: apps log name-resolution errors and nslookup returns 'connection timed out; no servers could be reached'. CoreDNS Pods are healthy, which rules out the DNS server itself.",
+    "Diagnosis: a restrictive NetworkPolicy had been applied across application namespaces with an Egress policy type but no rule allowing DNS. Queries never left the Pod's namespace.",
+    "Resolution: add an egress rule to the CoreDNS Pods or namespace on UDP and TCP port 53. Use the automatic kubernetes.io/metadata.name label to select kube-system. Lookups succeed and the database connections return. Add this rule to your standard policy template so it is never forgotten."
+   ],
+   "key_points": [
+    "Egress default-deny blocks DNS too.",
+    "Allow UDP and TCP 53 (TCP is used for large answers).",
+    "Select kube-system with the kubernetes.io/metadata.name label.",
+    "Include DNS in the base template for every policy set."
+   ],
+   "commands": [
+    {
+     "cmd": "apiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: allow-dns-egress\nspec:\n  podSelector: {}\n  policyTypes: [Egress]\n  egress:\n  - to:\n    - namespaceSelector:\n        matchLabels:\n          kubernetes.io/metadata.name: kube-system\n    ports:\n    - {protocol: UDP, port: 53}\n    - {protocol: TCP, port: 53}",
+     "note": "allow-dns-egress.yaml: lets every Pod in the namespace query CoreDNS"
+    },
+    {
+     "cmd": "kubectl apply -f allow-dns-egress.yaml",
+     "note": "Apply the policy below"
+    },
+    {
+     "cmd": "kubectl exec web-7d9 -- nslookup database-svc",
+     "note": "Verify resolution works again"
+    }
+   ],
+   "follow_ups": [
+    "Why do you need TCP as well as UDP for DNS?",
+    "How would you roll out default-deny safely in a live cluster?"
+   ],
+   "pitfalls": [
+    "Fixing it by deleting all policies instead of adding the DNS rule."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-policy-breaks-dns.html",
+    "title": "Policy breaks DNS",
+    "ratio": "784/336"
+   }
+  },
+  {
+   "id": "ch16-ingress-path",
+   "level": "senior",
+   "question": "Users get 404 or 502 from your Ingress. How do you troubleshoot the whole external path?",
+   "say_first": "I walk the chain from outside in: external DNS, the cloud load balancer, the Ingress resource and controller, then the Service and Pod. I test the last hop by curling the Service from inside the controller Pod.",
+   "explain": [
+    "The path is a relay race: DNS gives the address, the cloud load balancer receives the packets, the Ingress controller reads the rules and picks a backend, the Service picks a Pod. The baton can be dropped at any handover.",
+    "Outside: does the hostname's DNS record point at the controller Service's external address? If EXTERNAL-IP stays pending, the cloud provider is not provisioning the load balancer. Middle: describe the Ingress to verify host, path, pathType, backend name and port; check the ingressClassName matches an installed controller. The controller Pods must be running, and their logs show config reload errors and missing backends.",
+    "Inside: exec into a controller Pod and curl the Service DNS name. If that fails, the problem is the Service (often no endpoints). If it works, the fault is upstream. A 404 generally comes from the controller's default backend and means no rule matched; a 502 or 503 means a rule matched but no healthy upstream answered.",
+    "Remember an Ingress object does nothing without a controller, and the Ingress and its backend Service must share a namespace.",
+    "Note: the community ingress-nginx controller is retired (maintenance ended March 2026), so for new clusters trace the same path through a Gateway API implementation instead: check the GatewayClass, Gateway and HTTPRoute status conditions in place of the Ingress rules and controller logs."
+   ],
+   "key_points": [
+    "Walk outside in: DNS, load balancer, controller, Service, Pod.",
+    "404 means no rule matched; 502/503 means a backend problem.",
+    "EXTERNAL-IP pending points at the cloud provider or a missing LB controller.",
+    "ingressClassName must match an installed controller.",
+    "Test the last hop from inside the controller Pod."
+   ],
+   "table": {
+    "caption": "Ingress versus Ingress controller",
+    "headers": [
+     "",
+     "Ingress",
+     "Ingress controller"
+    ],
+    "rows": [
+     [
+      "What it is",
+      "An API object with routing rules",
+      "A running proxy, such as NGINX or Traefik"
+     ],
+     [
+      "Lives in",
+      "Application namespace",
+      "Its own namespace, with a Service of type LoadBalancer"
+     ],
+     [
+      "Does work?",
+      "No, it is only configuration",
+      "Yes, it reads rules and forwards traffic"
+     ],
+     [
+      "Debug with",
+      "kubectl describe ingress",
+      "Controller Pod status and logs"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch16-ingress-path.html",
+    "title": "Walking the Ingress path",
+    "ratio": "1072/360"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get svc -A | grep -i LoadBalancer",
+     "note": "Find the controller or Gateway Service and its EXTERNAL-IP"
+    },
+    {
+     "cmd": "kubectl describe ingress web",
+     "note": "Host, path, backend, and controller events"
+    },
+    {
+     "cmd": "kubectl get ingressclass",
+     "note": "Which classes (controllers) exist"
+    },
+    {
+     "cmd": "kubectl get gateway,httproute -A",
+     "note": "Gateway API: check Accepted/Programmed conditions and attached routes"
+    },
+    {
+     "cmd": "kubectl run tmp --rm -it --image=curlimages/curl --restart=Never -- curl -s -o /dev/null -w '%{http_code}' http://api-v1.api.svc.cluster.local",
+     "note": "Can a Pod in the cluster reach the Service? (same test the proxy makes)"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between pathType Prefix and Exact?",
+    "How does the Gateway API change this picture?"
+   ],
+   "pitfalls": [
+    "Debugging the Ingress YAML when the real problem is a Service without endpoints.",
+    "Forgetting to set ingressClassName when more than one controller is installed."
+   ]
+  },
+  {
+   "id": "ch16-case-ingress-namespace",
+   "level": "senior",
+   "question": "A new route api.example.com/v1 returns the default backend's 404 even though the Ingress looks right. What do you suspect?",
+   "say_first": "I suspect the backend Service lives in a different namespace from the Ingress, which is not allowed. The controller cannot find the Service and falls back to its default backend.",
+   "explain": [
+    "Symptom: clients get the controller's default 404 page for the new path. Diagnosis step 1: describe ingress shows no obvious mistakes. Step 2: controller logs show requests for the host but mention no backend for /v1 and often a warning about a missing Service or endpoints.",
+    "Root cause: the Ingress was created in default while the api-v1 Service is in the api namespace. An Ingress backend names only a Service and port, not a namespace, so it always resolves in the Ingress's own namespace. There is no namespace field on an Ingress backend.",
+    "Fix: create the Ingress in the api namespace, or add an ExternalName Service in the Ingress's namespace that points to api-v1.api.svc.cluster.local, or use Gateway API ReferenceGrant for cross-namespace routing. Keep the Ingress next to its backend wherever possible."
+   ],
+   "key_points": [
+    "Ingress backends resolve in the Ingress's own namespace.",
+    "Default-backend 404 usually means no rule or no valid backend matched.",
+    "Controller logs reveal what it could or could not resolve.",
+    "Cross-namespace routing needs ExternalName Services or Gateway API grants."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get ingress -A",
+     "note": "In which namespace does each Ingress live?"
+    },
+    {
+     "cmd": "kubectl get svc api-v1 -n api",
+     "note": "Confirm where the Service really is"
+    },
+    {
+     "cmd": "kubectl create service externalname api-v1 --external-name=api-v1.api.svc.cluster.local -n default",
+     "note": "Local alias Service pointing at the other namespace"
+    }
+   ],
+   "follow_ups": [
+    "What does Gateway API's ReferenceGrant provide that Ingress lacks?",
+    "Why might the alias Service lose client IP or TLS details?"
+   ],
+   "pitfalls": [
+    "Editing the path rules repeatedly when the Service lookup is what fails."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-ingress-namespace.html",
+    "title": "Ingress backend in the wrong namespace",
+    "ratio": "872/352"
+   }
+  },
+  {
+   "id": "ch16-oomkilled",
+   "level": "mid",
+   "question": "A container keeps restarting with OOMKilled and exit code 137. How do you confirm it, and how do you fix a Java service that triggers it?",
+   "say_first": "OOMKilled means the container went over its memory limit and the kernel killed it. I confirm in describe, compare usage against the limit, then find out whether it is a spike, a leak or a mis-sized runtime like a JVM with no heap cap.",
+   "explain": [
+    "Memory is a hard ceiling, like a lift with a weight limit: go over and you are removed instantly, with no warning. The kubelet then restarts the container, and repeated kills become CrashLoopBackOff.",
+    "Confirm: kubectl describe pod, Last State: Terminated, Reason: OOMKilled, Exit Code: 137. Compare the limit shown there with real usage from kubectl top or Prometheus. Then ask why usage grew: one big request, steady growth from a leak, or a runtime that sizes itself badly.",
+    "Case: a Java service with a 256 Mi limit crashed after a few minutes. The JVM had no explicit heap bound and also needs memory outside the heap, so total use passed the limit. The team capped the heap (for example -Xmx200m, or better percentage-based -XX:MaxRAMPercentage so the heap follows the container limit), leaving headroom for metaspace, threads and buffers. Raising the limit to 1 Gi was a short-term relief while they profiled."
+   ],
+   "key_points": [
+    "Reason OOMKilled with exit 137 is the proof.",
+    "Memory limit exceeded means kill; it is not throttled.",
+    "Leave headroom beyond the heap for off-heap memory in JVM apps.",
+    "Set requests close to real use and limits above the peak.",
+    "Node memory pressure is different: it causes eviction, not OOMKilled."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl describe pod java-svc | grep -A6 'Last State'",
+     "note": "Reason and exit code of the previous run"
+    },
+    {
+     "cmd": "kubectl top pod java-svc --containers",
+     "note": "Current memory per container (needs metrics-server)"
+    },
+    {
+     "cmd": "kubectl set resources deployment/java-svc --limits=memory=1Gi",
+     "note": "Raise the limit as a stop-gap"
+    },
+    {
+     "cmd": "kubectl get pod java-svc -o jsonpath='{.status.containerStatuses[0].lastState.terminated.reason}'",
+     "note": "Script-friendly check of the last termination reason"
+    }
+   ],
+   "follow_ups": [
+    "Why does exit code 137 not always mean OOM?",
+    "How would you find a memory leak in a running service?"
+   ],
+   "pitfalls": [
+    "Only raising the limit without finding why usage grew.",
+    "Setting -Xmx equal to the container limit, leaving no room for off-heap memory."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-oomkilled.html",
+    "title": "OOMKilled",
+    "ratio": "784/336"
+   }
+  },
+  {
+   "id": "ch16-oom-vs-eviction",
+   "level": "senior",
+   "question": "What is the difference between a Pod being OOMKilled and a Pod being Evicted?",
+   "say_first": "OOMKilled is a container exceeding its own memory limit, enforced by the kernel. Eviction is the kubelet removing whole Pods because the node is under memory or disk pressure, chosen by priority and QoS class.",
+   "explain": [
+    "OOMKilled is a lodger breaking their own room's rules; eviction is the landlord asking people to leave because the building is full.",
+    "An OOM kill is per container, restarts the container in the same Pod, and shows Reason OOMKilled. An eviction removes the Pod itself; status shows Evicted with a message about node pressure, and a controller creates a replacement elsewhere. The kubelet picks victims by whether they exceed requests, then by Pod priority, with BestEffort and Burstable Pods going before Guaranteed ones.",
+    "If you see many evictions on one node, look at node conditions and at Pods with no requests; the fix is proper requests and limits so the scheduler does not over-pack the node."
+   ],
+   "key_points": [
+    "OOMKilled: container level, kernel, limit exceeded.",
+    "Evicted: Pod level, kubelet, node pressure.",
+    "Pods using more than their requests are evicted first.",
+    "Guaranteed QoS (requests equal limits) is the last to go.",
+    "Set requests on everything so pressure is handled predictably."
+   ],
+   "table": {
+    "caption": "OOMKilled versus Evicted",
+    "headers": [
+     "",
+     "OOMKilled",
+     "Evicted"
+    ],
+    "rows": [
+     [
+      "Trigger",
+      "Container passes its memory limit",
+      "Node short of memory or disk"
+     ],
+     [
+      "Enforced by",
+      "Linux kernel cgroup",
+      "Kubelet eviction manager"
+     ],
+     [
+      "Scope",
+      "One container",
+      "Whole Pod"
+     ],
+     [
+      "What you see",
+      "Reason OOMKilled, exit 137, restart",
+      "Status Evicted, Pod replaced elsewhere"
+     ],
+     [
+      "Fix",
+      "Right-size limit, fix leak",
+      "Add capacity, set requests, use priorities"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe node NODE | grep -A8 Conditions",
+     "note": "MemoryPressure and DiskPressure flags"
+    },
+    {
+     "cmd": "kubectl get pods -A --field-selector=status.phase=Failed",
+     "note": "Evicted Pods are left in Failed phase"
+    },
+    {
+     "cmd": "kubectl get pod web-7d9 -o jsonpath='{.status.qosClass}'",
+     "note": "QoS class of a Pod"
+    }
+   ],
+   "follow_ups": [
+    "How does QoS class get decided?",
+    "What does PriorityClass change during eviction?"
+   ],
+   "pitfalls": [
+    "Calling every memory restart an eviction."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-oom-vs-eviction.html",
+    "title": "OOMKilled vs Evicted",
+    "ratio": "832/320"
+   }
+  },
+  {
+   "id": "ch16-cpu-throttling",
+   "level": "senior",
+   "question": "An API becomes very slow under load but never crashes and CPU looks flat. What could it be?",
+   "say_first": "CPU throttling: a container at its CPU limit is paused by the kernel scheduler for the rest of each period, so latency rises without any restart or event. The proof is in throttling metrics, not in kubectl events.",
+   "explain": [
+    "CPU is a tap with a flow restrictor, memory is a tank with a hard lid. Exceed the CPU limit and the tap just slows; exceed the memory limit and the container is removed.",
+    "The trap: kubectl top shows CPU pinned at exactly the limit, which does not look like an error. Prove it with Prometheus: a rising container_cpu_cfs_throttled_periods_total, or the ratio of throttled to total periods. Compare the limit in describe with usage, and check whether the whole node is out of CPU (kubectl top node), which would need more capacity, not a different limit.",
+    "Case: an API with a 500m limit went from 50 ms to over 2000 ms under load; usage sat flat at 500m with throttling climbing. Removing the CPU limit but keeping the 500m request let it burst to about 1.5 cores and latency stayed low while they optimised a hot function.",
+    "Rule of thumb: always set a CPU request; set a CPU limit only when you need a hard cap or Guaranteed QoS for predictability, and watch throttling if you do."
+   ],
+   "key_points": [
+    "CPU over limit means throttled; memory over limit means killed.",
+    "No event is raised for throttling; use metrics.",
+    "Usage flat against the limit plus high latency is the signature.",
+    "Requests govern scheduling and fair share; limits cap bursts.",
+    "Profile the code before buying more CPU."
+   ],
+   "table": {
+    "caption": "Memory limit versus CPU limit",
+    "headers": [
+     "",
+     "Memory",
+     "CPU"
+    ],
+    "rows": [
+     [
+      "Type",
+      "Incompressible, hard limit",
+      "Compressible, soft limit"
+     ],
+     [
+      "When exceeded",
+      "Container killed (OOMKilled, 137)",
+      "Process throttled"
+     ],
+     [
+      "Visible as",
+      "Restarts, describe output",
+      "Latency, throttling metrics"
+     ],
+     [
+      "Enforced by",
+      "OOM killer in the cgroup",
+      "CFS quota in the cgroup"
+     ],
+     [
+      "Common fix",
+      "Raise limit or fix leak",
+      "Raise or remove limit, optimise code"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch16-oom-vs-throttle.html",
+    "title": "Memory limit kills, CPU limit slows",
+    "ratio": "888/356"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl top pod api-5f7 --containers",
+     "note": "CPU use per container, look for a flat line at the limit"
+    },
+    {
+     "cmd": "kubectl top node",
+     "note": "Is the node itself short on CPU?"
+    },
+    {
+     "cmd": "rate(container_cpu_cfs_throttled_periods_total[5m]) / rate(container_cpu_cfs_periods_total[5m])",
+     "note": "PromQL: fraction of periods that were throttled"
+    }
+   ],
+   "follow_ups": [
+    "When would you still keep a CPU limit?",
+    "What does Guaranteed QoS require?"
+   ],
+   "pitfalls": [
+    "Reading flat CPU usage as 'the app is idle'.",
+    "Setting tiny CPU limits on latency-sensitive services."
+   ]
+  },
+  {
+   "id": "ch16-hpa-not-scaling",
+   "level": "senior",
+   "question": "Pods are overloaded but the HPA does not add replicas. How do you find out why?",
+   "say_first": "I start with kubectl describe hpa. If current usage shows unknown, the metrics pipeline is broken or the Pods lack CPU requests. If the numbers are fine, I check the thresholds, maxReplicas, and whether new Pods are stuck Pending.",
+   "explain": [
+    "The HPA is a thermostat: it reads a temperature (metric), compares it with the target, and adjusts the heating (replica count). No sensor reading, no action.",
+    "Check in order. One: describe hpa and read Metrics and Conditions; '<unknown> / 70%' means no data, and events may say FailedGetResourceMetric. Two: test the metrics pipeline with kubectl top pods; if it fails, metrics-server is missing or broken. Three: inspect the Deployment, since utilisation percentage is computed against resources.requests, so without a CPU request the HPA cannot calculate it. Four: logic and capacity: is usage actually above target, is it already at maxReplicas, is it in a cooldown or stabilization window, and are the new Pods Pending because the cluster has no room?",
+    "Case: a frontend HPA targeted 70% CPU, but the Deployment had limits and no requests, so the HPA showed unknown. Adding a CPU request let it compute utilisation and it scaled out during the sale. Note that with multiple containers in a Pod, every container needs a request for the Pod-level calculation."
+   ],
+   "key_points": [
+    "<unknown> in TARGETS means the HPA has no usable metric.",
+    "CPU utilisation is relative to the request, not the limit.",
+    "kubectl top working proves metrics-server is healthy.",
+    "The HPA creates demand for Pods; the cluster autoscaler supplies nodes.",
+    "Scale-down has a stabilization window to avoid flapping."
+   ],
+   "table": {
+    "caption": "HPA checklist",
+    "headers": [
+     "Check",
+     "Command",
+     "Bad sign"
+    ],
+    "rows": [
+     [
+      "HPA status",
+      "kubectl describe hpa",
+      "unknown / 70%, FailedGetResourceMetric"
+     ],
+     [
+      "Metrics API",
+      "kubectl top pods",
+      "error: Metrics API not available"
+     ],
+     [
+      "Requests set",
+      "kubectl get deploy -o yaml",
+      "No resources.requests.cpu"
+     ],
+     [
+      "Ceiling",
+      "kubectl get hpa",
+      "REPLICAS equals MAXPODS"
+     ],
+     [
+      "Capacity",
+      "kubectl get pods",
+      "New Pods Pending"
+     ]
+    ]
+   },
+   "diagram": {
+    "file": "diagrams/ch16-hpa-checklist.html",
+    "title": "Why is the HPA not scaling?",
+    "ratio": "800/616"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe hpa frontend-hpa",
+     "note": "Current vs target, conditions and events"
+    },
+    {
+     "cmd": "kubectl top pods -l app=frontend",
+     "note": "Confirms the metrics API works"
+    },
+    {
+     "cmd": "kubectl get deployment frontend -o jsonpath='{.spec.template.spec.containers[*].resources}'",
+     "note": "Are requests defined?"
+    },
+    {
+     "cmd": "kubectl autoscale deployment frontend --cpu-percent=70 --min=2 --max=10",
+     "note": "Create a CPU-based HPA"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between HPA, VPA and the cluster autoscaler?",
+    "How would you scale on queue length instead of CPU?"
+   ],
+   "pitfalls": [
+    "Setting limits but not requests and expecting the HPA to work.",
+    "Forgetting that scale-up may be blocked by Pending Pods."
+   ]
+  },
+  {
+   "id": "ch16-observability-leak",
+   "level": "senior",
+   "question": "Which tools do you use to investigate performance problems, and how would you find a memory leak?",
+   "say_first": "I use metrics for what changed, logs for why, traces for where in a request path, and a profiler for which line of code. A sawtooth memory graph that climbs for days and drops at a restart is the classic leak signature.",
+   "explain": [
+    "Think of a car diagnostic: the dashboard lights (metrics), the error log (logs), the route map with timings (traces), and finally putting the engine on a test bench (profiler).",
+    "Prometheus with Grafana covers metrics and lets you line up a latency spike against CPU throttling. Loki or an EFK stack centralises logs. OpenTelemetry instruments code to emit traces that Jaeger or Zipkin display as a waterfall, so a slow call across five services is obvious. Profilers such as pprof or JVM tools find the function responsible. VPA can suggest right-sized requests, and KEDA scales on event sources like queue depth.",
+    "Case: a service slowed and restarted every few days. Grafana showed memory rising for 48 hours then dropping to zero at an OOM restart. A heap dump during high usage revealed a cache that grew without bound. They fixed the eviction logic and added an alert on abnormal memory growth."
+   ],
+   "key_points": [
+    "Metrics, logs and traces each answer a different question.",
+    "Tracing is the right tool for latency across many services.",
+    "Sawtooth memory with restarts suggests a leak.",
+    "Alert on trends, not just thresholds.",
+    "Profile before scaling; scaling a leak only delays it."
+   ],
+   "table": {
+    "caption": "Observability tools and their role",
+    "headers": [
+     "Signal",
+     "Tools",
+     "Answers"
+    ],
+    "rows": [
+     [
+      "Metrics",
+      "Prometheus, Grafana",
+      "What changed, how bad, since when"
+     ],
+     [
+      "Logs",
+      "Loki, EFK",
+      "Why it failed, the error text"
+     ],
+     [
+      "Traces",
+      "OpenTelemetry, Jaeger, Zipkin",
+      "Which hop is slow"
+     ],
+     [
+      "Profiles",
+      "pprof, JVM profilers, APM",
+      "Which code path burns CPU or memory"
+     ],
+     [
+      "Right-sizing",
+      "VPA, KEDA",
+      "Better requests, event-driven scaling"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl top pod --sort-by=memory -A",
+     "note": "Biggest memory consumers across the cluster"
+    },
+    {
+     "cmd": "predict_linear(container_memory_working_set_bytes{pod=~\"svc-.*\"}[6h], 3600*12)",
+     "note": "PromQL: projected memory in 12 hours, useful for alerts"
+    }
+   ],
+   "follow_ups": [
+    "How would you debug latency across five microservices?",
+    "Where would you add an alert for this leak?"
+   ],
+   "pitfalls": [
+    "Relying only on logs for latency problems.",
+    "Restarting on a schedule and calling the leak solved."
+   ],
+   "diagram": {
+    "file": "diagrams/ch16-observability-leak.html",
+    "title": "Finding a leak",
+    "ratio": "844/356"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch16-crashloop-flow.html",
+  "diagrams/ch16-dns-path.html",
+  "diagrams/ch16-hpa-checklist.html",
+  "diagrams/ch16-ingress-path.html",
+  "diagrams/ch16-layer-stack.html",
+  "diagrams/ch16-oom-vs-throttle.html",
+  "diagrams/ch16-pending-tree.html",
+  "diagrams/ch16-service-trace.html",
+  "diagrams/ch16-bottom-up-triage.html",
+  "diagrams/ch16-first-five-minutes.html",
+  "diagrams/ch16-over-requested.html",
+  "diagrams/ch16-image-pull-errors.html",
+  "diagrams/ch16-missing-config.html",
+  "diagrams/ch16-liveness-vs-readiness.html",
+  "diagrams/ch16-aggressive-liveness.html",
+  "diagrams/ch16-terminating-finalizers.html",
+  "diagrams/ch16-network-policy-block.html",
+  "diagrams/ch16-policy-breaks-dns.html",
+  "diagrams/ch16-ingress-namespace.html",
+  "diagrams/ch16-oomkilled.html",
+  "diagrams/ch16-oom-vs-eviction.html",
+  "diagrams/ch16-observability-leak.html"
+ ]
+}

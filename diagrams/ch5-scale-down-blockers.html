@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why a node will not scale down</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75; --color-accent:#eb6c36;
+      --font-sans:'Geist', system-ui, sans-serif; --font-serif:'Instrument Serif', serif; --font-mono:'Geist Mono', ui-monospace, monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1200px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:0.66rem; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:0.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight:400; letter-spacing:-0.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Autoscaling · Troubleshooting</p>
+    <h1>Why a node will not scale down</h1>
+    <svg viewBox="0 0 1000 428" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch5-scale-down-blockers-title ch5-scale-down-blockers-desc">
+      <title id="ch5-scale-down-blockers-title">Why a node will not scale down</title>
+      <desc id="ch5-scale-down-blockers-desc">Tree listing four reasons an idle node is not removed by the Cluster Autoscaler, each paired with its fix.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M428,108 V120 Q428,128 420,128 H160 Q152,128 152,136 V176" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M476,108 V136 Q476,144 468,144 H392 Q384,144 384,152 V176" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M524,108 V136 Q524,144 532,144 H608 Q616,144 616,152 V176" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M572,108 V120 Q572,128 580,128 H840 Q848,128 848,136 V176" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M152,240 V288" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M384,240 V288" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M616,240 V288" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M848,240 V288" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="380" y="60" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="60" width="240" height="48" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="500" y="88" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Idle node will not go away</text>
+<rect x="52" y="176" width="200" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="52" y="176" width="200" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="152" y="206" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">At minimum size</text>
+<text x="152" y="222" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ASG floor reached</text>
+<rect x="52" y="288" width="200" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="52" y="288" width="200" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="152" y="314" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Lower minSize</text>
+<text x="152" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">if cost allows</text>
+<rect x="284" y="176" width="200" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="284" y="176" width="200" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="384" y="206" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PDB blocks eviction</text>
+<text x="384" y="222" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">budget would break</text>
+<rect x="284" y="288" width="200" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="284" y="288" width="200" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="384" y="314" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Add replicas or relax</text>
+<text x="384" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">PodDisruptionBudget</text>
+<rect x="516" y="176" width="200" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="516" y="176" width="200" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="616" y="206" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod refuses eviction</text>
+<text x="616" y="222" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">safe-to-evict: "false"</text>
+<rect x="516" y="288" width="200" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="516" y="288" width="200" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="616" y="314" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Remove annotation</text>
+<text x="616" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">or local storage</text>
+<rect x="748" y="176" width="200" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="748" y="176" width="200" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="848" y="206" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Timer still running</text>
+<text x="848" y="222" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">scale-down-unneeded-time</text>
+<rect x="748" y="288" width="200" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="748" y="288" width="200" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="848" y="314" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Wait or tune the flag</text>
+<text x="848" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">default is 10m</text>
+<line x1="30" y1="380" x2="970" y2="380" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="30" y="396" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="388" width="24" height="12" rx="2" fill="#fff" stroke="#2d3142"/>
+<text x="152" y="397" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">cause</text>
+<rect x="213" y="388" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36"/>
+<text x="245" y="397" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">symptom</text>
+    </svg>
+  </div>
+</body>
+</html>

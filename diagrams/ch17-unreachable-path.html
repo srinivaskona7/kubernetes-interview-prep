@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Where an unreachable app breaks</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Troubleshooting · Network path</p>
+    <h1>Where an unreachable app breaks</h1>
+
+    <svg viewBox="0 0 1000 376" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch17-unreachable-path-title ch17-unreachable-path-desc">
+      <title id="ch17-unreachable-path-title">Where an unreachable app breaks</title>
+      <desc id="ch17-unreachable-path-desc">Request path from outside in: DNS, load balancer, ingress or gateway controller, Service, Pods, each with its check; the Service is the most common break, with a real case and quiet blockers below.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      
+      <rect x="40" y="56" width="160" height="84" rx="6" fill="#f5f5f5"/><rect x="40" y="56" width="160" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="52" y="66" width="38" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="71" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HOP 1</text><text x="52" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">DNS</text><text x="52" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">dig myapp.example.com</text><text x="52" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">points at the LB?</text>
+<rect x="230" y="56" width="160" height="84" rx="6" fill="#f5f5f5"/><rect x="230" y="56" width="160" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="242" y="66" width="38" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="261" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HOP 2</text><text x="242" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Load balancer</text><text x="242" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">curl the LB address</text><text x="242" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">targets healthy?</text>
+<rect x="420" y="56" width="160" height="84" rx="6" fill="#f5f5f5"/><rect x="420" y="56" width="160" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="432" y="66" width="38" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="451" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HOP 3</text><text x="432" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Ingress or Gateway</text><text x="432" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">get ingress / httproute</text><text x="432" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">class + backend match?</text>
+<rect x="610" y="56" width="160" height="84" rx="6" fill="#f5f5f5"/><rect x="610" y="56" width="160" height="84" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="622" y="66" width="38" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="641" y="75" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HOP 4</text><text x="622" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Service</text><text x="622" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">get endpoints</text><text x="622" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">empty = selector miss</text>
+<rect x="800" y="56" width="160" height="84" rx="6" fill="#f5f5f5"/><rect x="800" y="56" width="160" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="812" y="66" width="38" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="831" y="75" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HOP 5</text><text x="812" y="94" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Pods</text><text x="812" y="110" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">get pods --show-labels</text><text x="812" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">Ready? labels right?</text>
+<rect x="40" y="208" width="540" height="84" rx="6" fill="#f5f5f5"/><rect x="40" y="208" width="540" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="52" y="218" width="57" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="81" y="227" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">REAL CASE</text><text x="52" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Label renamed, selector left alone</text><text x="52" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">CI relabelled the Pods my-app-v2; the Service still selected my-app</text><text x="52" y="276" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">describe svc showed no endpoints: the hop that broke</text>
+<rect x="724" y="208" width="236" height="84" rx="6" fill="#f5f5f5"/><rect x="724" y="208" width="236" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="736" y="218" width="62" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="767" y="227" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ALSO CHECK</text><text x="736" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Quiet blockers</text><text x="736" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">NetworkPolicy on the Pods</text><text x="736" y="276" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">Pod not Ready: dropped</text>
+      <path d="M200,98 L230,98" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M390,98 L420,98" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M580,98 L610,98" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M770,98 L800,98" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M580,258 L682,258 Q690,258 690,250 L690,140" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="698" y="196" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">BREAKS HERE</text>
+<path d="M880,208 L880,140" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="888" y="192" fill="#5a6580" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">DROPS TRAFFIC</text>
+<text x="40" y="316" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">Walk outside in; check each hand-off before guessing.</text>
+      <line x1="32" y1="348" x2="968" y2="348" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="364" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="360" x2="148" y2="360" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="363" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="212" y="356" width="12" height="8" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="232" y="363" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">most common break</text>
+    </svg>
+  </div>
+</body>
+</html>

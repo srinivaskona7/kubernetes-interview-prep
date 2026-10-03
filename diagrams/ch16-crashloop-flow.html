@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reading a CrashLoopBackOff</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Troubleshooting · Pod lifecycle</p>
+    <h1>Reading a CrashLoopBackOff</h1>
+
+    <svg viewBox="0 0 800 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="crashloop-flow-title crashloop-flow-desc">
+      <title id="crashloop-flow-title">Reading a CrashLoopBackOff</title>
+      <desc id="crashloop-flow-desc">Decision flow from describe and previous logs to the four usual causes of a crash loop, ending with a debug copy of the Pod.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M360 88 H520" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="426" y="68" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="440" y="77" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text><path d="M240 136 V184" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="248" y="154" width="20" height="12" rx="2" fill="#f5f5f5"/><text x="264" y="163" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text><path d="M360 232 H520" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="426" y="212" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="440" y="221" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text><path d="M240 280 V328" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="248" y="298" width="20" height="12" rx="2" fill="#f5f5f5"/><text x="264" y="307" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text><path d="M360 376 H520" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="426" y="356" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="440" y="365" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text><path d="M240 424 V472" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="248" y="442" width="20" height="12" rx="2" fill="#f5f5f5"/><text x="264" y="451" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text><path d="M360 520 H520" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="426" y="500" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="440" y="509" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text><path d="M240 568 V616" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="248" y="586" width="20" height="12" rx="2" fill="#f5f5f5"/><text x="264" y="595" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text><polygon points="240,40 360,88 240,136 120,88" fill="#f5f5f5"/><polygon points="240,40 360,88 240,136 120,88" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="240" y="92" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Exit 137 / OOMKilled?</text><rect x="520" y="56" width="240" height="64" rx="6" fill="#f5f5f5"/><rect x="520" y="56" width="240" height="64" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="528" y="64" width="32" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="544" y="73" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FIX</text><text x="640" y="92" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Raise limit, cap the heap</text><text x="640" y="108" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Last State: OOMKilled</text><polygon points="240,184 360,232 240,280 120,232" fill="#f5f5f5"/><polygon points="240,184 360,232 240,280 120,232" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="240" y="236" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Liveness probe failed event?</text><rect x="520" y="200" width="240" height="64" rx="6" fill="#f5f5f5"/><rect x="520" y="200" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="528" y="208" width="32" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="544" y="217" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FIX</text><text x="640" y="236" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Relax or fix the probe</text><text x="640" y="252" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Liveness probe failed</text><polygon points="240,328 360,376 240,424 120,376" fill="#f5f5f5"/><polygon points="240,328 360,376 240,424 120,376" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="240" y="380" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Log shows missing config?</text><rect x="520" y="344" width="240" height="64" rx="6" fill="#f5f5f5"/><rect x="520" y="344" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="528" y="352" width="32" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="544" y="361" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FIX</text><text x="640" y="380" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fix mount, ConfigMap, Secret</text><text x="640" y="396" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">kubectl logs --previous</text><polygon points="240,472 360,520 240,568 120,520" fill="#f5f5f5"/><polygon points="240,472 360,520 240,568 120,520" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="240" y="524" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Other error in the log?</text><rect x="520" y="488" width="240" height="64" rx="6" fill="#f5f5f5"/><rect x="520" y="488" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="528" y="496" width="32" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="544" y="505" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FIX</text><text x="640" y="524" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fix the code or its inputs</text><text x="640" y="540" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">exit code 1 = app error</text><rect x="120" y="616" width="240" height="80" rx="6" fill="#f5f5f5"/><rect x="120" y="616" width="240" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="128" y="624" width="44" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="150" y="633" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DEBUG</text><text x="240" y="652" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">kubectl debug a copy</text><text x="240" y="668" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">no logs at all? run a shell</text><line x1="32" y1="728" x2="768" y2="728" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="744" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="740" x2="148" y2="740" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="743" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="212" y="736" width="12" height="8" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="232" y="743" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">likely culprit</text>
+    </svg>
+  </div>
+</body>
+</html>

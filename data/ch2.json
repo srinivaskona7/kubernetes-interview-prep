@@ -1,0 +1,1050 @@
+{
+ "number": 2,
+ "title": "Kubernetes Key Components and Their Functions",
+ "part": "Part 1 · Introduction",
+ "tagline": "Control plane, worker nodes, runtimes and the services that glue a cluster together",
+ "overview": "This chapter opens up a cluster. You learn what each control plane and worker node component does, how a Pod creation request travels through them, how Docker gave way to CRI runtimes, and how DNS and networking plug in. It ends with how clusters are deployed and managed.",
+ "topics": [
+  {
+   "id": "ch2-cluster-components",
+   "level": "junior",
+   "question": "What are the main components of a Kubernetes cluster?",
+   "say_first": "A cluster has a control plane that makes decisions (API server, etcd, scheduler, controller manager, optionally a cloud controller manager) and worker nodes that run the workloads (kubelet, container runtime, kube-proxy).",
+   "explain": [
+    "Think of a restaurant. The control plane is the management office: it takes orders, keeps the books and assigns tables. The worker nodes are the kitchen stations where the food is actually cooked.",
+    "The control plane never runs your application containers. It stores the desired state and keeps nudging the real world toward it. Each worker node runs an agent that obeys those instructions.",
+    "A good opening answer lists the pieces and gives each a one-line job, then offers to go deeper on any of them. Interviewers use your answer to pick the next question."
+   ],
+   "key_points": [
+    "Control plane: API server, etcd, scheduler, controller manager, cloud controller manager (cloud only).",
+    "Worker node: kubelet, container runtime, kube-proxy.",
+    "The API server is the only component everything else talks to.",
+    "Add-ons such as cluster DNS and a CNI plugin complete a working cluster."
+   ],
+   "table": {
+    "caption": "Control plane versus worker node",
+    "headers": [
+     "Aspect",
+     "Control plane",
+     "Worker node"
+    ],
+    "rows": [
+     [
+      "Role",
+      "Decides and records desired state",
+      "Runs the Pods"
+     ],
+     [
+      "Key parts",
+      "API server, etcd, scheduler, controllers",
+      "kubelet, runtime, kube-proxy"
+     ],
+     [
+      "Typical workload",
+      "Cluster management only",
+      "Application containers"
+     ],
+     [
+      "Managed clouds",
+      "Hosted by the provider",
+      "You size and pay for the nodes"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get nodes -o wide",
+     "note": "Lists nodes, their roles, IPs and container runtime"
+    },
+    {
+     "cmd": "kubectl get pods -n kube-system",
+     "note": "Shows control plane add-ons and system Pods"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-cluster-architecture.html",
+    "title": "Control plane and worker node",
+    "ratio": "960/460"
+   },
+   "follow_ups": [
+    "Which component would you check first if kubectl stops responding?",
+    "Can the control plane run on the same machines as workers?"
+   ],
+   "pitfalls": [
+    "Listing component names without saying what each does.",
+    "Saying the control plane runs application Pods (true only on single-node dev setups where it is untainted)."
+   ]
+  },
+  {
+   "id": "ch2-api-server",
+   "level": "junior",
+   "question": "What does the API server do and why does everything go through it?",
+   "say_first": "The API server is the cluster's front door: it authenticates, authorizes and validates every request, stores accepted objects in etcd, and is the only component that talks to etcd.",
+   "explain": [
+    "Imagine a hotel reception desk. Guests, housekeeping and the manager all go through reception; nobody walks into the records room directly. That is the API server.",
+    "It exposes a REST API. kubectl, the scheduler, kubelets and controllers are all just clients of it, which is why it is the central communication hub.",
+    "For every request it asks three questions in order: who are you (authentication), are you allowed (authorization), and is the object valid (admission and validation)."
+   ],
+   "key_points": [
+    "Stateless: all data lives in etcd, so you can run several API server replicas behind a load balancer.",
+    "Authentication proves identity; authorization decides permissions.",
+    "Other components never talk to each other directly; they watch the API server.",
+    "Every kubectl command becomes a REST call."
+   ],
+   "table": {
+    "caption": "Authentication versus authorization",
+    "headers": [
+     "Concept",
+     "Question answered",
+     "Example"
+    ],
+    "rows": [
+     [
+      "Authentication",
+      "Who are you?",
+      "Client certificate or bearer token"
+     ],
+     [
+      "Authorization",
+      "What may you do?",
+      "RBAC allows get on Pods only"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get --raw /healthz",
+     "note": "Asks the API server for its health endpoint"
+    },
+    {
+     "cmd": "kubectl api-resources",
+     "note": "Lists resource types the API server exposes"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-api-server-request.html",
+    "title": "How the API server handles a request",
+    "ratio": "960/400"
+   },
+   "follow_ups": [
+    "What are admission controllers?",
+    "How does RBAC fit in?"
+   ],
+   "pitfalls": [
+    "Claiming the API server stores data itself.",
+    "Mixing up authentication (who) and authorization (what)."
+   ]
+  },
+  {
+   "id": "ch2-etcd",
+   "level": "mid",
+   "question": "What is etcd, and what happens if it loses quorum?",
+   "say_first": "etcd is a strongly consistent, distributed key-value store holding all cluster state; it uses the Raft consensus algorithm, so it needs a majority of members alive to accept writes.",
+   "explain": [
+    "etcd is the cluster's ledger. Every object, from Pods to Secrets, is a record in it. If the ledger is lost, the cluster forgets what it should be running.",
+    "Raft needs a majority (quorum) to agree on every write. With 3 members you can lose 1; with 5 you can lose 2. Use an odd number, since an even count adds cost without more fault tolerance.",
+    "If quorum is lost, etcd becomes unavailable for writes (and for consistent reads): no new changes can be committed. Pods already running keep running because kubelets act on what they already know, but you cannot create, scale or heal anything until quorum returns."
+   ],
+   "key_points": [
+    "Only the API server reads and writes etcd.",
+    "Back it up regularly with etcdctl snapshot save; the snapshot is your disaster recovery.",
+    "Run 3 or 5 members for high availability, on fast disks.",
+    "Losing quorum freezes changes but does not stop existing containers."
+   ],
+   "table": {
+    "caption": "etcd members and fault tolerance",
+    "headers": [
+     "Members",
+     "Quorum",
+     "Failures tolerated"
+    ],
+    "rows": [
+     [
+      "1",
+      "1",
+      "0"
+     ],
+     [
+      "3",
+      "2",
+      "1"
+     ],
+     [
+      "5",
+      "3",
+      "2"
+     ],
+     [
+      "4",
+      "3",
+      "1 (no gain over 3)"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "ETCDCTL_API=3 etcdctl snapshot save /backup/etcd.db --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key",
+     "note": "Takes a snapshot on a kubeadm control plane node"
+    },
+    {
+     "cmd": "etcdctl endpoint status --cluster -w table",
+     "note": "Shows each member, leader and DB size (same TLS flags needed)"
+    }
+   ],
+   "follow_ups": [
+    "How would you back up and restore etcd?",
+    "Why is an even number of members a poor choice?"
+   ],
+   "pitfalls": [
+    "Saying the cluster stops completely when quorum is lost; running workloads continue.",
+    "Storing large blobs in etcd."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-etcd-quorum.html",
+    "title": "etcd and quorum",
+    "ratio": "960/448"
+   }
+  },
+  {
+   "id": "ch2-pod-creation-flow",
+   "level": "mid",
+   "question": "Walk me through what happens when you create a Pod.",
+   "say_first": "kubectl sends the request to the API server, which stores the Pod in etcd as Pending; the scheduler picks a node and records it; the kubelet on that node sees the assignment, starts the containers and reports Running.",
+   "explain": [
+    "Each component does exactly one job and communicates only through the API server. Nobody gives direct orders; they watch for work.",
+    "Step 1: kubectl creates the Pod object. Step 2: the API server validates it and persists it to etcd with no node assigned. Step 3: the scheduler notices an unassigned Pod and binds it to a node. Step 4: that node's kubelet notices a Pod bound to it and asks the container runtime to start it. Step 5: the kubelet reports status back through the API server.",
+    "This watch-and-react design is why Kubernetes survives component restarts: the state is in etcd, and each piece resumes where it left off."
+   ],
+   "key_points": [
+    "The scheduler only sets the node name; it never starts containers.",
+    "The kubelet starts containers through the CRI.",
+    "Status flows back through the API server into etcd.",
+    "All communication is watch-based, not direct calls between components."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl run web --image=nginx",
+     "note": "Creates a Pod and triggers the whole flow"
+    },
+    {
+     "cmd": "kubectl get events --sort-by=.lastTimestamp",
+     "note": "Shows Scheduled, Pulling, Created and Started events in order"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-pod-creation-flow.html",
+    "title": "Pod creation sequence",
+    "ratio": "1000/480"
+   },
+   "follow_ups": [
+    "Where does the controller manager fit in for a Deployment-created Pod?",
+    "What if no node fits?"
+   ],
+   "pitfalls": [
+    "Saying the scheduler talks to the kubelet directly.",
+    "Forgetting that etcd is written before anything is scheduled."
+   ]
+  },
+  {
+   "id": "ch2-scheduler",
+   "level": "mid",
+   "question": "How does the scheduler decide where a Pod runs?",
+   "say_first": "It filters out nodes that cannot host the Pod, scores the remaining ones, and binds the Pod to the best scorer, considering resource requests, affinity, taints and tolerations, and spreading rules.",
+   "explain": [
+    "Think of a matchmaker. First rule out the impossible (not enough CPU, wrong labels, tainted node). Then rank what is left (spread, locality, free capacity) and pick the winner.",
+    "The scheduler uses the Pod's resource requests, not live usage, to judge fit. That is why setting requests correctly matters.",
+    "All the knobs are set by whoever writes the manifest: nodeSelector, affinity and anti-affinity, tolerations, topology spread constraints and priority."
+   ],
+   "key_points": [
+    "Two phases: filter (feasibility) then score (preference).",
+    "Decisions use requests, not limits or current usage.",
+    "Affinity attracts Pods; anti-affinity and spread keep replicas apart for availability.",
+    "A Pod nobody fits stays Pending with an explanatory event."
+   ],
+   "table": {
+    "caption": "Common scheduling controls",
+    "headers": [
+     "Control",
+     "Effect",
+     "Set on"
+    ],
+    "rows": [
+     [
+      "nodeSelector",
+      "Hard match on node labels",
+      "Pod"
+     ],
+     [
+      "Node affinity",
+      "Required or preferred node rules",
+      "Pod"
+     ],
+     [
+      "Pod anti-affinity",
+      "Keep Pods away from each other",
+      "Pod"
+     ],
+     [
+      "Taint and toleration",
+      "Node repels Pods unless tolerated",
+      "Node and Pod"
+     ],
+     [
+      "Topology spread",
+      "Even spread across zones or nodes",
+      "Pod"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pod <pod-name>",
+     "note": "Events show why a Pod is Pending or which node it was bound to"
+    },
+    {
+     "cmd": "kubectl get pod <pod-name> -o wide",
+     "note": "Shows the node the scheduler picked"
+    }
+   ],
+   "follow_ups": [
+    "Why is my Pod stuck in Pending?",
+    "What is the difference between a taint and a nodeSelector?"
+   ],
+   "pitfalls": [
+    "Saying the scheduler balances by real-time load.",
+    "Believing QoS class alone chooses the node; it matters mostly for eviction."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-scheduler-filter-score.html",
+    "title": "Scheduler filter and score",
+    "ratio": "960/380"
+   }
+  },
+  {
+   "id": "ch2-controller-manager",
+   "level": "mid",
+   "question": "What is a reconciliation loop and which component runs it?",
+   "say_first": "A controller repeatedly compares the actual state with the desired state in etcd and acts to close the gap; the controller manager runs the built-in controllers as one process.",
+   "explain": [
+    "Think of a thermostat. You set 21 degrees; it measures the room, and turns heating on or off until they match, forever. Controllers do this for Kubernetes objects.",
+    "The controller manager is a bundle of many controllers in one binary. Each watches one kind of resource and has one job.",
+    "This loop is the source of self-healing: if a Pod dies, the ReplicaSet controller sees fewer Pods than desired and creates a replacement."
+   ],
+   "key_points": [
+    "Declarative model: you state the goal; controllers do the work.",
+    "Controllers watch the API server and never poll etcd directly.",
+    "One process, many controllers.",
+    "Loops are level-based, so they correct drift even if an event was missed."
+   ],
+   "table": {
+    "caption": "Built-in controllers and their jobs",
+    "headers": [
+     "Controller",
+     "Job"
+    ],
+    "rows": [
+     [
+      "ReplicaSet",
+      "Keeps the desired number of Pods running"
+     ],
+     [
+      "Node",
+      "Watches node health and marks nodes unready"
+     ],
+     [
+      "EndpointSlice",
+      "Maps Services to ready Pod IPs"
+     ],
+     [
+      "ServiceAccount and token",
+      "Creates default accounts and credentials"
+     ],
+     [
+      "Namespace",
+      "Cleans up when a namespace is deleted"
+     ],
+     [
+      "Job",
+      "Runs Pods until completions are reached"
+     ],
+     [
+      "DaemonSet",
+      "Ensures one Pod per matching node"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl scale deployment web --replicas=5",
+     "note": "Changes desired state; the ReplicaSet controller reconciles"
+    },
+    {
+     "cmd": "kubectl get pods -n kube-system -l component=kube-controller-manager",
+     "note": "Finds the controller manager on a kubeadm cluster"
+    }
+   ],
+   "follow_ups": [
+    "How do custom controllers and operators extend this?",
+    "What happens if the controller manager is down?"
+   ],
+   "pitfalls": [
+    "Describing the controller manager as a single controller.",
+    "Thinking controllers run once at creation time."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-reconciliation-loop.html",
+    "title": "Reconciliation loop",
+    "ratio": "960/380"
+   }
+  },
+  {
+   "id": "ch2-cloud-controller-manager",
+   "level": "mid",
+   "question": "What does the cloud controller manager do and why is it separate?",
+   "say_first": "It runs the controllers that talk to a cloud provider's API, such as creating load balancers and tracking cloud nodes, and is kept separate so the core code stays vendor-neutral.",
+   "explain": [
+    "The core controllers only manage things inside the cluster. When a Service of type LoadBalancer is created, someone has to ask the cloud for a real load balancer. That is this component.",
+    "Splitting it out lets each cloud provider ship and update its integration on its own schedule without changing Kubernetes core.",
+    "It also cleans up: delete the Service or node and the matching cloud resources are released, avoiding surprise bills."
+   ],
+   "key_points": [
+    "Present only on clusters integrated with a cloud provider.",
+    "Handles load balancers, node lifecycle and routes.",
+    "Keeps provider code out of the core project.",
+    "On bare metal, tools such as MetalLB fill the load balancer gap."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get svc -A --field-selector spec.type=LoadBalancer",
+     "note": "Services that rely on the cloud integration"
+    }
+   ],
+   "follow_ups": [
+    "How do you get a LoadBalancer Service on-premises?",
+    "Which cloud resources get created for a LoadBalancer Service?"
+   ],
+   "pitfalls": [
+    "Saying kube-proxy talks to the cloud provider; the cloud controller manager does."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-cloud-controller-manager.html",
+    "title": "Cloud controller manager",
+    "ratio": "960/380"
+   }
+  },
+  {
+   "id": "ch2-kubelet",
+   "level": "mid",
+   "question": "What is the kubelet and why is it important?",
+   "say_first": "The kubelet is the agent on each node that turns Pod specs from the API server into running containers, keeps them healthy, and reports status back.",
+   "explain": [
+    "It is the bridge between desired state and reality on one machine. It never decides where a Pod goes; it only runs what has been assigned to its node.",
+    "It runs liveness and readiness probes, restarts failed containers, enforces resource limits, evicts Pods under node pressure, and reports node and Pod status regularly.",
+    "It asks the container runtime to pull images and start containers. It talks only to the API server, not to etcd."
+   ],
+   "key_points": [
+    "Watches the API server for Pods bound to its node.",
+    "Runs probes and restarts containers per restartPolicy.",
+    "Evicts Pods when the node is short on memory or disk.",
+    "Reports node heartbeat; missing heartbeats mark the node NotReady."
+   ],
+   "commands": [
+    {
+     "cmd": "systemctl status kubelet",
+     "note": "Check the agent on a node (run on the node)"
+    },
+    {
+     "cmd": "journalctl -u kubelet --since '10 min ago'",
+     "note": "Kubelet logs for troubleshooting"
+    }
+   ],
+   "follow_ups": [
+    "What happens when the kubelet stops on a node?",
+    "What is the difference between a liveness and readiness probe?"
+   ],
+   "pitfalls": [
+    "Saying the kubelet syncs with etcd; it goes through the API server.",
+    "Thinking the kubelet schedules Pods."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-kubelet-node-agent.html",
+    "title": "Kubelet node agent",
+    "ratio": "960/380"
+   }
+  },
+  {
+   "id": "ch2-kube-proxy",
+   "level": "mid",
+   "question": "How does kube-proxy make Services work?",
+   "say_first": "kube-proxy runs on every node, watches Services and EndpointSlices, and programs kernel rules so traffic to a Service's virtual IP reaches one of its healthy backing Pods.",
+   "explain": [
+    "A Service IP is virtual: no machine owns it. kube-proxy writes rules (iptables, IPVS or nftables) that rewrite the destination to a real Pod IP.",
+    "Only ready Pods are listed as endpoints, so unhealthy Pods stop receiving traffic once readiness fails. That filtering comes from the endpoint data, not from kube-proxy running its own checks.",
+    "Some CNIs such as Cilium can replace kube-proxy entirely using eBPF."
+   ],
+   "key_points": [
+    "ClusterIP: internal virtual IP only.",
+    "NodePort: opens a port on every node.",
+    "LoadBalancer: adds an external load balancer, via the cloud controller manager or MetalLB.",
+    "Modes: iptables (common default), IPVS, nftables; the old userspace mode is obsolete."
+   ],
+   "table": {
+    "caption": "Service types",
+    "headers": [
+     "Type",
+     "Reachable from",
+     "Typical use"
+    ],
+    "rows": [
+     [
+      "ClusterIP",
+      "Inside the cluster",
+      "Internal microservice calls"
+     ],
+     [
+      "NodePort",
+      "Any node IP and port (30000-32767)",
+      "Simple external access, testing"
+     ],
+     [
+      "LoadBalancer",
+      "Cloud or MetalLB external IP",
+      "Production external traffic"
+     ],
+     [
+      "ExternalName",
+      "Inside the cluster, DNS alias",
+      "Point to an outside hostname"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get svc,endpointslices",
+     "note": "Shows Services and the Pod IPs behind them"
+    },
+    {
+     "cmd": "kubectl -n kube-system get ds kube-proxy",
+     "note": "kube-proxy usually runs as a DaemonSet"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between ClusterIP and NodePort?",
+    "How would you debug a Service with no endpoints?"
+   ],
+   "pitfalls": [
+    "Calling it a proxy that carries traffic in the data path; in iptables mode it only programs rules."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-kube-proxy-services.html",
+    "title": "kube-proxy and Services",
+    "ratio": "960/380"
+   }
+  },
+  {
+   "id": "ch2-runtime-vs-cri",
+   "level": "mid",
+   "question": "What is the difference between a container runtime and the CRI?",
+   "say_first": "The runtime (containerd, CRI-O) is the software that pulls images and runs containers; the CRI is the standard gRPC API the kubelet uses to talk to any such runtime.",
+   "explain": [
+    "Think of a wall socket standard. The CRI is the socket shape; runtimes are appliances with a matching plug. The kubelet only knows the socket.",
+    "Because of the CRI, Kubernetes can swap runtimes without changing the kubelet. Runtimes also work outside Kubernetes.",
+    "Under containerd, a lower-level runtime such as runc actually creates the isolated process."
+   ],
+   "key_points": [
+    "Runtime does the work; CRI defines the conversation.",
+    "Common runtimes: containerd, CRI-O.",
+    "Pluggable by design.",
+    "kubelet speaks CRI over a local socket."
+   ],
+   "table": {
+    "caption": "Runtime versus CRI",
+    "headers": [
+     "Aspect",
+     "Container runtime",
+     "CRI"
+    ],
+    "rows": [
+     [
+      "What it is",
+      "Software that runs containers",
+      "API specification"
+     ],
+     [
+      "Examples",
+      "containerd, CRI-O",
+      "Kubernetes RuntimeService and ImageService gRPC"
+     ],
+     [
+      "Used outside Kubernetes",
+      "Yes",
+      "No"
+     ],
+     [
+      "Replaceable",
+      "Yes, per node",
+      "Fixed contract"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get nodes -o jsonpath='{.items[*].status.nodeInfo.containerRuntimeVersion}'",
+     "note": "Prints the runtime and version per node"
+    },
+    {
+     "cmd": "crictl ps",
+     "note": "Lists containers via the CRI on a node"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-runtime-vs-cri.html",
+    "title": "Runtime versus CRI",
+    "ratio": "960/400"
+   },
+   "follow_ups": [
+    "Which runtime does your cluster use?",
+    "What is runc?"
+   ],
+   "pitfalls": [
+    "Calling CRI a runtime, or Docker a CRI."
+   ]
+  },
+  {
+   "id": "ch2-dockershim",
+   "level": "senior",
+   "question": "Why did Kubernetes drop Docker as a runtime, and what was Dockershim?",
+   "say_first": "Dockershim was a built-in adapter translating CRI calls into Docker calls; it was deprecated in 1.20 and removed in 1.24 because Docker itself does not implement the CRI and containerd, which Docker uses internally, can be used directly.",
+   "explain": [
+    "Docker predates the CRI, so Kubernetes maintained a translation layer inside the kubelet. That extra layer was costly to maintain.",
+    "Going through Docker added hops: kubelet, shim, Docker Engine, containerd, runc. Talking straight to containerd removes two hops and a larger attack surface.",
+    "Images built with Docker still run, since they follow the OCI standard. What changed is the node runtime, not your Dockerfile."
+   ],
+   "key_points": [
+    "Deprecated in 1.20, removed in 1.24.",
+    "Images remain compatible.",
+    "Check node tooling that relied on the Docker socket, such as docker ps or Docker-in-Docker builds.",
+    "Replacement options: containerd or CRI-O."
+   ],
+   "table": {
+    "caption": "Before and after Dockershim",
+    "headers": [
+     "Aspect",
+     "With Dockershim",
+     "With CRI runtime"
+    ],
+    "rows": [
+     [
+      "Path",
+      "kubelet, shim, Docker, containerd, runc",
+      "kubelet, containerd, runc"
+     ],
+     [
+      "Maintenance",
+      "Kubernetes owns the shim",
+      "Runtime project owns CRI support"
+     ],
+     [
+      "Footprint",
+      "Docker daemon on node",
+      "Smaller runtime"
+     ],
+     [
+      "Image format",
+      "OCI",
+      "OCI"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get nodes -o wide",
+     "note": "CONTAINER-RUNTIME column shows containerd or docker"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-dockershim-removal.html",
+    "title": "Why Dockershim was removed",
+    "ratio": "960/400"
+   },
+   "follow_ups": [
+    "Do I need to rebuild my images?",
+    "What breaks if a pod mounts the Docker socket?"
+   ],
+   "pitfalls": [
+    "Saying Docker images no longer work on Kubernetes."
+   ]
+  },
+  {
+   "id": "ch2-static-pods",
+   "level": "senior",
+   "question": "What is a static Pod and when is it used?",
+   "say_first": "A static Pod is defined by a manifest file on a node and run directly by that node's kubelet, with no controller involved; kubeadm uses them for the control plane itself.",
+   "explain": [
+    "The kubelet watches a directory, commonly /etc/kubernetes/manifests, and keeps a Pod running for each file. If the container dies, the kubelet restarts it.",
+    "The kubelet also creates a read-only mirror Pod in the API server so you can see it, but you cannot manage it through the API; deleting the mirror does nothing.",
+    "This solves the chicken-and-egg problem: the API server must run before it can schedule anything, so on kubeadm clusters it runs as a static Pod."
+   ],
+   "key_points": [
+    "Bound to one node; not rescheduled.",
+    "Not managed by Deployments or DaemonSets.",
+    "Edit the file to change it; remove the file to delete it.",
+    "Used for kube-apiserver, etcd, scheduler and controller manager in kubeadm."
+   ],
+   "table": {
+    "caption": "Static Pod versus DaemonSet Pod",
+    "headers": [
+     "Aspect",
+     "Static Pod",
+     "DaemonSet Pod"
+    ],
+    "rows": [
+     [
+      "Managed by",
+      "Kubelet",
+      "DaemonSet controller"
+     ],
+     [
+      "Defined in",
+      "File on the node",
+      "API object"
+     ],
+     [
+      "Needs API server to start",
+      "No",
+      "Yes"
+     ],
+     [
+      "Editing",
+      "Change the file",
+      "kubectl apply"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "ls /etc/kubernetes/manifests",
+     "note": "Control plane manifests on a kubeadm node"
+    },
+    {
+     "cmd": "grep staticPodPath /var/lib/kubelet/config.yaml",
+     "note": "Shows where the kubelet looks for static Pod files"
+    }
+   ],
+   "follow_ups": [
+    "How does a static Pod differ from a DaemonSet Pod?",
+    "Where is the manifest path configured?"
+   ],
+   "pitfalls": [
+    "Trying to kubectl delete a static Pod to remove it."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-static-pods.html",
+    "title": "Static Pods",
+    "ratio": "960/380"
+   }
+  },
+  {
+   "id": "ch2-dns-coredns",
+   "level": "mid",
+   "question": "How does service discovery work with cluster DNS?",
+   "say_first": "CoreDNS runs as Pods behind a cluster service; every Pod is configured to send DNS queries to it, so a Service name resolves to its stable ClusterIP regardless of Pod churn.",
+   "explain": [
+    "Pod IPs change constantly, so applications use names. Think of a phone book that updates itself whenever someone moves.",
+    "A Service named db in namespace shop becomes db.shop.svc.cluster.local. From the same namespace the short name db also works because of the search domains in the Pod's resolv.conf.",
+    "Names outside the cluster domain are forwarded to upstream resolvers. CoreDNS is the default; the older kube-dns is superseded because CoreDNS is more extensible through plugins. Load spreading happens at the Service layer, not in DNS."
+   ],
+   "key_points": [
+    "Stable name, changing IPs behind it.",
+    "CoreDNS is the default cluster DNS.",
+    "The cluster DNS Service keeps the same IP for all Pods.",
+    "Corefile ConfigMap customises behaviour."
+   ],
+   "table": {
+    "caption": "CoreDNS versus kube-dns",
+    "headers": [
+     "Aspect",
+     "CoreDNS",
+     "kube-dns"
+    ],
+    "rows": [
+     [
+      "Status",
+      "Current default",
+      "Legacy"
+     ],
+     [
+      "Extensibility",
+      "Plugin chain via Corefile",
+      "Limited"
+     ],
+     [
+      "Design",
+      "Single process",
+      "Multiple containers"
+     ],
+     [
+      "Recommendation",
+      "Use for new and migrated clusters",
+      "Migrate away"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl -n kube-system get pods -l k8s-app=kube-dns",
+     "note": "CoreDNS Pods keep the kube-dns label"
+    },
+    {
+     "cmd": "kubectl run -it --rm dnstest --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default",
+     "note": "Resolves the API Service from inside a Pod"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-dns-resolution.html",
+    "title": "How a Pod resolves a name",
+    "ratio": "960/440"
+   },
+   "follow_ups": [
+    "How would you debug DNS failures in a Pod?",
+    "How do headless Services resolve?"
+   ],
+   "pitfalls": [
+    "Saying DNS load balances across Pods; it returns the Service IP and the data path spreads traffic."
+   ]
+  },
+  {
+   "id": "ch2-cni",
+   "level": "mid",
+   "question": "What is the CNI and what does it do?",
+   "say_first": "The Container Network Interface is a plugin standard: when the kubelet creates a Pod, a CNI plugin such as Calico, Flannel or Cilium assigns its IP and wires up routes.",
+   "explain": [
+    "Kubernetes defines the network rules (every Pod can reach every Pod without NAT) but does not implement them. A CNI plugin does.",
+    "Flow: the runtime creates the Pod sandbox, the CNI plugin binary is called with config, it sets up the network interface, IP and routes, and the containers start.",
+    "Plugins differ in features: overlay or direct routing, network policy enforcement, observability. Without one, nodes stay NotReady."
+   ],
+   "key_points": [
+    "Plugin model, swap by cluster.",
+    "Gives Pods IPs and routes.",
+    "Not all plugins enforce NetworkPolicy; Flannel alone does not.",
+    "Must be installed after kubeadm init."
+   ],
+   "table": {
+    "caption": "Popular CNI plugins",
+    "headers": [
+     "Plugin",
+     "Strength",
+     "NetworkPolicy"
+    ],
+    "rows": [
+     [
+      "Flannel",
+      "Simple overlay",
+      "No"
+     ],
+     [
+      "Calico",
+      "Routing and policy",
+      "Yes"
+     ],
+     [
+      "Cilium",
+      "eBPF, observability",
+      "Yes"
+     ],
+     [
+      "Weave Net",
+      "Easy mesh overlay (project archived)",
+      "Yes"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "ls /etc/cni/net.d",
+     "note": "CNI config present on a node"
+    },
+    {
+     "cmd": "kubectl get pods -A -o wide",
+     "note": "Pod IPs come from the CNI-managed range"
+    }
+   ],
+   "follow_ups": [
+    "How do NetworkPolicies depend on the CNI?",
+    "Why would a node be NotReady with no CNI?"
+   ],
+   "pitfalls": [
+    "Saying kube-proxy assigns Pod IPs."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-cni-pod-networking.html",
+    "title": "CNI Pod networking",
+    "ratio": "960/380"
+   }
+  },
+  {
+   "id": "ch2-talking-to-api",
+   "level": "junior",
+   "question": "How can you interact with the Kubernetes API?",
+   "say_first": "Three ways: kubectl, client libraries in languages such as Python or Go, or raw HTTPS requests with a token or client certificate.",
+   "explain": [
+    "All three end up as the same REST calls. kubectl is the friendly terminal, libraries suit automation, raw HTTP suits unusual integrations.",
+    "Credentials live in a kubeconfig file, which holds clusters, users and contexts. Switching contexts switches which cluster you talk to.",
+    "Whatever method you pick, the API server still authenticates and authorizes you."
+   ],
+   "key_points": [
+    "kubectl is the default tool.",
+    "Official client libraries exist for many languages.",
+    "Raw calls need a bearer token or certificate.",
+    "kubeconfig contexts manage multiple clusters."
+   ],
+   "table": {
+    "caption": "Ways to reach the API",
+    "headers": [
+     "Method",
+     "Best for",
+     "Auth source"
+    ],
+    "rows": [
+     [
+      "kubectl",
+      "Daily operations",
+      "kubeconfig"
+     ],
+     [
+      "Client library",
+      "Automation and operators",
+      "kubeconfig or in-cluster account"
+     ],
+     [
+      "Raw HTTPS",
+      "Custom integrations",
+      "Bearer token or client cert"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl config get-contexts",
+     "note": "List clusters you can use"
+    },
+    {
+     "cmd": "kubectl get --raw /api/v1/namespaces/default/pods",
+     "note": "Same call a raw HTTP client would make"
+    },
+    {
+     "cmd": "curl -H \"Authorization: Bearer $TOKEN\" https://<api-server>:6443/api/v1/namespaces/default/pods",
+     "note": "Direct REST call (use --cacert for the cluster CA)"
+    }
+   ],
+   "follow_ups": [
+    "How do you switch clusters?",
+    "How would a Pod call the API?"
+   ],
+   "pitfalls": [
+    "Putting tokens directly in shell history or source control."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-talking-to-api.html",
+    "title": "Ways to call the API",
+    "ratio": "960/460"
+   }
+  },
+  {
+   "id": "ch2-self-hosted-vs-managed",
+   "level": "senior",
+   "question": "Self-hosted or managed Kubernetes: how do you choose?",
+   "say_first": "Self-hosted gives full control but you operate the control plane; managed services such as EKS, GKE or AKS run it for you, trading some customisation for far less operational work.",
+   "explain": [
+    "A kubeadm cluster means provisioning machines, installing a runtime, running kubeadm init, joining workers with kubeadm join, installing a CNI and verifying nodes with kubectl get nodes. Then you own upgrades, etcd backups and certificates forever.",
+    "With a managed service the provider runs, patches and scales the control plane with an availability SLA. You manage worker nodes and workloads, often with managed node groups.",
+    "Pick self-hosted for strict compliance, air-gapped sites or special tuning; pick managed when the team wants to ship applications rather than run clusters."
+   ],
+   "key_points": [
+    "Control versus convenience.",
+    "Managed: provider handles control plane upgrades, HA and patching.",
+    "Self-hosted: you handle etcd backups, certificates and version skew.",
+    "Integration with cloud IAM, load balancers and logging is easier when managed."
+   ],
+   "table": {
+    "caption": "Self-hosted versus managed",
+    "headers": [
+     "Aspect",
+     "Self-hosted",
+     "Managed"
+    ],
+    "rows": [
+     [
+      "Control plane",
+      "You run and secure it",
+      "Provider runs it"
+     ],
+     [
+      "Customisation",
+      "Maximum",
+      "Limited to supported options"
+     ],
+     [
+      "Upgrades",
+      "Manual, planned by you",
+      "Provider-assisted"
+     ],
+     [
+      "Setup time",
+      "Hours to days",
+      "Minutes"
+     ],
+     [
+      "Expertise needed",
+      "High",
+      "Moderate"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "sudo kubeadm init --pod-network-cidr=10.244.0.0/16",
+     "note": "Initialises the control plane on the first node"
+    },
+    {
+     "cmd": "sudo kubeadm join <control-plane-host>:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash>",
+     "note": "Joins a worker node"
+    },
+    {
+     "cmd": "kubectl get nodes",
+     "note": "Verify all nodes become Ready"
+    }
+   ],
+   "follow_ups": [
+    "What are the steps of a kubeadm install?",
+    "What do you still own on a managed cluster?"
+   ],
+   "pitfalls": [
+    "Believing managed means no operations; nodes, workloads and upgrades of add-ons remain yours."
+   ],
+   "diagram": {
+    "file": "diagrams/ch2-self-hosted-vs-managed.html",
+    "title": "Self-hosted or managed",
+    "ratio": "960/460"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch2-api-server-request.html",
+  "diagrams/ch2-cloud-controller-manager.html",
+  "diagrams/ch2-cluster-architecture.html",
+  "diagrams/ch2-cni-pod-networking.html",
+  "diagrams/ch2-dns-resolution.html",
+  "diagrams/ch2-dockershim-removal.html",
+  "diagrams/ch2-etcd-quorum.html",
+  "diagrams/ch2-kube-proxy-services.html",
+  "diagrams/ch2-kubelet-node-agent.html",
+  "diagrams/ch2-pod-creation-flow.html",
+  "diagrams/ch2-reconciliation-loop.html",
+  "diagrams/ch2-runtime-vs-cri.html",
+  "diagrams/ch2-scheduler-filter-score.html",
+  "diagrams/ch2-self-hosted-vs-managed.html",
+  "diagrams/ch2-static-pods.html",
+  "diagrams/ch2-talking-to-api.html"
+ ]
+}

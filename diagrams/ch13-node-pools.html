@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node pools for each kind of workload</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75; --color-accent:#eb6c36;
+      --font-sans:'Geist', system-ui, sans-serif; --font-serif:'Instrument Serif', serif; --font-mono:'Geist Mono', ui-monospace, monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1200px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:0.66rem; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:0.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight:400; letter-spacing:-0.02em; line-height:1.15; margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture</p>
+    <h1>Node pools for each kind of workload</h1>
+    <svg viewBox="0 0 960 388" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch13-node-pools-title ch13-node-pools-desc">
+      <title id="ch13-node-pools-title">Node pools for each kind of workload</title>
+      <desc id="ch13-node-pools-desc">A Pod reaches a node pool through a nodeSelector, node affinity, or a taint and toleration. The pools are general purpose, memory-heavy, GPU, and spot or preemptible, and each pool has its own autoscaling limits.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="48" y="64" width="200" height="224" rx="6" fill="#f5f5f5"/><rect x="48" y="64" width="200" height="224" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="148.0" y="162.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod</text><text x="148.0" y="178.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">its spec decides</text><text x="148.0" y="190.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">which pool it lands in</text><rect x="560" y="48" width="352" height="56" rx="6" fill="#f5f5f5"/><rect x="560" y="48" width="352" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="736.0" y="68.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">General purpose pool</text><text x="736.0" y="84.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no special rules</text><path d="M248,176 H304 V76 H560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="560" y="120" width="352" height="56" rx="6" fill="#f5f5f5"/><rect x="560" y="120" width="352" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="736.0" y="140.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Memory-heavy pool</text><text x="736.0" y="156.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">own autoscaling limits</text><path d="M248,176 H304 V148 H560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="560" y="192" width="352" height="56" rx="6" fill="#f5f5f5"/><rect x="560" y="192" width="352" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="736.0" y="212.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">GPU pool</text><text x="736.0" y="228.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">own autoscaling limits</text><path d="M248,176 H304 V220 H560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="560" y="264" width="352" height="56" rx="6" fill="#f5f5f5"/><rect x="560" y="264" width="352" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="736.0" y="284.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Spot or preemptible pool</text><text x="736.0" y="300.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">cheap, interruptible work</text><path d="M248,176 H304 V292 H560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="376.4" y="70" width="111.19999999999999" height="12" rx="2" fill="#f5f5f5"/><text x="432" y="79" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">DEFAULT PLACEMENT</text><rect x="342.8" y="142" width="178.39999999999998" height="12" rx="2" fill="#f5f5f5"/><text x="432" y="151" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">NODESELECTOR OR NODE AFFINITY</text><rect x="337.2" y="214" width="189.6" height="12" rx="2" fill="#f5f5f5"/><text x="432" y="223" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">TAINT + TOLERATION (+ AFFINITY)</text><rect x="345.6" y="286" width="172.79999999999998" height="12" rx="2" fill="#f5f5f5"/><text x="432" y="295" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">TOLERATION OF THE SPOT TAINT</text><text x="48" y="332" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">Pools scale independently, so a noisy batch job cannot starve a latency-sensitive service.</text>
+<line x1="32" y1="352" x2="928" y2="352" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="372" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text><rect x="112" y="364" width="16" height="12" rx="2" fill="#fdeee6" stroke="#eb6c36" stroke-width="1"/><text x="136" y="373" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.08em">WORKLOAD</text><rect x="228" y="364" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="252" y="373" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.08em">NODE POOL</text>
+    </svg>
+  </div>
+</body>
+</html>

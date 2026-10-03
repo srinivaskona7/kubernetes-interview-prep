@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>emptyDir vs hostPath: Pod scope or node scope</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Comparison · Volumes</p>
+    <h1>emptyDir vs hostPath: Pod scope or node scope</h1>
+
+    <svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch8-emptydir-vs-hostpath-title ch8-emptydir-vs-hostpath-desc">
+<title id="ch8-emptydir-vs-hostpath-title">emptyDir vs hostPath: Pod scope or node scope</title>
+<desc id="ch8-emptydir-vs-hostpath-desc">emptyDir is created with a Pod and deleted with it; hostPath maps a node directory that outlives the Pod but is invisible to Pods on other nodes.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<polyline points="240,80 360,80" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="600,80 720,80" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="240,200 360,200" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="600,200 720,200" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="240,320 360,320" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="277.2" y="74" width="45.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="300" y="83" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MOUNTS</text>
+<rect x="623.2" y="74" width="73.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="660" y="83" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">POD DELETED</text>
+<rect x="277.2" y="194" width="45.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="300" y="203" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MOUNTS</text>
+<rect x="623.2" y="194" width="73.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="660" y="203" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">POD DELETED</text>
+<rect x="277.2" y="314" width="45.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="300" y="323" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MOUNTS</text>
+<rect x="40" y="56" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="56" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="140" y="80" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod</text>
+<text x="140" y="96" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">scheduled on node A</text>
+<rect x="360" y="56" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="360" y="56" width="240" height="48" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="480" y="80" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">emptyDir</text>
+<text x="480" y="96" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Fresh and empty, shared in Pod</text>
+<rect x="720" y="56" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="56" width="240" height="48" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="840" y="80" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Gone with the Pod</text>
+<text x="840" y="96" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Survives container restarts</text>
+<rect x="40" y="176" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="176" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="140" y="200" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod</text>
+<text x="140" y="216" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">scheduled on node A</text>
+<rect x="360" y="176" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="360" y="176" width="240" height="48" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="480" y="200" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">hostPath</text>
+<text x="480" y="216" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Existing directory on node A</text>
+<rect x="720" y="176" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="176" width="240" height="48" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="840" y="200" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Data stays on node A</text>
+<text x="840" y="216" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Survives Pod deletion</text>
+<rect x="40" y="296" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="296" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="140" y="320" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod on node B</text>
+<text x="140" y="336" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">same spec, new node</text>
+<rect x="360" y="296" width="240" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="360" y="296" width="240" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="480" y="320" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">hostPath on node B</text>
+<text x="480" y="336" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">A different directory</text>
+<text x="40" y="396" fill="#4f5d75" font-size="16" font-style="italic" font-family="'Instrument Serif', serif">emptyDir is scoped to a Pod; hostPath is scoped to a node, not the cluster.</text>
+    </svg>
+  </div>
+</body>
+</html>

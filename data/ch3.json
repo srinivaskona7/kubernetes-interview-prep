@@ -1,0 +1,983 @@
+{
+ "number": 3,
+ "title": "Exploring Kubernetes Basics",
+ "part": "Part 2 · Schedulers, Workloads, and Scaling",
+ "tagline": "Pods, probes and the controllers that run real applications",
+ "overview": "This chapter starts with the Pod, the smallest unit Kubernetes runs, covering shared networking, init and sidecar containers, lifecycle phases and probes. It then climbs to the controllers that keep applications alive: ReplicaSets, Deployments, StatefulSets, DaemonSets, Jobs, CronJobs and Static Pods, with a way to choose between them.",
+ "topics": [
+  {
+   "id": "ch3-what-is-a-pod",
+   "level": "junior",
+   "question": "What is a Pod, and why does Kubernetes use Pods instead of running containers directly?",
+   "say_first": "A Pod is the smallest thing Kubernetes can schedule: a small wrapper around one or more tightly coupled containers that always land on the same node and share a network and storage context.",
+   "explain": [
+    "Think of a Pod as a shared flat for a few containers. They have separate rooms (their own filesystems and processes) but share one front door (the IP address) and a common pantry (volumes).",
+    "Another useful picture is an operating-system process: the containers are like threads inside it, cooperating quickly because they share the same environment.",
+    "Kubernetes adds the Pod layer so it has one unit to place, restart, move and delete. If a node dies, the whole Pod is recreated elsewhere as a package, and the containers inside never end up split across machines.",
+    "Most Pods hold a single container. Extra containers are added only when they must live and die together with the main one."
+   ],
+   "key_points": [
+    "Smallest deployable unit; you never schedule a bare container.",
+    "All containers in a Pod run on the same node.",
+    "One Pod gets one IP address.",
+    "Containers share network namespace and can share volumes.",
+    "A single Pod has no self-healing across node failure; a controller is needed."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-pod-anatomy.html",
+    "title": "Inside a Pod",
+    "ratio": "780/420"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl run web --image=nginx:1.25",
+     "note": "Create a single-container Pod quickly"
+    },
+    {
+     "cmd": "kubectl get pod web -o wide",
+     "note": "Shows the Pod IP and the node it landed on"
+    }
+   ],
+   "follow_ups": [
+    "Why would you put two containers in one Pod instead of two Pods?",
+    "What happens to a Pod when its node fails?"
+   ],
+   "pitfalls": [
+    "Saying a Pod is the same thing as a container.",
+    "Putting a web tier and a database in one Pod just because they talk to each other; they should scale independently."
+   ]
+  },
+  {
+   "id": "ch3-pod-shared-network-storage",
+   "level": "junior",
+   "question": "What do containers in the same Pod share, and what is emptyDir used for?",
+   "say_first": "They share one IP address, one port space and any volumes the Pod declares, so they reach each other over localhost and can exchange files through a common volume such as emptyDir.",
+   "explain": [
+    "Because the network namespace is shared, a sidecar can call the app on localhost:8080 with no service discovery. The flip side is that two containers in one Pod cannot both listen on the same port.",
+    "Volumes are declared once at Pod level, then each container mounts them wherever it likes. An emptyDir starts empty when the Pod is placed on a node and is wiped when the Pod leaves that node. It survives container restarts, though.",
+    "Classic example: one container writes a file every second into an emptyDir, and an nginx container serves that same directory, so a browser refresh always shows fresh content."
+   ],
+   "key_points": [
+    "emptyDir lifetime equals the Pod's lifetime on that node, not the container's.",
+    "Useful for scratch space, caches and handing files between containers.",
+    "It is not durable storage; use a PersistentVolume for data that must survive.",
+    "Shared IP means port clashes are possible between containers."
+   ],
+   "table": {
+    "caption": "Shared versus separate inside a Pod",
+    "headers": [
+     "Shared by all containers",
+     "Private to each container"
+    ],
+    "rows": [
+     [
+      "IP address and port space",
+      "Container image and filesystem layers"
+     ],
+     [
+      "Network namespace (localhost works)",
+      "Process tree (by default)"
+     ],
+     [
+      "Declared volumes",
+      "Resource requests and limits"
+     ],
+     [
+      "Pod lifetime and node placement",
+      "Probes and restart tracking"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f shared-volume-pod.yaml",
+     "note": "Apply a Pod where web-server and data-updater both mount an emptyDir named shared-data"
+    },
+    {
+     "cmd": "kubectl exec shared-volume-pod -c web-server -- cat /usr/share/nginx/html/index.html",
+     "note": "Read, from the nginx container, the file written by the other container"
+    }
+   ],
+   "follow_ups": [
+    "Does emptyDir data survive a container crash?",
+    "How would you keep the data after the Pod is deleted?"
+   ],
+   "pitfalls": [
+    "Treating emptyDir as persistent storage.",
+    "Forgetting -c <container> when a Pod has several containers."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-shared-network-storage.html",
+    "title": "What Pod containers share",
+    "ratio": "780/372"
+   }
+  },
+  {
+   "id": "ch3-init-vs-sidecar",
+   "level": "mid",
+   "question": "What is the difference between an init container and a sidecar container?",
+   "say_first": "Init containers run one at a time before the app starts and must finish successfully; sidecars run alongside the app for the Pod's whole life to provide supporting services.",
+   "explain": [
+    "An init container is like the stagehand who sets the scene before the curtain rises: wait for a database, fetch config, fix file permissions. Only after every init container exits with success do the app containers start.",
+    "A sidecar is the assistant who stays on stage: it ships logs, refreshes certificates, or proxies traffic, so the main image stays small and focused.",
+    "Init containers do not take liveness, readiness or startup probes because they are meant to exit. If one fails, the kubelet retries it according to the Pod's restartPolicy; with Never the Pod fails.",
+    "In recent Kubernetes versions a native sidecar is declared as an init container with restartPolicy: Always. It starts before the app, keeps running, and is stopped after the app, which also fixes Jobs hanging on a sidecar that never exits."
+   ],
+   "key_points": [
+    "Init containers are sequential and run to completion.",
+    "Sidecars are listed in containers (or as native sidecars in initContainers) and run in parallel.",
+    "Init containers have no probes; sidecars can.",
+    "Both share the Pod's network and volumes."
+   ],
+   "table": {
+    "caption": "Init container versus sidecar",
+    "headers": [
+     "Aspect",
+     "Init container",
+     "Sidecar"
+    ],
+    "rows": [
+     [
+      "When it runs",
+      "Before app containers, one by one",
+      "Alongside the app"
+     ],
+     [
+      "Lifetime",
+      "Exits when done",
+      "Runs as long as the Pod"
+     ],
+     [
+      "Probes",
+      "Not supported",
+      "Supported"
+     ],
+     [
+      "Typical use",
+      "Wait for dependency, seed data",
+      "Log shipping, proxy, metrics agent"
+     ],
+     [
+      "Where declared",
+      "spec.initContainers",
+      "spec.containers (or initContainers with restartPolicy: Always)"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl logs mypod -c init-mydb",
+     "note": "Read the logs of a finished init container"
+    },
+    {
+     "cmd": "kubectl get pod mypod",
+     "note": "STATUS shows Init:0/1 while an init container is still running"
+    }
+   ],
+   "follow_ups": [
+    "Why can a sidecar stop a Job from completing?",
+    "Can you have several init containers, and in what order do they run?"
+   ],
+   "pitfalls": [
+    "Using an init container for something that must keep running.",
+    "Expecting init containers to start in parallel."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-init-vs-sidecar.html",
+    "title": "Init container vs sidecar",
+    "ratio": "680/396"
+   }
+  },
+  {
+   "id": "ch3-pod-phases",
+   "level": "junior",
+   "question": "What are the Pod phases, and how does the phase help you troubleshoot?",
+   "say_first": "A Pod is always in one of five phases: Pending, Running, Succeeded, Failed or Unknown. The phase tells you which stage to investigate first: scheduling and image pull, a live container, a clean exit, a failure, or a lost node.",
+   "explain": [
+    "Pending means the API server accepted the Pod but it is not running yet: the scheduler may still be finding a node, or the node is pulling images.",
+    "Running means the Pod is bound to a node and at least one container is running or starting or restarting.",
+    "Succeeded and Failed are terminal: every container has stopped, and Failed means at least one stopped with a nonzero exit code or was killed.",
+    "Unknown usually means the control plane cannot reach the node, so nobody can report the Pod's state."
+   ],
+   "key_points": [
+    "Phase is a coarse summary; container states give the detail.",
+    "Pending for a long time points to scheduling or image problems.",
+    "Succeeded and Failed are final for run-to-completion Pods.",
+    "Unknown is almost always a node communication issue.",
+    "CrashLoopBackOff is a container status, not a phase."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-pod-lifecycle.html",
+    "title": "Pod phases",
+    "ratio": "860/440"
+   },
+   "table": {
+    "caption": "Pod phases at a glance",
+    "headers": [
+     "Phase",
+     "Meaning",
+     "First thing to check"
+    ],
+    "rows": [
+     [
+      "Pending",
+      "Accepted, not yet running",
+      "kubectl describe pod: scheduling events, image pull"
+     ],
+     [
+      "Running",
+      "Bound to a node, a container is alive",
+      "Container logs and readiness"
+     ],
+     [
+      "Succeeded",
+      "All containers exited 0",
+      "Nothing; expected for Jobs"
+     ],
+     [
+      "Failed",
+      "All stopped, one failed",
+      "Exit code and logs"
+     ],
+     [
+      "Unknown",
+      "State cannot be read",
+      "Node health and kubelet connectivity"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get pod mypod -o jsonpath='{.status.phase}'",
+     "note": "Print only the phase"
+    },
+    {
+     "cmd": "kubectl get pods --field-selector=status.phase=Pending",
+     "note": "List every Pending Pod in the namespace"
+    }
+   ],
+   "follow_ups": [
+    "Is CrashLoopBackOff a phase?",
+    "What does Pending with a FailedScheduling event mean?"
+   ],
+   "pitfalls": [
+    "Calling CrashLoopBackOff or ImagePullBackOff a phase.",
+    "Assuming Running means the app is healthy and serving."
+   ]
+  },
+  {
+   "id": "ch3-crashloopbackoff",
+   "level": "mid",
+   "question": "A Pod is in CrashLoopBackOff. How do you troubleshoot it?",
+   "say_first": "It means a container keeps starting and crashing, and the kubelet waits longer between restarts. I read describe for events and exit codes, then the logs of the crashed container, then check config, env vars and dependencies.",
+   "explain": [
+    "Picture a car that stalls every time you turn the key. The kubelet keeps trying but waits longer after each failure (the wait grows up to about five minutes), hence BackOff.",
+    "Start with the Pod: kubectl describe shows the last state, exit code, reason (such as OOMKilled) and recent events. Then read the logs, using --previous to see the run that actually crashed rather than the fresh restart.",
+    "Typical causes: wrong command or args, missing ConfigMap or Secret, a bad environment variable, an unreachable dependency, a failing liveness probe, or the memory limit being too low.",
+    "If a Pod is stuck in Pending instead, the same describe output usually shows insufficient CPU or memory, taints, or unbound volumes."
+   ],
+   "key_points": [
+    "Read describe first: exit code, reason, events.",
+    "Use logs --previous for the crashed instance.",
+    "Exit code 137 often means OOMKilled or SIGKILL.",
+    "Check probes: an over-strict liveness probe can cause the loop itself.",
+    "Fix the cause; deleting the Pod only restarts the loop."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl describe pod my-pod",
+     "note": "Last state, exit code, reason and events"
+    },
+    {
+     "cmd": "kubectl logs my-pod -c my-container --previous",
+     "note": "Logs from the previous, crashed container instance"
+    },
+    {
+     "cmd": "kubectl get events --sort-by=.metadata.creationTimestamp",
+     "note": "Timeline of recent cluster events"
+    },
+    {
+     "cmd": "kubectl describe deployment my-deployment",
+     "note": "Check whether the owning Deployment can reach its replica count"
+    }
+   ],
+   "follow_ups": [
+    "How do you debug when the container exits too fast to exec into?",
+    "What does exit code 137 tell you?"
+   ],
+   "pitfalls": [
+    "Reading only current logs, which belong to the new, empty restart.",
+    "Raising the restart count or deleting the Pod instead of finding the cause."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-crashloopbackoff.html",
+    "title": "CrashLoopBackOff triage",
+    "ratio": "740/368"
+   }
+  },
+  {
+   "id": "ch3-probes",
+   "level": "mid",
+   "question": "Explain liveness, readiness and startup probes and when you would use each.",
+   "say_first": "Liveness asks whether to restart the container, readiness asks whether to send it traffic, and startup asks whether it has finished booting, holding the other two off until it has.",
+   "explain": [
+    "Imagine a restaurant kitchen. Liveness is checking the chef is not unconscious (if so, replace them). Readiness is checking the chef is at the station and ready for orders (if not, stop seating guests, but do not fire anyone). Startup is giving a new chef time to get dressed before either check begins.",
+    "A failing readiness probe removes the Pod from Service endpoints without restarting it. A failing liveness probe makes the kubelet kill the container and apply the restart policy.",
+    "Probes can be an HTTP GET, a TCP socket check, a command, or gRPC. Tune initialDelaySeconds, periodSeconds, timeoutSeconds and failureThreshold so a slow but healthy app is not killed.",
+    "Slow-booting apps should use a startup probe with a generous failureThreshold rather than a huge initialDelaySeconds on liveness."
+   ],
+   "key_points": [
+    "Liveness failure leads to a container restart.",
+    "Readiness failure leads to removal from Service traffic.",
+    "Startup probe disables the other two until it succeeds.",
+    "Init containers do not support probes.",
+    "Do not make liveness depend on downstream services."
+   ],
+   "table": {
+    "caption": "The three probes",
+    "headers": [
+     "Probe",
+     "Question it answers",
+     "On failure",
+     "Typical use"
+    ],
+    "rows": [
+     [
+      "Liveness",
+      "Is it still working?",
+      "Container restarted",
+      "Deadlocks, hung processes"
+     ],
+     [
+      "Readiness",
+      "Can it take traffic now?",
+      "Removed from Service endpoints",
+      "Warm-up, temporary overload"
+     ],
+     [
+      "Startup",
+      "Has it finished starting?",
+      "Container restarted after threshold",
+      "Slow-starting legacy apps"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f liveness-http.yaml",
+     "note": "Pod with an httpGet livenessProbe on /healthz:8080 every 3 seconds, starting after 3 seconds"
+    },
+    {
+     "cmd": "kubectl describe pod liveness-http",
+     "note": "Events show Liveness probe failed and container restarts"
+    }
+   ],
+   "follow_ups": [
+    "What goes wrong if liveness checks a database the app depends on?",
+    "Why use a startup probe instead of a long initialDelaySeconds?"
+   ],
+   "pitfalls": [
+    "Using the same endpoint and thresholds for liveness and readiness.",
+    "Aggressive liveness probes that kill a healthy but busy app."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-probes.html",
+    "title": "Liveness, readiness, startup",
+    "ratio": "820/396"
+   }
+  },
+  {
+   "id": "ch3-replicaset",
+   "level": "junior",
+   "question": "What does a ReplicaSet do, and what happens when you create one?",
+   "say_first": "A ReplicaSet keeps a fixed number of identical Pods running, creating replacements when Pods die and deleting extras when there are too many.",
+   "explain": [
+    "It is a thermostat for Pod count: you set the desired number, it compares with what exists, and corrects the difference. The spec has three key parts: replicas, a label selector that says which Pods it owns, and a Pod template used to create new ones.",
+    "On creation the request hits the API server, the ReplicaSet controller notices it and creates Pod objects, the scheduler assigns each to a node, the kubelet there starts the containers, and status flows back to the API server.",
+    "Because ownership is by label selector, the selector must match the template's labels, otherwise the ReplicaSet would never see its own Pods."
+   ],
+   "key_points": [
+    "Spec: replicas, selector, template.",
+    "Self-heals: deleted Pods are recreated.",
+    "Owns Pods by label selector.",
+    "Normally managed by a Deployment, not created by hand.",
+    "Does not handle rolling updates itself."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-replicaset-creation.html",
+    "title": "ReplicaSet creation flow",
+    "ratio": "1000/520"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f replicaset.yaml",
+     "note": "Create the backend-replicaset with 2 replicas"
+    },
+    {
+     "cmd": "kubectl get rs",
+     "note": "DESIRED, CURRENT and READY counts"
+    },
+    {
+     "cmd": "kubectl describe rs backend-replicaset",
+     "note": "Selector, template and events"
+    },
+    {
+     "cmd": "kubectl delete rs backend-replicaset --cascade=orphan",
+     "note": "Delete the ReplicaSet but leave its Pods running (older docs show --cascade=false)"
+    }
+   ],
+   "follow_ups": [
+    "What if the selector does not match the template labels?",
+    "If you delete a Pod owned by a ReplicaSet, what happens?"
+   ],
+   "pitfalls": [
+    "Editing the image on a ReplicaSet and expecting running Pods to update.",
+    "Creating a bare Pod whose labels accidentally match an existing ReplicaSet selector."
+   ]
+  },
+  {
+   "id": "ch3-deployment-vs-replicaset",
+   "level": "mid",
+   "question": "What is the difference between a Deployment and a ReplicaSet?",
+   "say_first": "A ReplicaSet only maintains a count of identical Pods; a Deployment sits above it and manages ReplicaSets to give you rolling updates, rollbacks and history.",
+   "explain": [
+    "Think of the ReplicaSet as the staff roster for one version of the app, and the Deployment as the manager who swaps rosters when a new version ships.",
+    "Each change to the Pod template creates a new ReplicaSet. The Deployment scales it up while scaling the old one down, and keeps old ReplicaSets (at zero replicas) so a rollback is just scaling the old one back up.",
+    "In practice you almost never create ReplicaSets directly; you declare the desired state in a Deployment and let it do the work."
+   ],
+   "key_points": [
+    "Deployment manages ReplicaSets, which manage Pods.",
+    "One ReplicaSet per revision of the Pod template.",
+    "Gives declarative updates, rollbacks and revision history.",
+    "Best fit for stateless apps where any Pod is interchangeable."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-deployment-rollout.html",
+    "title": "Deployment and ReplicaSets",
+    "ratio": "1000/448"
+   },
+   "table": {
+    "caption": "ReplicaSet versus Deployment",
+    "headers": [
+     "Feature",
+     "ReplicaSet",
+     "Deployment"
+    ],
+    "rows": [
+     [
+      "Keeps N Pods running",
+      "Yes",
+      "Yes (through ReplicaSet)"
+     ],
+     [
+      "Rolling updates",
+      "No",
+      "Yes"
+     ],
+     [
+      "Rollback",
+      "No",
+      "Yes"
+     ],
+     [
+      "Revision history",
+      "No",
+      "Yes"
+     ],
+     [
+      "Used directly?",
+      "Rarely",
+      "Normally"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl create deployment nginx-deployment --image=nginx:alpine",
+     "note": "Imperatively create a Deployment"
+    },
+    {
+     "cmd": "kubectl get deployments,rs,pods",
+     "note": "See the three layers the Deployment created"
+    }
+   ],
+   "follow_ups": [
+    "Why does a Deployment keep old ReplicaSets around?",
+    "How would you limit how many old ReplicaSets are kept?"
+   ],
+   "pitfalls": [
+    "Editing the generated ReplicaSet by hand; the Deployment will overwrite it."
+   ]
+  },
+  {
+   "id": "ch3-rolling-vs-recreate",
+   "level": "mid",
+   "question": "Compare the RollingUpdate and Recreate strategies, and explain maxSurge and maxUnavailable.",
+   "say_first": "Recreate stops every old Pod and then starts new ones, causing downtime; RollingUpdate swaps Pods gradually so the service stays up, with maxSurge and maxUnavailable setting how fast.",
+   "explain": [
+    "Recreate is like closing a shop, redoing the shelves, and reopening. It is simple and guarantees two versions never run together, which matters for some schema migrations, but it has an outage.",
+    "RollingUpdate is like renovating one aisle at a time while the shop stays open. It is the default.",
+    "maxSurge is how many extra Pods may exist above the desired count during the update. maxUnavailable is how many may be missing. Both accept a number or a percentage. With 4 replicas, maxSurge 1 and maxUnavailable 1, Kubernetes may run up to 5 Pods and must keep at least 3 ready.",
+    "Raise maxSurge for speed if you have spare capacity; set maxUnavailable to 0 for the safest update."
+   ],
+   "key_points": [
+    "RollingUpdate is the default strategy.",
+    "maxSurge adds capacity; maxUnavailable removes it.",
+    "Setting both to 0 is invalid because the rollout could not progress.",
+    "Readiness probes decide when a new Pod counts as available.",
+    "Blue/green and canary are built on top of these primitives."
+   ],
+   "table": {
+    "caption": "Deployment strategies",
+    "headers": [
+     "Aspect",
+     "Recreate",
+     "RollingUpdate"
+    ],
+    "rows": [
+     [
+      "Downtime",
+      "Yes",
+      "No, if probes are right"
+     ],
+     [
+      "Versions running together",
+      "Never",
+      "Briefly both"
+     ],
+     [
+      "Speed",
+      "Fast",
+      "Controlled by surge and unavailable"
+     ],
+     [
+      "Extra capacity needed",
+      "No",
+      "Up to maxSurge"
+     ],
+     [
+      "Best for",
+      "Dev, incompatible versions",
+      "Production"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl explain deployment.spec.strategy.rollingUpdate",
+     "note": "Field documentation for the two knobs"
+    }
+   ],
+   "follow_ups": [
+    "Why does a readiness probe matter for a rolling update?",
+    "What would you set for a zero-downtime update on 10 replicas?"
+   ],
+   "pitfalls": [
+    "Using Recreate in production without accepting the outage.",
+    "Forgetting that without readiness probes new Pods are counted ready too early."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-rolling-vs-recreate.html",
+    "title": "Recreate vs RollingUpdate",
+    "ratio": "820/380"
+   }
+  },
+  {
+   "id": "ch3-rollouts-rollbacks",
+   "level": "mid",
+   "question": "How do you update a Deployment, watch the rollout, and roll back if it goes wrong?",
+   "say_first": "Change the Pod template (for example with kubectl set image), watch it with kubectl rollout status, and revert with kubectl rollout undo, which scales the previous ReplicaSet back up.",
+   "explain": [
+    "Changing the image triggers a new ReplicaSet and a rolling update governed by the strategy.",
+    "rollout status blocks until the rollout finishes or fails, which makes it handy in pipelines. rollout history lists revisions, and undo returns to the previous one or to a specific revision with --to-revision.",
+    "In production keep manifests in Git and apply them; imperative set image is fine for practice, but it leaves the live object different from your files."
+   ],
+   "key_points": [
+    "Only Pod template changes create a new revision; scaling does not.",
+    "Undo is quick because the old ReplicaSet still exists.",
+    "revisionHistoryLimit controls how many revisions are retained.",
+    "Pair rollout status with a non-zero exit check in CI."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl set image deployment/nginx-deployment nginx=nginx:1.19.2",
+     "note": "Trigger a rolling update (container name nginx)"
+    },
+    {
+     "cmd": "kubectl rollout status deployment/nginx-deployment",
+     "note": "Watch progress until complete"
+    },
+    {
+     "cmd": "kubectl rollout history deployment/nginx-deployment",
+     "note": "List revisions"
+    },
+    {
+     "cmd": "kubectl rollout undo deployment/nginx-deployment",
+     "note": "Go back to the previous revision"
+    },
+    {
+     "cmd": "kubectl rollout undo deployment/nginx-deployment --to-revision=2",
+     "note": "Go back to a specific revision"
+    }
+   ],
+   "follow_ups": [
+    "What stops a stuck rollout from continuing forever?",
+    "Does scaling a Deployment create a new revision?"
+   ],
+   "pitfalls": [
+    "Rolling back with undo but leaving the bad change in Git, so the next apply re-breaks it."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-rollouts-rollbacks.html",
+    "title": "Rollout and rollback",
+    "ratio": "780/396"
+   }
+  },
+  {
+   "id": "ch3-statefulset-vs-deployment",
+   "level": "mid",
+   "question": "When would you use a StatefulSet instead of a Deployment?",
+   "say_first": "Use a StatefulSet when each Pod needs a stable name, its own persistent volume and ordered startup, as with databases and clustered systems; use a Deployment when Pods are interchangeable.",
+   "explain": [
+    "Deployment Pods are cattle: any one can be replaced by another. StatefulSet Pods are pets: mysql-0 is always mysql-0, with the same hostname and the same disk, even after rescheduling.",
+    "Pods are numbered from 0 and created in order, then removed in reverse order. A headless Service gives each Pod a stable DNS name.",
+    "volumeClaimTemplates make a separate PersistentVolumeClaim per Pod. These claims are kept when a Pod is deleted or scaled down, so the data is still there when the Pod returns.",
+    "Running a database on Kubernetes is possible, but you still own backups, replication and failover; operators help."
+   ],
+   "key_points": [
+    "Stable identity: name-0, name-1 and so on.",
+    "Per-Pod storage through volumeClaimTemplates.",
+    "Ordered create, scale and update.",
+    "Needs a governing (headless) Service via serviceName.",
+    "PVCs are retained by default on Pod deletion."
+   ],
+   "table": {
+    "caption": "StatefulSet versus Deployment",
+    "headers": [
+     "Aspect",
+     "Deployment",
+     "StatefulSet"
+    ],
+    "rows": [
+     [
+      "Pod identity",
+      "Random suffix, interchangeable",
+      "Stable ordinal name"
+     ],
+     [
+      "Storage",
+      "Usually shared or ephemeral",
+      "Own PVC per Pod"
+     ],
+     [
+      "Start and stop order",
+      "Parallel",
+      "Sequential by ordinal"
+     ],
+     [
+      "Network identity",
+      "Via Service only",
+      "Stable per-Pod DNS through headless Service"
+     ],
+     [
+      "Typical workload",
+      "Web, API",
+      "Database, queue, consensus store"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f mysql-statefulset.yaml",
+     "note": "Three replicas with a 10Gi ReadWriteOnce claim each"
+    },
+    {
+     "cmd": "kubectl get pods -l app=mysql",
+     "note": "Shows mysql-0, mysql-1, mysql-2 in order"
+    },
+    {
+     "cmd": "kubectl get pvc",
+     "note": "One claim per Pod, such as mysql-persistent-storage-mysql-0"
+    }
+   ],
+   "follow_ups": [
+    "What is a headless Service and why does a StatefulSet need one?",
+    "What happens to the PVCs when you scale down?"
+   ],
+   "pitfalls": [
+    "Using a Deployment with one shared volume for a clustered database.",
+    "Assuming a StatefulSet handles backups or replication for you."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-statefulset-vs-deployment.html",
+    "title": "StatefulSet vs Deployment",
+    "ratio": "820/440"
+   }
+  },
+  {
+   "id": "ch3-daemonset",
+   "level": "mid",
+   "question": "What is a DaemonSet and when would you use one?",
+   "say_first": "A DaemonSet ensures one copy of a Pod runs on every node (or a chosen subset), automatically adding it to new nodes and cleaning up when nodes leave.",
+   "explain": [
+    "Think of a security guard assigned to every building in a campus: build a new building and a guard appears; demolish one and the post disappears.",
+    "That is why log collectors, monitoring agents, network plugins and storage drivers are DaemonSets: they must exist per node, not per replica count.",
+    "You can limit nodes with nodeSelector or affinity, and add tolerations so the agent also runs on tainted nodes such as control-plane nodes.",
+    "Deleting the DaemonSet removes all the Pods it created."
+   ],
+   "key_points": [
+    "No replicas field; the node count decides.",
+    "New nodes get the Pod automatically.",
+    "Typical uses: logging, monitoring, CNI, CSI node plugins.",
+    "Use tolerations to run on tainted nodes."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f logging-agent-ds.yaml",
+     "note": "Create the logging-agent DaemonSet"
+    },
+    {
+     "cmd": "kubectl get ds",
+     "note": "DESIRED equals the number of eligible nodes"
+    },
+    {
+     "cmd": "kubectl get pods -o wide -l name=logging-agent",
+     "note": "Verify one Pod per node"
+    }
+   ],
+   "follow_ups": [
+    "How do you keep a DaemonSet off some nodes?",
+    "How is it different from a Deployment with many replicas?"
+   ],
+   "pitfalls": [
+    "Using a Deployment with anti-affinity to fake a DaemonSet.",
+    "Forgetting tolerations, so the agent misses tainted nodes."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-daemonset.html",
+    "title": "DaemonSet: one Pod per node",
+    "ratio": "880/348"
+   }
+  },
+  {
+   "id": "ch3-jobs-cronjobs",
+   "level": "mid",
+   "question": "How do Jobs and CronJobs work, and how do you clean up finished ones?",
+   "say_first": "A Job runs Pods until a set number complete successfully; a CronJob creates Jobs on a cron schedule; ttlSecondsAfterFinished deletes finished Jobs automatically.",
+   "explain": [
+    "A Job is a one-off errand: run it, retry on failure up to backoffLimit, and stop when done. Pods must use restartPolicy Never or OnFailure, since Always would never let them finish.",
+    "A CronJob is the alarm clock that spawns a Job at each tick. The schedule has five fields: minute, hour, day of month, month, day of week. For example, 0 * * * * means at minute 0 of every hour.",
+    "Finished Jobs and their Pods stay around for inspection. Setting ttlSecondsAfterFinished (for example 100) makes the TTL controller delete them after that many seconds."
+   ],
+   "key_points": [
+    "Job success is counted by completed Pods.",
+    "restartPolicy must be Never or OnFailure.",
+    "backoffLimit caps retries.",
+    "CronJob uses jobTemplate and a five-field schedule.",
+    "TTL keeps the cluster tidy."
+   ],
+   "table": {
+    "caption": "Reading the cron schedule 0 * * * *",
+    "headers": [
+     "Field",
+     "Value",
+     "Meaning"
+    ],
+    "rows": [
+     [
+      "Minute (0-59)",
+      "0",
+      "At the top of the hour"
+     ],
+     [
+      "Hour (0-23)",
+      "*",
+      "Every hour"
+     ],
+     [
+      "Day of month (1-31)",
+      "*",
+      "Every day"
+     ],
+     [
+      "Month (1-12)",
+      "*",
+      "Every month"
+     ],
+     [
+      "Day of week (0-7)",
+      "*",
+      "Every weekday"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl create job example-job --image=busybox -- sh -c 'echo hello'",
+     "note": "Run a quick one-off Job"
+    },
+    {
+     "cmd": "kubectl create cronjob hourly-job --image=busybox --schedule='0 * * * *' -- date",
+     "note": "Create an hourly CronJob"
+    },
+    {
+     "cmd": "kubectl get jobs,cronjobs",
+     "note": "Check completions and last schedule time"
+    }
+   ],
+   "follow_ups": [
+    "What does a CronJob do if the previous run is still going?",
+    "What happens to a Job's Pods when backoffLimit is reached?"
+   ],
+   "pitfalls": [
+    "Setting restartPolicy to Always in a Job.",
+    "Never setting a TTL and ending up with thousands of finished Jobs."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-jobs-cronjobs.html",
+    "title": "Jobs and CronJobs",
+    "ratio": "780/396"
+   }
+  },
+  {
+   "id": "ch3-static-pods",
+   "level": "senior",
+   "question": "What are Static Pods and how do they differ from other workloads?",
+   "say_first": "Static Pods are managed directly by the kubelet on one node from manifest files on disk, with no Deployment or ReplicaSet behind them; this is how control-plane components run on a kubeadm cluster.",
+   "explain": [
+    "The kubelet watches a manifest directory, usually /etc/kubernetes/manifests, and keeps whatever Pods are described there running. It restarts them on failure without asking the API server.",
+    "The kubelet also creates a read-only mirror Pod in the API so you can see it with kubectl, with the node name as a suffix such as kube-apiserver-my-node. That mirror cannot be controlled through the API.",
+    "This solves the bootstrap problem: the API server cannot be started by the thing that needs the API server.",
+    "To remove one you delete its manifest file on that node; kubectl delete only removes the mirror, which reappears."
+   ],
+   "key_points": [
+    "Managed by kubelet, bound to one node.",
+    "Manifest directory is set by staticPodPath in the kubelet config.",
+    "Used for kube-apiserver, kube-scheduler, controller-manager and etcd on kubeadm clusters.",
+    "No controller can scale or update them.",
+    "Name ends with the node name."
+   ],
+   "commands": [
+    {
+     "cmd": "ls /etc/kubernetes/manifests",
+     "note": "Run on a control-plane node to list static Pod manifests"
+    },
+    {
+     "cmd": "kubectl get pods -n kube-system",
+     "note": "Mirror Pods show names like etcd-<node>"
+    },
+    {
+     "cmd": "rm /etc/kubernetes/manifests/<file>.yaml",
+     "note": "On the node, remove a Static Pod; the kubelet stops it shortly after"
+    }
+   ],
+   "follow_ups": [
+    "How would you find the manifest directory on a node?",
+    "Why can't you delete a Static Pod with kubectl?"
+   ],
+   "pitfalls": [
+    "Trying to kubectl delete a Static Pod and wondering why it comes back."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-static-pods.html",
+    "title": "Static Pods",
+    "ratio": "800/396"
+   }
+  },
+  {
+   "id": "ch3-choose-workload",
+   "level": "senior",
+   "question": "Given a workload, how do you choose between Deployment, StatefulSet, DaemonSet, Job and CronJob?",
+   "say_first": "Ask four questions: does it run to completion, does it run on a schedule, does it need one copy per node, and does it need stable identity or storage; if none apply, use a Deployment.",
+   "explain": [
+    "Finite work points to Job, and recurring finite work points to CronJob. Per-node agents point to DaemonSet. Anything that needs stable names and its own disk points to StatefulSet.",
+    "Everything else, which is most web and API services, is a Deployment: stateless, scalable and easy to update.",
+    "Rarely, a Static Pod fits when the kubelet itself must run a component with no control plane. Bare Pods are for experiments only."
+   ],
+   "key_points": [
+    "Default to Deployment for stateless services.",
+    "Job for run-once, CronJob for scheduled.",
+    "DaemonSet for per-node agents.",
+    "StatefulSet for stable identity and storage.",
+    "Static Pods for control-plane bootstrapping."
+   ],
+   "diagram": {
+    "file": "diagrams/ch3-workload-chooser.html",
+    "title": "Workload decision flow",
+    "ratio": "1240/480"
+   },
+   "table": {
+    "caption": "Workload controllers compared",
+    "headers": [
+     "Controller",
+     "Runs",
+     "Identity",
+     "Typical example"
+    ],
+    "rows": [
+     [
+      "Deployment",
+      "Continuously, N replicas",
+      "Interchangeable",
+      "Web API"
+     ],
+     [
+      "StatefulSet",
+      "Continuously, ordered",
+      "Stable per Pod",
+      "Database"
+     ],
+     [
+      "DaemonSet",
+      "Continuously, one per node",
+      "Per node",
+      "Log agent"
+     ],
+     [
+      "Job",
+      "Until complete",
+      "Interchangeable",
+      "Data migration"
+     ],
+     [
+      "CronJob",
+      "Jobs on a schedule",
+      "Interchangeable",
+      "Nightly report"
+     ],
+     [
+      "Static Pod",
+      "Continuously, one node",
+      "Node-bound",
+      "kube-apiserver"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "How would you run a one-off database migration before a release?",
+    "Can a Deployment run a database safely?"
+   ],
+   "pitfalls": [
+    "Using a Deployment for everything, including stateful systems.",
+    "Running a long-lived service as a bare Pod."
+   ]
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch3-crashloopbackoff.html",
+  "diagrams/ch3-daemonset.html",
+  "diagrams/ch3-deployment-rollout.html",
+  "diagrams/ch3-init-vs-sidecar.html",
+  "diagrams/ch3-jobs-cronjobs.html",
+  "diagrams/ch3-pod-anatomy.html",
+  "diagrams/ch3-pod-lifecycle.html",
+  "diagrams/ch3-probes.html",
+  "diagrams/ch3-replicaset-creation.html",
+  "diagrams/ch3-rolling-vs-recreate.html",
+  "diagrams/ch3-rollouts-rollbacks.html",
+  "diagrams/ch3-shared-network-storage.html",
+  "diagrams/ch3-statefulset-vs-deployment.html",
+  "diagrams/ch3-static-pods.html",
+  "diagrams/ch3-workload-chooser.html"
+ ]
+}

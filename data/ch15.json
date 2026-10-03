@@ -1,0 +1,750 @@
+{
+ "number": 15,
+ "title": "Backup, Maintenance, and Disaster Recovery in Kubernetes",
+ "part": "Part 5 · Reliability, Monitoring and Maintenance",
+ "tagline": "Backups, safe upgrades and tested recovery plans",
+ "overview": "This chapter covers protecting a cluster: what to back up beyond etcd, which tools and practices make backups reliable, and how to restore in the right order. It then walks through safe upgrades (control plane, nodes, PDBs, add-ons) and closes with RTO, RPO and designing a disaster recovery plan.",
+ "topics": [
+  {
+   "id": "ch15-why-backup",
+   "level": "junior",
+   "question": "Why do Kubernetes clusters need backups, and what makes backing them up harder than a normal server?",
+   "say_first": "A backup is a point-in-time copy you can restore from after loss or corruption. Kubernetes needs them for disaster recovery, protection against mistakes or attacks, and moving workloads between clusters.",
+   "explain": [
+    "Think of a backup as a photo of your desk before a messy day. If someone tips coffee over everything, you can rebuild the desk from the photo.",
+    "In Kubernetes the desk keeps changing: Pods appear and vanish, replicas scale up and down. A copy of running containers is nearly meaningless, so you protect the durable things instead: the declared state, the data on volumes, and the configuration.",
+    "Three reasons to back up: recover from a disaster such as a lost data centre, protect against deletion, corruption or malicious changes, and migrate apps to another cluster."
+   ],
+   "key_points": [
+    "Backups are point-in-time copies used to restore.",
+    "Pods are disposable, so back up declarations and data, not containers.",
+    "Three drivers: disaster recovery, data protection, migration.",
+    "A backup never restored in a test is only a hope."
+   ],
+   "follow_ups": [
+    "What exactly is lost if only the Pods are deleted?",
+    "How is a backup different from high availability?"
+   ],
+   "pitfalls": [
+    "Saying replicas are the backup. Replicas copy mistakes and deletions instantly."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-why-backup.html",
+    "title": "Why back up a cluster",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-backup-types",
+   "level": "junior",
+   "question": "What backup types exist (full, incremental, differential, application-level) and how do they trade storage against restore speed?",
+   "say_first": "Full copies everything, incremental copies changes since the last backup of any kind, differential copies changes since the last full, and application-level targets one app or namespace.",
+   "explain": [
+    "Picture copying a photo album. A full backup is photocopying every page. An incremental is copying only the pages that changed since your last visit to the copier, so to rebuild you need the first full copy plus every later batch in order. A differential is copying every page changed since the last full copy, so you need just two piles.",
+    "Application-level backups narrow the scope: one namespace or one database, so a single broken app can be rolled back without touching the rest of the cluster."
+   ],
+   "key_points": [
+    "Full: simplest restore, biggest and slowest to take.",
+    "Incremental: smallest and fastest to take, longest restore chain.",
+    "Differential: grows over time, restore needs last full plus latest differential.",
+    "Application-level: granular, small, fast for one workload."
+   ],
+   "table": {
+    "caption": "Backup types compared",
+    "headers": [
+     "Type",
+     "What it copies",
+     "Storage",
+     "Restore needs"
+    ],
+    "rows": [
+     [
+      "Full",
+      "Everything",
+      "Highest",
+      "One backup"
+     ],
+     [
+      "Incremental",
+      "Changes since the last backup of any type",
+      "Lowest",
+      "Last full plus every incremental in order"
+     ],
+     [
+      "Differential",
+      "Changes since the last full",
+      "Medium, growing",
+      "Last full plus latest differential"
+     ],
+     [
+      "Application-level",
+      "One app or namespace",
+      "Small",
+      "That app's backup only"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Which would you choose for a 15-minute RPO?",
+    "What happens if one incremental in the chain is corrupt?"
+   ],
+   "pitfalls": [
+    "Forgetting that a broken link in an incremental chain can ruin every restore after it."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-backup-types.html",
+    "title": "Backup types compared",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-beyond-etcd",
+   "level": "mid",
+   "question": "Why is an etcd backup not enough for a complete recovery?",
+   "say_first": "etcd holds the desired state of the API objects, but not the data inside PersistentVolumes or anything living outside the cluster, so you also need volume data, cluster-level objects, custom resources and your manifests.",
+   "explain": [
+    "etcd is the cluster's blueprint cabinet: it knows a database Deployment exists and which volume it wants. It does not hold the rows in that database. Restore only etcd and you get a perfectly described but empty house.",
+    "Secrets and ConfigMaps are inside etcd snapshots, but Secret values are only Base64-encoded by default, so the snapshot itself is sensitive. CRD definitions are in etcd too, yet any external system an operator manages is not.",
+    "A complete plan covers etcd, PV data, Secrets and ConfigMaps, CRDs and their custom resources, and the manifests or Helm charts that describe your apps (ideally already in Git)."
+   ],
+   "key_points": [
+    "etcd = cluster state, not application data.",
+    "PV contents need volume snapshots or app-native backups.",
+    "External systems managed by operators are outside etcd.",
+    "Manifests and charts in Git are a backup too.",
+    "Treat the etcd snapshot as a secret in itself."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-backup-scope.html",
+    "title": "Backup scope",
+    "ratio": "1000/532"
+   },
+   "follow_ups": [
+    "Which objects are in etcd but easy to forget to export?",
+    "How would you restore a single namespace from an etcd snapshot?"
+   ],
+   "pitfalls": [
+    "Believing a snapshot of etcd also restores database contents."
+   ]
+  },
+  {
+   "id": "ch15-etcd-snapshot",
+   "level": "mid",
+   "question": "How do you take and restore an etcd snapshot?",
+   "say_first": "Use etcdctl snapshot save against a healthy member with its client certificates, then verify the file; restoring builds a new data directory from that file.",
+   "explain": [
+    "A snapshot is a consistent point-in-time copy of the whole etcd keyspace. You run it from a control-plane node and authenticate with the etcd client certificates.",
+    "Check the result with the status command, then copy the file off the node, encrypted. A backup that lives on the disk that just died helps nobody.",
+    "To restore, you restore into a fresh data directory, point etcd at it and start it again. On kubeadm clusters you stop the static Pod by moving its manifest away, swap the data directory, and move the manifest back. Managed services (EKS, GKE, AKS) hide etcd, so you rely on provider features and workload-level backups."
+   ],
+   "key_points": [
+    "Needs endpoints plus CA, cert and key.",
+    "Verify with snapshot status.",
+    "Store off the node and encrypted.",
+    "Restore creates a new data directory; do not restore over a live one.",
+    "Not available on managed control planes."
+   ],
+   "commands": [
+    {
+     "cmd": "ETCDCTL_API=3 etcdctl snapshot save snapshot.db --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key",
+     "note": "Take a snapshot on a kubeadm control-plane node"
+    },
+    {
+     "cmd": "etcdutl snapshot status snapshot.db -w table",
+     "note": "Verify hash, revision and size of the file"
+    },
+    {
+     "cmd": "etcdutl snapshot restore snapshot.db --data-dir=/var/lib/etcd-restore",
+     "note": "Rebuild a fresh data directory from the snapshot"
+    }
+   ],
+   "follow_ups": [
+    "What changes when etcd runs as three members?",
+    "How often would you snapshot it?"
+   ],
+   "pitfalls": [
+    "Leaving the only snapshot on the same node."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-etcd-snapshot.html",
+    "title": "etcd snapshot and restore",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-pv-backup",
+   "level": "mid",
+   "question": "How do you back up data in PersistentVolumes, and how do CSI snapshots differ from database dumps?",
+   "say_first": "Use CSI VolumeSnapshots for fast, volume-level copies and database-native dumps for portable, logical copies; mature setups use both.",
+   "explain": [
+    "A VolumeSnapshot is like freezing the disk at an instant: it is near-instant and consistent at the storage layer, but it usually lives in the same storage system, so moving it to another cloud is awkward.",
+    "A logical dump (mysqldump, pg_dump) is like exporting a spreadsheet to CSV: portable and readable anywhere, but slower on big databases and only consistent if you use transactions or locking correctly.",
+    "A sensible pattern is frequent snapshots for quick rollback plus periodic dumps or off-site copies for portability and regional failures. For a database, quiesce or flush it first if you need application-consistent snapshots."
+   ],
+   "key_points": [
+    "VolumeSnapshot needs a CSI driver that supports snapshots and a VolumeSnapshotClass.",
+    "Snapshots: fast, storage-bound.",
+    "Dumps: portable, slower, need consistent settings.",
+    "Combine both for real protection."
+   ],
+   "table": {
+    "caption": "CSI snapshot versus logical dump",
+    "headers": [
+     "Aspect",
+     "CSI VolumeSnapshot",
+     "Logical dump"
+    ],
+    "rows": [
+     [
+      "Speed to take",
+      "Near-instant",
+      "Slow on large data"
+     ],
+     [
+      "Consistency",
+      "Volume level, may need quiescing",
+      "Transactional if configured"
+     ],
+     [
+      "Portability",
+      "Tied to storage backend",
+      "Restores anywhere"
+     ],
+     [
+      "Best for",
+      "Fast rollback in region",
+      "Migration and off-site copy"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get volumesnapshotclass",
+     "note": "List snapshot classes installed by the CSI driver"
+    },
+    {
+     "cmd": "kubectl get volumesnapshot -n database",
+     "note": "See snapshots and whether they are ReadyToUse"
+    }
+   ],
+   "follow_ups": [
+    "What makes a snapshot crash-consistent versus application-consistent?",
+    "How do you restore a PVC from a snapshot?"
+   ],
+   "pitfalls": [
+    "Trusting snapshots alone for cross-region disaster recovery."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-pv-backup.html",
+    "title": "Snapshot versus dump",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-snapshot-yaml",
+   "level": "mid",
+   "question": "Show a VolumeSnapshot manifest and explain how to restore from it.",
+   "say_first": "A VolumeSnapshot names a PVC and a snapshot class; to restore, you create a new PVC whose dataSource points at that snapshot.",
+   "explain": [
+    "The snapshot object is the request: which claim to copy and which class (driver) to use. When status shows ReadyToUse, the copy exists.",
+    "Restoring never rewrites the old claim. You create a new PVC with dataSource referencing the snapshot, and mount that in a fresh Pod or StatefulSet.",
+    "The snippet below shows both halves."
+   ],
+   "key_points": [
+    "Snapshot and PVC must be in the same namespace.",
+    "Restore goes into a new PVC.",
+    "Wait for readyToUse before relying on it."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: snapshot.storage.k8s.io/v1\nkind: VolumeSnapshot\nmetadata:\n  name: mysql-data-snapshot\n  namespace: database\nspec:\n  volumeSnapshotClassName: csi-snapshot-class\n  source:\n    persistentVolumeClaimName: mysql-pvc\nEOF",
+     "note": "Snapshot the mysql-pvc claim"
+    },
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: mysql-restored\n  namespace: database\nspec:\n  storageClassName: csi-sc\n  dataSource:\n    name: mysql-data-snapshot\n    kind: VolumeSnapshot\n    apiGroup: snapshot.storage.k8s.io\n  accessModes: [ReadWriteOnce]\n  resources:\n    requests:\n      storage: 10Gi\nEOF",
+     "note": "Create a new PVC from the snapshot (size at least the original)"
+    }
+   ],
+   "follow_ups": [
+    "Can a snapshot be restored in another cluster?"
+   ],
+   "pitfalls": [
+    "Expecting the snapshot to survive deletion of the whole storage backend."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-snapshot-yaml.html",
+    "title": "Restore from a VolumeSnapshot",
+    "ratio": "1000/216"
+   }
+  },
+  {
+   "id": "ch15-secrets-crds-cluster",
+   "level": "senior",
+   "question": "How do you safely back up Secrets, CRDs, custom resources and cluster-scoped objects, and in what order do you restore them?",
+   "say_first": "Export declarative objects with kubectl, never leave Secrets as plaintext on disk, and restore in dependency order: CRDs, cluster-scoped objects, namespaces, baselines, workloads, then data.",
+   "explain": [
+    "ConfigMaps are safe to export into Git. Secrets need care: they are already in the etcd snapshot, and if you must export them, encrypt them (for example with SOPS and a KMS) or use sealed or external secrets so plaintext never lands in a repo. Enabling encryption at rest with a KMS provider limits damage if etcd or a snapshot leaks.",
+    "CRDs alone are not enough; the custom resources that use them hold the real configuration. Also save foundations many workloads assume: ClusterRoles and bindings, StorageClasses, PriorityClasses, webhook configurations, APIServices, IngressClasses, Namespaces with their labels, and namespaced guardrails such as quotas, LimitRanges, NetworkPolicies and PDBs.",
+    "Restore order matters like building a house: foundations first (CRDs, cluster-scoped), then rooms (namespaces and baselines), then furniture (workloads), and finally the contents (data)."
+   ],
+   "key_points": [
+    "Treat exported Secrets and etcd snapshots as highly sensitive.",
+    "Back up CR instances, not just CRDs.",
+    "Include cluster-scoped and namespaced baselines.",
+    "Restore order: CRDs, cluster-scoped, namespaces, baselines, workloads, data.",
+    "Prefer GitOps so most of this is already stored."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get crds -o yaml > crds.yaml",
+     "note": "Export CRD definitions"
+    },
+    {
+     "cmd": "kubectl get clusterroles,clusterrolebindings,storageclasses,priorityclasses,validatingwebhookconfigurations,mutatingwebhookconfigurations,apiservices,ingressclasses -o yaml > cluster-scoped.yaml",
+     "note": "Export cluster-level objects"
+    },
+    {
+     "cmd": "kubectl get resourcequotas,limitranges,networkpolicies,poddisruptionbudgets -A -o yaml > baselines.yaml",
+     "note": "Export namespaced guardrails"
+    }
+   ],
+   "follow_ups": [
+    "What breaks if you restore workloads before their CRDs?",
+    "Why might a webhook configuration block a restore?"
+   ],
+   "pitfalls": [
+    "Committing kubectl get secret -o yaml output to Git."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-secrets-crds-cluster.html",
+    "title": "Restore order",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-backup-tools",
+   "level": "mid",
+   "question": "Which backup tools would you consider for Kubernetes, and how do you choose?",
+   "say_first": "Velero is the common open-source general choice, Kasten K10 is a commercial enterprise option, and Stash is operator-based; native kubectl and etcdctl work for small or custom setups.",
+   "explain": [
+    "General backup software does not understand Pods, PVCs and CRDs or how they relate, so it tends to produce inconsistent copies. Kubernetes-aware tools talk to the API, capture objects together with volume data, and schedule and restore them as a unit.",
+    "Choose by cluster size, data consistency needs, compliance (encryption, audit, retention), where you run (cloud, on-prem, hybrid), team skills, support and budget.",
+    "Velero stores object manifests in object storage and uses CSI snapshots or file-system backup for volume data."
+   ],
+   "key_points": [
+    "Pick Kubernetes-aware tools over generic backup agents.",
+    "Decide on compliance and retention first.",
+    "Check which storage backends and CSI drivers the tool supports.",
+    "Always rehearse a restore with the chosen tool."
+   ],
+   "table": {
+    "caption": "Popular backup tools",
+    "headers": [
+     "Tool",
+     "Highlights",
+     "Good fit"
+    ],
+    "rows": [
+     [
+      "Velero",
+      "Open source, schedules, cluster migration",
+      "General purpose and migrations"
+     ],
+     [
+      "Kasten K10",
+      "Commercial, policy automation, enterprise features",
+      "Larger organisations"
+     ],
+     [
+      "Stash",
+      "Operator-based, strong database support",
+      "App-level backups, GitOps"
+     ],
+     [
+      "kubectl / etcdctl",
+      "Manual, scriptable",
+      "Small clusters, learning"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "velero backup create nightly-full --include-namespaces prod --snapshot-volumes",
+     "note": "One-off Velero backup of a namespace with volume snapshots"
+    },
+    {
+     "cmd": "velero schedule create daily --schedule=\"0 2 * * *\" --ttl 720h",
+     "note": "Daily backup kept for 30 days"
+    }
+   ],
+   "follow_ups": [
+    "How does Velero back up volumes?",
+    "When are plain kubectl exports enough?"
+   ],
+   "pitfalls": [
+    "Choosing a tool and never testing a restore."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-backup-tools.html",
+    "title": "Choosing a backup tool",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-backup-practices",
+   "level": "mid",
+   "question": "What are the best practices for a reliable backup programme?",
+   "say_first": "Automate it, encrypt it, keep copies off-site, define retention, document it and above all test restores regularly.",
+   "explain": [
+    "Think of a smoke alarm: it is only useful if it is installed, powered and tested. Backups follow the same rule.",
+    "Automate on a schedule so people are not the weak link. Encrypt in transit and at rest, and turn on Secret encryption at rest in the cluster via an EncryptionConfiguration with a KMS provider. Keep a retention policy so cost does not run away. Use VolumeSnapshots where supported, and add application-level backups for critical data.",
+    "Write down the restore steps and keep them where you can reach them during an outage, not only on the cluster that is down."
+   ],
+   "key_points": [
+    "Automate and schedule.",
+    "Test restores on a calendar.",
+    "Encrypt backups and Secrets at rest.",
+    "Set retention by need and compliance.",
+    "Document and keep docs off-cluster."
+   ],
+   "follow_ups": [
+    "How often should restore drills happen?",
+    "Where should the runbook live?"
+   ],
+   "pitfalls": [
+    "Monitoring that the backup job ran but never checking it is restorable."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-backup-practices.html",
+    "title": "A reliable backup programme",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-upgrade-order",
+   "level": "mid",
+   "question": "What order do you follow to upgrade a Kubernetes cluster, and why one minor version at a time?",
+   "say_first": "Back up etcd, check deprecated APIs, upgrade the control plane, then workers node by node, then add-ons, and watch; always step one minor version at a time.",
+   "explain": [
+    "The control plane goes first because it must understand every version of the API that the nodes speak. Kubelets may be older than the API server (within the supported skew, currently up to three minors; check the version-skew policy), never newer.",
+    "Skipping minors is unsupported: deprecations and storage migrations are designed to be crossed one release at a time. Multiple changes at once also make failures hard to trace.",
+    "Rehearse in a staging cluster that mirrors production, including add-ons and admission webhooks, then promote through non-production environments before production. Afterwards watch metrics, logs and network behaviour for a while before the next step."
+   ],
+   "key_points": [
+    "Order: backup, API check, control plane, nodes, add-ons, observe.",
+    "One minor version at a time.",
+    "Kubelet never newer than the API server.",
+    "Staging should mirror production.",
+    "Managed services upgrade the control plane for you; nodes and add-ons remain yours."
+   ],
+   "table": {
+    "caption": "Who upgrades what",
+    "headers": [
+     "Model",
+     "Control plane",
+     "Nodes and add-ons"
+    ],
+    "rows": [
+     [
+      "Managed (EKS, GKE, AKS)",
+      "Provider, triggered by you",
+      "You plan node pools and add-ons"
+     ],
+     [
+      "kubeadm or self-managed",
+      "You, with kubeadm upgrade",
+      "You, node by node, plus etcd and certificates"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "sudo kubeadm upgrade plan",
+     "note": "Show available versions and pre-flight checks"
+    },
+    {
+     "cmd": "sudo kubeadm upgrade apply v1.33.0",
+     "note": "Upgrade the first control-plane node (use kubeadm upgrade node on the others)"
+    },
+    {
+     "cmd": "kubectl get --raw /metrics | grep apiserver_requested_deprecated_apis",
+     "note": "Spot deprecated APIs still being called"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-upgrade-order.html",
+    "title": "Cluster upgrade order",
+    "ratio": "1000/224"
+   },
+   "follow_ups": [
+    "How do you find deprecated APIs in use?",
+    "What is the kubelet version skew limit?"
+   ],
+   "pitfalls": [
+    "Upgrading nodes before the control plane.",
+    "Jumping from 1.28 straight to 1.32."
+   ]
+  },
+  {
+   "id": "ch15-drain-cycle",
+   "level": "junior",
+   "question": "How do you upgrade a worker node without downtime?",
+   "say_first": "Cordon it, drain it, upgrade it, uncordon it, and repeat for one node at a time.",
+   "explain": [
+    "Cordon marks the node unschedulable so no new Pods land on it. Drain then evicts the existing Pods gracefully so controllers recreate them elsewhere. Upgrade the kubelet and other node software, restart as needed, and uncordon to let Pods come back.",
+    "Picture closing a restaurant table: stop seating new guests, let current ones finish and move, clean the table, then reopen it.",
+    "DaemonSet Pods cannot be moved, so drain needs --ignore-daemonsets, and Pods with local emptyDir data need an explicit flag. Evictions respect PodDisruptionBudgets."
+   ],
+   "key_points": [
+    "Cordon stops new scheduling only.",
+    "Drain evicts Pods, respecting PDBs.",
+    "Use --ignore-daemonsets.",
+    "Do one node at a time and verify before continuing.",
+    "Capacity elsewhere must absorb the moved Pods."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl cordon worker-1",
+     "note": "Mark SchedulingDisabled"
+    },
+    {
+     "cmd": "kubectl drain worker-1 --ignore-daemonsets --delete-emptydir-data",
+     "note": "Evict Pods safely"
+    },
+    {
+     "cmd": "kubectl uncordon worker-1",
+     "note": "Return the node to service"
+    },
+    {
+     "cmd": "kubectl get nodes",
+     "note": "Check versions and Ready status"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-node-upgrade-cycle.html",
+    "title": "Upgrading one worker node",
+    "ratio": "1000/352"
+   },
+   "follow_ups": [
+    "What if drain hangs forever?",
+    "What does a PDB do during drain?"
+   ],
+   "pitfalls": [
+    "Draining several nodes at once and running out of capacity."
+   ]
+  },
+  {
+   "id": "ch15-pdb",
+   "level": "mid",
+   "question": "What is a PodDisruptionBudget and how does it protect an upgrade?",
+   "say_first": "A PDB sets a floor on how many replicas of an app must stay up during voluntary disruptions such as drains, so maintenance cannot take the service down.",
+   "explain": [
+    "Voluntary disruptions are planned ones: node drains, autoscaler scale-down. The eviction API checks PDBs and refuses an eviction that would break the budget; the drain then waits and retries.",
+    "You set either minAvailable or maxUnavailable, not both. A budget of minAvailable: 2 on three replicas lets one Pod be moved at a time.",
+    "A PDB does not help with crashes or node failures; those are involuntary. And a budget that equals the replica count blocks every drain."
+   ],
+   "key_points": [
+    "Applies to voluntary disruption only.",
+    "Choose minAvailable or maxUnavailable.",
+    "Needs enough replicas to be useful.",
+    "Too strict a budget stalls upgrades."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata:\n  name: api-pdb\nspec:\n  minAvailable: 2\n  selector:\n    matchLabels:\n      app: api\nEOF",
+     "note": "Keep at least two api Pods during drains"
+    },
+    {
+     "cmd": "kubectl get pdb",
+     "note": "Shows allowed disruptions right now"
+    }
+   ],
+   "follow_ups": [
+    "Why can a single-replica app with a PDB block node upgrades?",
+    "Does a PDB stop a kubectl delete pod?"
+   ],
+   "pitfalls": [
+    "Setting minAvailable equal to replicas."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-pdb.html",
+    "title": "PodDisruptionBudget during a drain",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-app-and-addons",
+   "level": "mid",
+   "question": "After the cluster is upgraded, what else must you update or verify?",
+   "say_first": "Add-ons such as the CNI, DNS and ingress controller, your Helm charts and application dependencies, all validated in staging first.",
+   "explain": [
+    "Add-ons are the plumbing. An incompatible CNI or ingress controller can break networking or routing even when all nodes are Ready, so upgrade each to the version recommended for the new Kubernetes release.",
+    "Applications roll forward with normal rolling updates, which replace Pods gradually so the service keeps answering. Config changes in ConfigMaps or Secrets often need a rollout restart to be picked up.",
+    "Afterwards, watch cluster and application health, especially networking, before moving to the next environment."
+   ],
+   "key_points": [
+    "Check add-on compatibility before and after.",
+    "Rolling updates keep the app available.",
+    "Config changes may need a restart.",
+    "Monitor networking closely after upgrades."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl set image deployment/my-app my-container=my-app:v2",
+     "note": "Trigger a rolling update"
+    },
+    {
+     "cmd": "kubectl rollout status deployment/my-app",
+     "note": "Wait for it to finish"
+    },
+    {
+     "cmd": "kubectl rollout restart deployment/my-app",
+     "note": "Pick up changed ConfigMap or Secret values"
+    },
+    {
+     "cmd": "kubectl rollout undo deployment/my-app",
+     "note": "Roll back"
+    }
+   ],
+   "follow_ups": [
+    "How would you roll back a bad application update?",
+    "How do you check that CoreDNS is healthy?"
+   ],
+   "pitfalls": [
+    "Testing only the final version jump in a clean cluster, not the real upgrade path."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-app-and-addons.html",
+    "title": "After the upgrade",
+    "ratio": "1000/356"
+   }
+  },
+  {
+   "id": "ch15-rto-rpo",
+   "level": "mid",
+   "question": "What are RTO and RPO, and how do they drive your backup design?",
+   "say_first": "RTO is how long you can be down; RPO is how much recent data you can afford to lose; both are business decisions that pick your backup schedule and architecture.",
+   "explain": [
+    "Picture the moment of a disaster. Looking back to your last good backup is the RPO, the stretch of data at risk. Looking forward to service working again is the RTO, the time users wait.",
+    "An RTO of 30 minutes and RPO of 5 minutes means a restore must finish in half an hour and you can lose at most five minutes of data. These numbers are agreed with the business, not chosen by engineers alone; a plan that restores in four hours when the business needs thirty minutes has failed.",
+    "Lower numbers cost more, so match tiers to importance and prove them with restore drills that record the achieved values."
+   ],
+   "key_points": [
+    "RTO = time to recover; RPO = data loss window.",
+    "Set with business stakeholders per tier.",
+    "Tighter targets cost more.",
+    "Measure achieved values in drills."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-rto-rpo.html",
+    "title": "RPO and RTO on a timeline",
+    "ratio": "1000/248"
+   },
+   "follow_ups": [
+    "How do you meet a 5-minute RPO?",
+    "How do multi-tenant clusters set different targets?"
+   ],
+   "pitfalls": [
+    "Mixing them up: RPO is about data, RTO about time."
+   ]
+  },
+  {
+   "id": "ch15-dr-plan",
+   "level": "senior",
+   "question": "How would you design a disaster recovery plan for a production cluster, including a regional outage?",
+   "say_first": "Agree RTO and RPO, protect etcd, volumes and configuration off-site, rebuild clusters with IaC and GitOps, fail traffic over with DNS, and test it regularly.",
+   "explain": [
+    "Start from realistic failures: control plane or etcd loss, storage loss, a bad deployment, a regional outage, and human or security events such as accidental deletion or ransomware.",
+    "Automate the rebuild. Terraform or Pulumi creates a cluster, Argo CD or Flux redeploys workloads from Git, backups restore the data, and runbooks list exact commands and locations. Store the runbook in version control and offline.",
+    "For a regional outage: keep a second cluster in another region with essential services deployed but scaled down, replicate etcd backups and volume snapshots to that region, use health-checked DNS failover, and have a pipeline that scales up quickly. Run drills at least quarterly and include a communication plan."
+   ],
+   "key_points": [
+    "Define RTO and RPO first.",
+    "IaC plus GitOps for repeatable rebuilds.",
+    "Replicate backups across regions.",
+    "DNS failover to a standby cluster.",
+    "Drill regularly and record the result."
+   ],
+   "table": {
+    "caption": "Strategy versus typical targets (validate with drills)",
+    "headers": [
+     "Strategy",
+     "Typical RPO",
+     "Typical RTO"
+    ],
+    "rows": [
+     [
+      "Nightly full only",
+      "Up to 24 h",
+      "1 to 3 h"
+     ],
+     [
+      "Weekly full plus daily differential",
+      "Up to 24 h",
+      "1 to 2 h"
+     ],
+     [
+      "Weekly full plus hourly incremental",
+      "Up to 60 min",
+      "2 to 4 h"
+     ],
+     [
+      "CSI snapshots every 15 min plus off-site copy",
+      "Up to 15 min",
+      "5 to 30 min"
+     ],
+     [
+      "Streaming database replication",
+      "1 to 5 min",
+      "10 to 30 min"
+     ],
+     [
+      "Active/active multi-region",
+      "About zero",
+      "1 to 5 min"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "velero restore create --from-backup nightly-full",
+     "note": "Restore a namespace set into the recovery cluster"
+    },
+    {
+     "cmd": "kubectl get pods -A --field-selector=status.phase!=Running",
+     "note": "Check what has not recovered"
+    }
+   ],
+   "follow_ups": [
+    "Warm standby or active-active, and what does each cost?",
+    "How do you keep secrets available in the recovery region?"
+   ],
+   "pitfalls": [
+    "A plan nobody has exercised.",
+    "Keeping the only runbook inside the failed cluster."
+   ],
+   "diagram": {
+    "file": "diagrams/ch15-dr-plan.html",
+    "title": "Regional outage failover",
+    "ratio": "1000/356"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch15-backup-scope.html",
+  "diagrams/ch15-node-upgrade-cycle.html",
+  "diagrams/ch15-upgrade-order.html",
+  "diagrams/ch15-rto-rpo.html",
+  "diagrams/ch15-why-backup.html",
+  "diagrams/ch15-backup-types.html",
+  "diagrams/ch15-etcd-snapshot.html",
+  "diagrams/ch15-pv-backup.html",
+  "diagrams/ch15-snapshot-yaml.html",
+  "diagrams/ch15-secrets-crds-cluster.html",
+  "diagrams/ch15-backup-tools.html",
+  "diagrams/ch15-backup-practices.html",
+  "diagrams/ch15-pdb.html",
+  "diagrams/ch15-app-and-addons.html",
+  "diagrams/ch15-dr-plan.html"
+ ]
+}

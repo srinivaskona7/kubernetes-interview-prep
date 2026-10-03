@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kubelet, CRI and runtimes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Runtime</p>
+    <h1>Kubelet, CRI and runtimes</h1>
+
+    <svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch1-cri-containerd-title ch1-cri-containerd-desc">
+<title id="ch1-cri-containerd-title">Kubelet, CRI and runtimes</title>
+<desc id="ch1-cri-containerd-desc">The kubelet talks CRI to containerd or CRI-O; Docker Engine needed the dockershim adapter, which was removed in Kubernetes 1.24.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        </defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="60" y="150" width="200" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="60" y="150" width="200" height="72" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="160.0" y="184.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kubelet</text>
+<text x="160.0" y="200.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">node agent, speaks CRI</text>
+<rect x="700" y="60" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="700" y="60" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="820.0" y="86.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">containerd</text>
+<text x="820.0" y="102.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CRI runtime, common default</text>
+<rect x="700" y="158" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="700" y="158" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="820.0" y="184.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CRI-O</text>
+<text x="820.0" y="200.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CRI runtime, built for Kubernetes</text>
+<rect x="380" y="300" width="200" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="300" width="200" height="56" rx="6" fill="#ececec" stroke="#4f5d75" stroke-width="1"/>
+<text x="480.0" y="326.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">dockershim</text>
+<text x="480.0" y="342.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">adapter, removed in 1.24</text>
+<rect x="700" y="300" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="700" y="300" width="240" height="56" rx="6" fill="#ececec" stroke="#4f5d75" stroke-width="1"/>
+<text x="820.0" y="326.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Docker Engine</text>
+<text x="820.0" y="342.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no native CRI</text>
+<path d="M260 186 H332 Q340 186 340 178 V96 Q340 88 348 88 H700" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="506.2" y="82" width="27.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="520" y="91" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CRI</text>
+<path d="M260 186 H700" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="506.2" y="180" width="27.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="520" y="189" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CRI</text>
+<path d="M260 186 H332 Q340 186 340 194 V320 Q340 328 348 328 H380" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="326.2" y="256" width="27.6" height="12" rx="2" fill="#f5f5f5"/>
+<text x="340" y="265" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CRI</text>
+<path d="M580 328 H700" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="608.0" y="322" width="64.0" height="12" rx="2" fill="#f5f5f5"/>
+<text x="640" y="331" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DOCKER API</text>
+<text x="700" y="48" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">CRI RUNTIMES TODAY</text>
+<text x="380" y="288" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">OLD PATH, NEEDED A SHIM</text>
+
+
+
+    </svg>
+  </div>
+</body>
+</html>

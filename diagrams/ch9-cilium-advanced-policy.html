@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standard policy vs Cilium policy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Network security</p>
+    <h1>Standard policy vs Cilium policy</h1>
+
+    <svg viewBox="0 0 1000 408" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch9-cilium-advanced-policy-title ch9-cilium-advanced-policy-desc">
+      <title id="ch9-cilium-advanced-policy-title">Standard policy vs Cilium policy</title>
+      <desc id="ch9-cilium-advanced-policy-desc">The standard NetworkPolicy matches IPs, ports and labels, while a CiliumNetworkPolicy adds domain names and layer-7 HTTP rules at the cost of portability.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M200 184 L272 184 Q280 184 280 176 L280 112 Q280 104 288 104 L360 104" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="211" y="166" width="58" height="12" rx="2" fill="#f5f5f5"/><text x="240" y="175" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PORTABLE</text><path d="M200 216 L272 216 Q280 216 280 224 L280 288 Q280 296 288 296 L360 296" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="211" y="198" width="58" height="12" rx="2" fill="#f5f5f5"/><text x="240" y="207" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CNI ONLY</text><path d="M600 104 L720 104" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M600 296 L720 296" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="40" y="164" width="160" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="164" width="160" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="172" width="52" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="74" y="181" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WORKLOAD</text><text x="120" y="196" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod</text><text x="120" y="212" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">needs github.com egress</text><rect x="360" y="60" width="240" height="88" rx="6" fill="#f5f5f5"/><rect x="360" y="60" width="240" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="368" y="68" width="52" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="394" y="77" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STANDARD</text><text x="480" y="92" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">NetworkPolicy</text><text x="480" y="108" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">IPs, ports, labels</text><text x="480" y="121" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">portable across CNIs</text><rect x="360" y="252" width="240" height="88" rx="6" fill="#f5f5f5"/><rect x="360" y="252" width="240" height="88" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="368" y="260" width="42" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="389" y="269" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CILIUM</text><text x="480" y="284" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CiliumNetworkPolicy</text><text x="480" y="300" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">toFQDNs + layer-7 rules</text><text x="480" y="313" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">works on that CNI only</text><rect x="720" y="60" width="240" height="88" rx="6" fill="#f5f5f5"/><rect x="720" y="60" width="240" height="88" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="728" y="68" width="36" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.4" stroke-width="0.8"/><text x="746" y="77" fill="#8d99ae" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LIMIT</text><text x="840" y="92" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">ipBlock only</text><text x="840" y="108" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">cannot say allow github.com</text><text x="840" y="121" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">IPs may change</text><rect x="720" y="252" width="240" height="88" rx="6" fill="#f5f5f5"/><rect x="720" y="252" width="240" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="728" y="260" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="749" y="269" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RESULT</text><text x="840" y="284" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Domain and HTTP rules</text><text x="840" y="300" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">plain HTTP: method + path</text><text x="840" y="313" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">HTTPS: host name only</text><line x1="30" y1="372" x2="970" y2="372" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="388" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="384" x2="148" y2="384" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="387" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">policy path</text><rect x="251" y="378" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="287" y="387" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">CNI-specific policy</text>
+    </svg>
+  </div>
+</body>
+</html>

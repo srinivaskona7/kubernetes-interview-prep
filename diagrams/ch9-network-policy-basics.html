@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetworkPolicy: allow listed traffic only</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Network security</p>
+    <h1>NetworkPolicy: allow listed traffic only</h1>
+
+    <svg viewBox="0 0 1000 476" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch9-network-policy-basics-title ch9-network-policy-basics-desc">
+      <title id="ch9-network-policy-basics-title">NetworkPolicy: allow listed traffic only</title>
+      <desc id="ch9-network-policy-basics-desc">Once a NetworkPolicy selects the backend Pod, traffic from the frontend is allowed and traffic from other Pods is denied, with the CNI plugin enforcing the rules.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M240 112 L352 112 Q360 112 360 120 L360 176 Q360 184 368 184 L480 184" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="279.5" y="94" width="41" height="12" rx="2" fill="#f5f5f5"/><text x="300" y="103" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ALLOW</text><path d="M240 272 L352 272 Q360 272 360 264 L360 224 Q360 216 368 216 L480 216" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrow)"/><rect x="282.5" y="254" width="35" height="12" rx="2" fill="#f5f5f5"/><text x="300" y="263" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DENY</text><path d="M800 200 L720 200" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="731" y="182" width="58" height="12" rx="2" fill="#f5f5f5"/><text x="760" y="191" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ENFORCES</text><rect x="40" y="76" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="76" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="84" width="47" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="71.5" y="93" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ALLOWED</text><text x="140" y="108" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Frontend Pod</text><text x="140" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">app=frontend</text><rect x="40" y="236" width="200" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="236" width="200" height="72" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="48" y="244" width="36" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.4" stroke-width="0.8"/><text x="66" y="253" fill="#8d99ae" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">OTHER</text><text x="140" y="268" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Any other Pod</text><text x="140" y="284" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">no matching rule</text><rect x="480" y="156" width="240" height="88" rx="6" fill="#f5f5f5"/><rect x="480" y="156" width="240" height="88" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="488" y="164" width="42" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="509" y="173" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TARGET</text><text x="600" y="188" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Backend Pod</text><text x="600" y="204" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">selected by podSelector</text><text x="600" y="217" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">only listed ingress allowed</text><rect x="800" y="156" width="160" height="88" rx="6" fill="#f5f5f5"/><rect x="800" y="156" width="160" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="808" y="164" width="52" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="834" y="173" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ENFORCER</text><text x="880" y="196" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CNI plugin</text><text x="880" y="212" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Calico, Cilium</text><rect x="40" y="352" width="920" height="56" rx="6" fill="#f5f5f5"/><rect x="40" y="352" width="920" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#8d99ae" stroke-width="1"/><rect x="48" y="360" width="63" height="12" rx="2" fill="transparent" stroke="#8d99ae" stroke-opacity="0.4" stroke-width="0.8"/><text x="79.5" y="369" fill="#8d99ae" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ZERO TRUST</text><text x="500" y="376" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Default deny first</text><text x="500" y="392" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">then add narrow allow rules; no supporting CNI means the policy does nothing</text><line x1="30" y1="440" x2="970" y2="440" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="456" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="452" x2="148" y2="452" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="455" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">allowed traffic</text><rect x="271" y="446" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="307" y="455" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">selected Pod</text><line x1="407" y1="452" x2="435" y2="452" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5 4"/><text x="443" y="455" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">denied traffic</text>
+    </svg>
+  </div>
+</body>
+</html>

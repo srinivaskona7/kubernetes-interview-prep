@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shadow: mirror traffic, discard the reply</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Deployment strategy</p>
+    <h1>Shadow: mirror traffic, discard the reply</h1>
+
+    <svg viewBox="0 0 1000 376" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="shadow-title shadow-desc">
+      <title id="shadow-title">Shadow: mirror traffic, discard the reply</title>
+      <desc id="shadow-desc">Traffic mirroring where a mesh routes live requests to the stable version and sends a copy to a shadow version whose responses are dropped.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <path d="M180 184 H280" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="204" y="164" width="52" height="12" rx="2" fill="#f5f5f5"/><text x="230" y="173" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQUEST</text><path d="M480 168 H532 Q540 168 540 160 V108 Q540 100 548 100 H600" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="552" y="80" width="36" height="12" rx="2" fill="#f5f5f5"/><text x="570" y="89" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LIVE</text><path d="M480 200 H532 Q540 200 540 208 V260 Q540 268 548 268 H600" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><rect x="552" y="248" width="36" height="12" rx="2" fill="#f5f5f5"/><text x="570" y="257" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">COPY</text><path d="M800 268 H840" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><rect x="40" y="152" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="40" y="152" width="140" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#4f5d75" stroke-width="1"/><rect x="48" y="160" width="32" height="12" rx="2" fill="transparent" stroke="#4f5d75" stroke-opacity="0.8" stroke-width="0.8"/><text x="64" y="169" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USER</text><text x="110" y="188" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Clients</text><rect x="280" y="136" width="200" height="96" rx="6" fill="#f5f5f5"/><rect x="280" y="136" width="200" height="96" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="288" y="144" width="32" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.8" stroke-width="0.8"/><text x="304" y="153" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">MESH</text><text x="380" y="188" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">VirtualService</text><text x="380" y="204" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">route + mirror rule</text><rect x="600" y="60" width="200" height="80" rx="6" fill="#f5f5f5"/><rect x="600" y="60" width="200" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="608" y="68" width="44" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="630" y="77" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STABLE</text><text x="700" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">subset v1</text><text x="700" y="120" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">answers the user</text><rect x="600" y="228" width="200" height="80" rx="6" fill="#f5f5f5"/><rect x="600" y="228" width="200" height="80" rx="6" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/><rect x="608" y="236" width="44" height="12" rx="2" fill="transparent" stroke="#4f5d75" stroke-opacity="0.8" stroke-width="0.8"/><text x="630" y="245" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SHADOW</text><text x="700" y="272" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">subset v2</text><text x="700" y="288" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">receives a copy</text><rect x="840" y="236" width="120" height="64" rx="6" fill="#f5f5f5"/><rect x="840" y="236" width="120" height="64" rx="6" fill="rgba(45,49,66,0.03)" stroke="#4f5d75" stroke-width="1"/><rect x="848" y="244" width="32" height="12" rx="2" fill="transparent" stroke="#4f5d75" stroke-opacity="0.8" stroke-width="0.8"/><text x="864" y="253" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SINK</text><text x="900" y="272" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Reply dropped</text><line x1="30" y1="336" x2="970" y2="336" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="352" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="348" x2="148" y2="348" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="351" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">real request path</text><line x1="276" y1="348" x2="304" y2="348" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4"/><text x="312" y="351" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">mirrored copy, fire and forget</text>
+    </svg>
+  </div>
+</body>
+</html>

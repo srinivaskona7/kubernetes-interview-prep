@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Native metrics versus log-derived metrics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Monitoring · Observability</p>
+    <h1>Native metrics versus log-derived metrics</h1>
+    <svg viewBox="0 0 936 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch14-native-vs-log-metrics-title ch14-native-vs-log-metrics-desc">
+      <title id="ch14-native-vs-log-metrics-title">Native metrics versus log-derived metrics</title>
+      <desc id="ch14-native-vs-log-metrics-desc">A native counter in the app is scraped as a few bytes and aggregated. Deriving a number from logs ships, indexes and retains every full line, then scans raw text on each query.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="24" y="28" width="888" height="120" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/><text x="36" y="44" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">NATIVE METRIC: CHEAP</text>
+<rect x="24" y="168" width="888" height="120" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/><text x="36" y="184" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LOG-DERIVED METRIC: EXPENSIVE</text>
+<path d="M360,92 L256,92" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M568,92 L672,92" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M256,232 L360,232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M568,232 L672,232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="308" y="86" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SCRAPE</text>
+<text x="620" y="86" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ANSWERS</text>
+<text x="308" y="226" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SHIPS EVERY LINE</text>
+<text x="620" y="226" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SCANS</text>
+<text x="40" y="328" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">COUNTERS AND HISTOGRAMS ANSWER WHAT AND HOW MUCH · LOGS ANSWER WHY</text>
+<text x="40" y="344" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">LEGACY APP? CONVERT LOGS TO METRICS AT INGEST, NOT AT QUERY TIME</text>
+<rect x="48" y="60" width="208" height="64" rx="6" fill="#f5f5f5"/><rect x="48" y="60" width="208" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="152.0" y="90.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">App counter</text><text x="152.0" y="106.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">incremented in code</text>
+<rect x="360" y="60" width="208" height="64" rx="6" fill="#f5f5f5"/><rect x="360" y="60" width="208" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="464.0" y="84.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Prometheus</text><text x="464.0" y="100.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">a few bytes per series</text><text x="464.0" y="112.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">pre-aggregated</text>
+<rect x="672" y="60" width="216" height="64" rx="6" fill="#f5f5f5"/><rect x="672" y="60" width="216" height="64" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="780.0" y="90.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fast, cheap answer</text><text x="780.0" y="106.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">dashboards and alerts</text>
+<rect x="48" y="200" width="208" height="64" rx="6" fill="#f5f5f5"/><rect x="48" y="200" width="208" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="152.0" y="230.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">App log line</text><text x="152.0" y="246.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">full text, every event</text>
+<rect x="360" y="200" width="208" height="64" rx="6" fill="#f5f5f5"/><rect x="360" y="200" width="208" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/><text x="464.0" y="224.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Log store</text><text x="464.0" y="240.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">indexed and retained</text><text x="464.0" y="252.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">full text</text>
+<rect x="672" y="200" width="216" height="64" rx="6" fill="#f5f5f5"/><rect x="672" y="200" width="216" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="780.0" y="230.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Slow, costly answer</text><text x="780.0" y="246.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">scan raw text per query</text>
+<line x1="30" y1="392" x2="906" y2="392" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="408" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><rect x="120" y="400" width="12" height="12" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="140" y="409" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">FOCAL</text><rect x="205.0" y="400" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="225.0" y="409" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">COMPONENT</text><rect x="310.0" y="400" width="12" height="12" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/><text x="330.0" y="409" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">STORAGE</text>
+    </svg>
+  </div>
+</body>
+</html>

@@ -1,0 +1,756 @@
+{
+ "number": 7,
+ "title": "Kubernetes Network Architecture: Services and Ingresses",
+ "part": "Part 3 · Networking",
+ "tagline": "Service types, Ingress controllers, Gateway API and the path a request takes",
+ "overview": "This chapter explains how traffic reaches pods. You learn the four Service types, how Services pick and balance pods, how an Ingress and its controller route HTTP from one entry point, and how the Gateway API improves on that model.",
+ "topics": [
+  {
+   "id": "ch7-what-is-a-service",
+   "level": "junior",
+   "question": "What is a Kubernetes Service and why do we need one?",
+   "say_first": "A Service is a stable virtual address and name in front of a changing set of pods. It picks its pods by label, so callers never track individual pod IPs.",
+   "explain": [
+    "Pods are disposable. They get replaced during rollouts, scaling and node failures, and every replacement gets a new IP. If a client hard-coded a pod IP it would break within hours.",
+    "Think of a Service as a company's main phone number. Staff come and go, but customers always dial the same number and get routed to whoever is on shift.",
+    "The link between a Service and its pods is the label selector. Any ready pod whose labels match is added to the Service's endpoint list automatically, and removed when it goes away.",
+    "There are four types: ClusterIP (default, internal), NodePort, LoadBalancer and ExternalName. Each is a different answer to 'who needs to reach this and from where'."
+   ],
+   "key_points": [
+    "Gives a stable IP and DNS name that survives pod churn",
+    "Membership is decided by label selectors, not by pod names",
+    "Spreads connections across all ready pods",
+    "Four types: ClusterIP, NodePort, LoadBalancer, ExternalName"
+   ],
+   "table": {
+    "caption": "The four Service types at a glance",
+    "headers": [
+     "Type",
+     "Reachable from",
+     "Typical use"
+    ],
+    "rows": [
+     [
+      "ClusterIP",
+      "Inside the cluster only",
+      "Service-to-service calls"
+     ],
+     [
+      "NodePort",
+      "Any node IP plus a static port",
+      "Quick tests, legacy access"
+     ],
+     [
+      "LoadBalancer",
+      "Internet via a cloud LB",
+      "Public production endpoints"
+     ],
+     [
+      "ExternalName",
+      "Inside the cluster, returns a DNS alias",
+      "Pointing at outside systems"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get svc -o wide",
+     "note": "List Services with type, cluster IP and selector"
+    },
+    {
+     "cmd": "kubectl get endpointslices -l kubernetes.io/service-name=hello-sample",
+     "note": "Show the pod IPs currently behind a Service"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-service-layers.html",
+    "title": "How the Service types build on each other",
+    "ratio": "1000/304"
+   },
+   "follow_ups": [
+    "How does a Service find its pods?",
+    "What happens when a pod fails its readiness probe?"
+   ],
+   "pitfalls": [
+    "Saying a Service is a pod or a process; it is only a routing abstraction implemented by rules on the nodes"
+   ]
+  },
+  {
+   "id": "ch7-clusterip",
+   "level": "junior",
+   "question": "What is a ClusterIP Service and when would you use it?",
+   "say_first": "ClusterIP is the default type. It gives a virtual IP that works only inside the cluster, which makes it the right choice for internal service-to-service traffic.",
+   "explain": [
+    "Picture an office intercom. Anyone inside the building can dial an extension, but nobody outside can reach it. That isolation is both the feature and the security benefit.",
+    "A frontend calls a backend using the Service name, and cluster DNS resolves that name to the ClusterIP. Whatever pods exist behind it at that moment receive the traffic.",
+    "A Service listens on port and forwards to targetPort on the pod, so the two numbers may differ, for example 80 in front of a container on 8080."
+   ],
+   "key_points": [
+    "Default type if you omit type",
+    "Reachable only from inside the cluster",
+    "Resolved by DNS as name.namespace.svc",
+    "port is the Service port, targetPort is the container port",
+    "Best default for every internal microservice"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f cluster-ip-svc.yaml",
+     "note": "Create two Deployments and their Services"
+    },
+    {
+     "cmd": "kubectl exec svc/nginx-sample -- curl hello-sample",
+     "note": "Call one Service from a pod behind another by name"
+    },
+    {
+     "cmd": "kubectl port-forward svc/hello-sample 8080:80",
+     "note": "Temporary local access to an internal Service"
+    }
+   ],
+   "follow_ups": [
+    "How can a user outside reach a ClusterIP Service for debugging?",
+    "What is the difference between port and targetPort?"
+   ],
+   "pitfalls": [
+    "Expecting a ClusterIP to answer a ping; it is a virtual IP handled by rules, not a real interface"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-clusterip-dns.html",
+    "title": "ClusterIP: internal name to pod",
+    "ratio": "960/380"
+   }
+  },
+  {
+   "id": "ch7-headless",
+   "level": "mid",
+   "question": "What is a headless Service and when is it used?",
+   "say_first": "A headless Service sets clusterIP to None, so there is no virtual IP and DNS returns the individual pod IPs. Clients or StatefulSets use it to reach specific pods directly.",
+   "explain": [
+    "A normal Service is a receptionist who forwards your call to someone. A headless Service hands you the full staff directory and lets you dial people yourself.",
+    "This matters for databases and clustered systems where each replica has a unique identity, such as a primary and replicas, or where the client library does its own load balancing.",
+    "With a StatefulSet, each pod also gets a stable DNS name of the form pod-0.service-name, which survives restarts."
+   ],
+   "key_points": [
+    "Declared with clusterIP: None",
+    "DNS returns A records for each ready pod",
+    "No kube-proxy rules or load balancing are involved",
+    "Pairs with StatefulSets for stable per-pod names"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get svc db -o jsonpath='{.spec.clusterIP}'",
+     "note": "Prints None for a headless Service"
+    },
+    {
+     "cmd": "kubectl run -it --rm dns --image=busybox:1.36 -- nslookup db",
+     "note": "Resolve the Service and see multiple pod IPs"
+    }
+   ],
+   "follow_ups": [
+    "How does DNS differ for a headless vs normal Service?",
+    "Can a headless Service have a selector-less variant?"
+   ],
+   "pitfalls": [
+    "Thinking headless means no DNS; DNS is the whole point of it"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-headless-vs-normal.html",
+    "title": "Normal vs headless Service",
+    "ratio": "960/360"
+   }
+  },
+  {
+   "id": "ch7-nodeport",
+   "level": "junior",
+   "question": "What is a NodePort Service and why is it discouraged in production?",
+   "say_first": "NodePort opens the same static port, 30000 to 32767 by default, on every node and forwards it to the Service. It is handy for testing but a poor public entry point.",
+   "explain": [
+    "Imagine every door of a building getting an extra side entrance with the same number. Any door works, even in rooms where the app is not running, because traffic is forwarded across the cluster.",
+    "NodePort builds on ClusterIP: the node port forwards to the ClusterIP, which then selects a pod.",
+    "In production it is discouraged because the range is well known and easy to scan, nodes must be reachable and have public IPs, node IPs change, and clients get no real load balancing across nodes."
+   ],
+   "key_points": [
+    "Default range 30000-32767, one port per Service",
+    "Works on every node, including nodes with no matching pod",
+    "Exposes node IPs directly, enlarging the attack surface",
+    "Fine for local clusters, demos and behind an external LB"
+   ],
+   "table": {
+    "caption": "ClusterIP vs NodePort vs LoadBalancer",
+    "headers": [
+     "Aspect",
+     "ClusterIP",
+     "NodePort",
+     "LoadBalancer"
+    ],
+    "rows": [
+     [
+      "Exposure",
+      "Internal",
+      "Node IP and port",
+      "External IP"
+     ],
+     [
+      "Cloud cost",
+      "None",
+      "None",
+      "One LB per Service"
+     ],
+     [
+      "Production use",
+      "Internal traffic",
+      "Rarely",
+      "Common"
+     ],
+     [
+      "Builds on",
+      "Nothing",
+      "ClusterIP",
+      "NodePort and ClusterIP"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl expose deploy hello-sample --type=NodePort --port=80 --target-port=8080",
+     "note": "Create a NodePort Service imperatively"
+    },
+    {
+     "cmd": "curl 192.168.1.10:30000",
+     "note": "Reach the app via any node IP and the node port"
+    }
+   ],
+   "follow_ups": [
+    "How would you put a load balancer in front of NodePorts?",
+    "How do you change the allowed port range?"
+   ],
+   "pitfalls": [
+    "Using NodePort for a public site because it is the quickest option"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-nodeport-path.html",
+    "title": "NodePort: same port on every node",
+    "ratio": "960/340"
+   }
+  },
+  {
+   "id": "ch7-loadbalancer",
+   "level": "mid",
+   "question": "How does a LoadBalancer Service work?",
+   "say_first": "A LoadBalancer Service asks the cloud provider for an external load balancer and publishes its address in the Service status. It is the standard way to expose a public TCP or UDP endpoint.",
+   "explain": [
+    "When the Service is created, the cloud controller manager notices type: LoadBalancer and calls the cloud API, for example creating an AWS Network Load Balancer.",
+    "Once the load balancer is ready its address is written back, and kubectl get svc shows it in the EXTERNAL-IP column. Until then it shows pending.",
+    "The cloud LB sends traffic to node ports, so internally it is still NodePort and ClusterIP underneath. That is why the PORT(S) column shows a pair like 80:30287/TCP.",
+    "The downside is cost and sprawl: every Service gets its own load balancer. That is one reason Ingress and Gateway API exist."
+   ],
+   "key_points": [
+    "Needs a cloud controller; bare metal needs something like MetalLB",
+    "Address appears in status.loadBalancer and EXTERNAL-IP",
+    "Built on NodePort, which is built on ClusterIP",
+    "One cloud LB per Service can get expensive"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get svc hello-sample -w",
+     "note": "Watch until EXTERNAL-IP is assigned"
+    },
+    {
+     "cmd": "kubectl describe svc hello-sample",
+     "note": "See load balancer events and ingress address"
+    }
+   ],
+   "follow_ups": [
+    "Why does EXTERNAL-IP stay pending on my cluster?",
+    "How do you avoid one load balancer per app?"
+   ],
+   "pitfalls": [
+    "Assuming it works identically on every platform; annotations and behaviour are provider-specific"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-loadbalancer-provisioning.html",
+    "title": "How a LoadBalancer Service gets its address",
+    "ratio": "960/340"
+   }
+  },
+  {
+   "id": "ch7-externalname",
+   "level": "mid",
+   "question": "What is an ExternalName Service and what are its limits?",
+   "say_first": "ExternalName maps a Service name to an outside DNS name by returning a CNAME. There is no proxying, no cluster IP and no load balancing.",
+   "explain": [
+    "It is a DNS alias, like a contact entry named 'billing' that points at a number held by another company. The cluster only rewrites the name.",
+    "This is useful during migrations: pods call a stable internal name while the real target moves from a managed service to something inside the cluster later, without app changes.",
+    "Because the connection goes straight to the external host, the HTTP Host header and TLS name still refer to the internal Service name. That can trigger 404s or certificate errors, so set the Host header or use the real name where it matters."
+   ],
+   "key_points": [
+    "Declared with type: ExternalName and externalName",
+    "Returns a CNAME record only",
+    "Not selected by pods and has no Endpoints",
+    "Mind Host headers and TLS names for HTTP and HTTPS"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl run -it --rm test --image=alpine -- sh",
+     "note": "Start a throwaway pod to test the alias"
+    },
+    {
+     "cmd": "curl hello-sample-ext -H 'Host: google.com' -L -I",
+     "note": "Call through the alias with the correct Host header"
+    }
+   ],
+   "follow_ups": [
+    "Can an ExternalName point at an IP address?",
+    "How would you use it in a cloud migration?"
+   ],
+   "pitfalls": [
+    "Expecting it to forward or load balance traffic"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-externalname-cname.html",
+    "title": "ExternalName is only a DNS alias",
+    "ratio": "960/340"
+   }
+  },
+  {
+   "id": "ch7-service-to-pod",
+   "level": "mid",
+   "question": "How do Services route traffic to pods?",
+   "say_first": "Labels pick the pods, and kube-proxy on each node programs rules that rewrite traffic sent to the Service IP so it lands on one of those pods.",
+   "explain": [
+    "The control plane keeps an endpoint list of ready pod IPs and ports for each Service. Each node's kube-proxy watches those and writes iptables or IPVS rules.",
+    "When a pod connects to the ClusterIP, the node's rules pick a backend and swap the destination to that pod IP. No separate proxy process sits in the data path for the typical mode.",
+    "Balancing is per connection and effectively round-robin or random, depending on mode. Setting sessionAffinity: ClientIP pins a client to the same pod, giving sticky sessions.",
+    "NodePort and LoadBalancer add more rules in front of the same machinery."
+   ],
+   "key_points": [
+    "Selector produces endpoints; kube-proxy turns them into node rules",
+    "Balancing happens per connection, not per request",
+    "sessionAffinity: ClientIP gives stickiness",
+    "Only ready pods are included"
+   ],
+   "table": {
+    "caption": "Balancing options at the Service layer",
+    "headers": [
+     "Mode",
+     "Behaviour",
+     "When useful"
+    ],
+    "rows": [
+     [
+      "Default",
+      "New connection goes to a backend in rotation or at random",
+      "Stateless apps"
+     ],
+     [
+      "sessionAffinity: ClientIP",
+      "Same client IP keeps hitting the same pod",
+      "Sticky sessions"
+     ],
+     [
+      "Headless Service",
+      "No balancing, client gets all pod IPs",
+      "Client-side balancing, StatefulSets"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get endpointslices -l kubernetes.io/service-name=hello-sample",
+     "note": "See the backing pod addresses"
+    },
+    {
+     "cmd": "kubectl patch svc hello-sample -p '{\"spec\":{\"sessionAffinity\":\"ClientIP\"}}'",
+     "note": "Enable sticky sessions"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between iptables and IPVS mode?",
+    "Why can long-lived gRPC connections balance badly?"
+   ],
+   "pitfalls": [
+    "Believing Services balance each HTTP request; they balance new connections"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-service-to-pod.html",
+    "title": "From Service selector to a pod",
+    "ratio": "960/400"
+   }
+  },
+  {
+   "id": "ch7-what-is-ingress",
+   "level": "mid",
+   "question": "What is an Ingress and what problem does it solve?",
+   "say_first": "An Ingress is an API object holding HTTP and HTTPS routing rules for traffic entering the cluster. One entry point can serve many Services by host and path.",
+   "explain": [
+    "Without it you would need a LoadBalancer per Service. An Ingress is like a building's front desk: one address, and the receptionist directs visitors to the right office based on what they ask for.",
+    "A resource contains rules (host and path mapped to a backend Service), optional TLS configuration with a certificate Secret, and annotations for controller-specific settings.",
+    "An Ingress object alone does nothing. It is only a declaration that a controller must read and implement."
+   ],
+   "key_points": [
+    "Layer 7 routing for HTTP and HTTPS only",
+    "Rules match host and path",
+    "TLS can be terminated at the edge",
+    "Requires an Ingress controller to take effect"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get ingress",
+     "note": "List Ingresses with hosts and addresses"
+    },
+    {
+     "cmd": "kubectl describe ingress web",
+     "note": "Show rules, backends and events"
+    },
+    {
+     "cmd": "kubectl create ingress web --rule='example.com/api*=hello-sample:80'",
+     "note": "Create a simple Ingress imperatively"
+    }
+   ],
+   "follow_ups": [
+    "Can Ingress route TCP or UDP?",
+    "How do you serve multiple hostnames with one Ingress?"
+   ],
+   "pitfalls": [
+    "Thinking creating an Ingress resource is enough without installing a controller"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-ingress-front-desk.html",
+    "title": "One entry point, many Services",
+    "ratio": "960/340"
+   }
+  },
+  {
+   "id": "ch7-ingress-controller",
+   "level": "mid",
+   "question": "What is an Ingress controller and which ones do you know?",
+   "say_first": "The controller is the running proxy that implements Ingress rules by watching the API and configuring itself. Maintained choices include Traefik, HAProxy, Contour and Kong plus cloud-provider controllers; the community ingress-nginx is retired, and new clusters should prefer a Gateway API implementation.",
+   "explain": [
+    "Ingress is the written order form, and the controller is the kitchen that cooks it. You can swap kitchens, and the orders stay the same.",
+    "The controller gives you a single entry, host and path routing, TLS termination, load balancing and hooks for WAF, authentication or CDN integration.",
+    "Pick based on needs: NGINX for ubiquity, Traefik for dynamic configuration, HAProxy for high throughput, Contour for Envoy features like gRPC and HTTP/2, Kong for API-gateway features such as rate limiting.",
+    "Current status: the community ingress-nginx controller was retired, with best-effort maintenance ending in March 2026 and its repository now archived. Existing installs keep running, but there are no more fixes or security patches, so do not start new projects on it. Kubernetes recommends moving to Gateway API, and the ingress2gateway tool converts existing Ingress resources. The Ingress API itself is frozen, not removed. Alternatives: a Gateway API implementation (Envoy Gateway, Istio, Cilium, Traefik, NGINX Gateway Fabric), or another maintained Ingress controller such as Traefik or HAProxy. A separate vendor-supported NGINX controller from F5 also exists; confirm which one you run."
+   ],
+   "key_points": [
+    "Controller is a Deployment or DaemonSet exposed through a LoadBalancer or NodePort",
+    "Selected using ingressClassName",
+    "Features beyond basics come from vendor annotations",
+    "Cloud providers offer managed controllers backed by their load balancers"
+   ],
+   "table": {
+    "caption": "Popular Ingress controllers",
+    "headers": [
+     "Controller",
+     "Built on",
+     "Known for"
+    ],
+    "rows": [
+     [
+      "NGINX",
+      "NGINX",
+      "Widely adopted, flexible"
+     ],
+     [
+      "Traefik",
+      "Traefik proxy",
+      "Lightweight, dynamic config, auto certificates"
+     ],
+     [
+      "HAProxy",
+      "HAProxy",
+      "High performance, reliability"
+     ],
+     [
+      "Contour",
+      "Envoy",
+      "HTTP/2, gRPC, WebSockets"
+     ],
+     [
+      "Kong",
+      "Kong gateway",
+      "API features: auth, rate limits"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get ingressclass",
+     "note": "Show controllers registered in the cluster"
+    },
+    {
+     "cmd": "kubectl get gatewayclass,gateway,httproute -A",
+     "note": "Gateway API equivalent: which implementation is installed, and what it routes"
+    }
+   ],
+   "follow_ups": [
+    "How do you run two controllers in one cluster?",
+    "What is an IngressClass?"
+   ],
+   "pitfalls": [
+    "Naming only one product; interviewers want to hear that the choice depends on features and operations"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-ingress-controller-roles.html",
+    "title": "Ingress rules vs the controller that runs them",
+    "ratio": "960/340"
+   }
+  },
+  {
+   "id": "ch7-controller-internals",
+   "level": "senior",
+   "question": "How does an Ingress controller work internally?",
+   "say_first": "It watches the API server for Ingress, Service and endpoint changes, renders them into its proxy configuration, and then proxies live requests to pod IPs.",
+   "explain": [
+    "Step one is the watch loop. Any create, update or delete of an Ingress triggers the controller to rebuild its routing config, usually reloading or hot-updating the proxy.",
+    "Step two is serving. The proxy terminates TLS if configured, reads the Host header and path, picks the matching rule and chooses a backend from the Service's endpoints.",
+    "Most controllers send directly to pod IPs from the endpoint list rather than through the ClusterIP, which allows their own balancing algorithm such as round-robin or least connections.",
+    "It also exports metrics and access logs, which is where you look when debugging 404s and 502s.",
+    "Current status: the community ingress-nginx controller was retired, with best-effort maintenance ending in March 2026 and its repository now archived. Existing installs keep running, but there are no more fixes or security patches, so do not start new projects on it. Kubernetes recommends moving to Gateway API, and the ingress2gateway tool converts existing Ingress resources. The Ingress API itself is frozen, not removed. Alternatives: a Gateway API implementation (Envoy Gateway, Istio, Cilium, Traefik, NGINX Gateway Fabric), or another maintained Ingress controller such as Traefik or HAProxy. A separate vendor-supported NGINX controller from F5 also exists; confirm which one you run."
+   ],
+   "key_points": [
+    "Reconciliation loop driven by API watches",
+    "Config is regenerated from Ingress, Service and endpoint data",
+    "Proxies to pod IPs, not necessarily via ClusterIP",
+    "Exposes logs and metrics for troubleshooting"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl describe httproute web",
+     "note": "Status conditions show whether the route was Accepted and its backends resolved (for a classic controller, read its pod logs instead)"
+    }
+   ],
+   "follow_ups": [
+    "Why can a controller reload cause dropped connections?",
+    "How would you debug a 502 from the controller?"
+   ],
+   "pitfalls": [
+    "Describing it as just a load balancer; it also watches, configures and terminates TLS"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-controller-internals.html",
+    "title": "Inside an Ingress controller",
+    "ratio": "960/400"
+   }
+  },
+  {
+   "id": "ch7-ingress-endpoints",
+   "level": "senior",
+   "question": "How does an Ingress find the right pods, and what if there are none?",
+   "say_first": "The rule names a Service, and the Service's endpoints list the live pod addresses. If that list is empty the controller has nowhere to send the request and returns 503.",
+   "explain": [
+    "Chain of lookup: host and path to a rule, rule to a backend Service, Service to its endpoints, endpoint to a pod IP and port.",
+    "Endpoints are maintained automatically as pods start, become ready, or terminate. Modern clusters store them as EndpointSlices, but the idea is the same.",
+    "An empty list usually means the selector does not match pod labels, pods are not ready, or the Deployment is scaled to zero. A 503 from the controller is the classic symptom."
+   ],
+   "key_points": [
+    "Ingress to Service to endpoints to pod",
+    "Updated automatically with pod readiness",
+    "Empty endpoints give 503 Service Unavailable",
+    "Check label match and readiness first"
+   ],
+   "table": {
+    "caption": "Common Ingress error codes",
+    "headers": [
+     "Code",
+     "Typical meaning",
+     "First check"
+    ],
+    "rows": [
+     [
+      "404",
+      "No rule matched host or path",
+      "Ingress host, path and class"
+     ],
+     [
+      "502",
+      "Backend pod reachable but bad response or reset",
+      "Pod logs, port number"
+     ],
+     [
+      "503",
+      "No ready endpoints",
+      "kubectl get endpointslices, selector, readiness"
+     ],
+     [
+      "504",
+      "Backend too slow",
+      "Timeouts, app latency"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get endpointslices -l kubernetes.io/service-name=web",
+     "note": "Empty ENDPOINTS column explains a 503"
+    },
+    {
+     "cmd": "kubectl get pods --show-labels",
+     "note": "Compare labels with the Service selector"
+    }
+   ],
+   "follow_ups": [
+    "How would you tell a 503 from a 502?",
+    "What does a 404 from the controller usually mean?"
+   ],
+   "pitfalls": [
+    "Debugging the Ingress object first when the Service has no endpoints"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-ingress-endpoints-503.html",
+    "title": "Ingress to pod lookup and the empty case",
+    "ratio": "960/340"
+   }
+  },
+  {
+   "id": "ch7-ingress-traffic-flow",
+   "level": "senior",
+   "question": "Walk me through a request from a browser to a pod through an Ingress.",
+   "say_first": "DNS maps the hostname to the entry point, the Ingress controller matches host and path, looks up the backend endpoints, proxies to a pod, and the response returns the same way.",
+   "explain": [
+    "First the browser resolves the hostname. The answer is the address of the load balancer in front of the controller.",
+    "The controller picks the matching rule using host and path, and decrypts TLS if it is the termination point.",
+    "It reads the Service's endpoints through the API data it already watches and chooses a pod using its balancing algorithm.",
+    "The pod runs the application logic, perhaps calling a database or cache, and the response flows back through the controller to the client."
+   ],
+   "key_points": [
+    "Five hops: DNS, load balancer, controller, pod, back",
+    "TLS usually terminates at the controller",
+    "Endpoint data is cached from watches",
+    "The same path in reverse carries the response"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-ingress-sequence.html",
+    "title": "Request path through an Ingress",
+    "ratio": "1000/480"
+   },
+   "follow_ups": [
+    "Where would you add a WAF or CDN?",
+    "What changes if TLS terminates at the load balancer?"
+   ],
+   "pitfalls": [
+    "Skipping DNS and the cloud load balancer in front of the controller"
+   ]
+  },
+  {
+   "id": "ch7-service-choice",
+   "level": "mid",
+   "question": "How do you decide between ClusterIP, NodePort, LoadBalancer, ExternalName and Ingress?",
+   "say_first": "Start with ClusterIP for anything internal, use an Ingress or Gateway for public HTTP, a LoadBalancer for raw TCP or UDP, NodePort only for testing, and ExternalName to alias outside hosts.",
+   "explain": [
+    "Ask who the caller is. Inside the cluster means ClusterIP. Outside means you need an entry point, and the protocol decides the rest.",
+    "For many HTTP apps behind one hostname an Ingress saves money because a single load balancer fronts all of them.",
+    "If pods need to call an external system by a stable internal name, use ExternalName."
+   ],
+   "key_points": [
+    "Default to the narrowest exposure that works",
+    "One Ingress beats many LoadBalancers for HTTP",
+    "NodePort is a test tool, not a public design",
+    "ExternalName is only a DNS alias"
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-service-decision.html",
+    "title": "Choosing a Service type",
+    "ratio": "1000/640"
+   },
+   "follow_ups": [
+    "How does the answer change on bare metal?",
+    "How would you expose a database port?"
+   ],
+   "pitfalls": [
+    "Giving every microservice its own LoadBalancer"
+   ]
+  },
+  {
+   "id": "ch7-gateway-api",
+   "level": "senior",
+   "question": "What is the Gateway API and how does it improve on Ingress?",
+   "say_first": "Gateway API is the current standard for cluster traffic (Gateway, GatewayClass and HTTPRoute are GA at v1) and the Kubernetes-recommended replacement for Ingress, especially now that the community ingress-nginx is retired.",
+   "explain": [
+    "Ingress squeezes everything into one object and pushes extras into vendor annotations. Gateway API splits concerns: GatewayClass says which implementation, Gateway defines listeners, and HTTPRoute holds the app team's routing rules.",
+    "This mirrors real organisations: a platform team owns gateways, application teams attach routes without touching shared infrastructure.",
+    "Routes support header and query matching and traffic splitting natively, which is useful for canary releases. Resources also carry rich status fields for troubleshooting.",
+    "Implementations include Envoy Gateway, Istio, Cilium, Traefik, NGINX Gateway Fabric and Kong's operator; pick one from the Gateway API implementations list and check its conformance level.",
+    "The Ingress API is frozen rather than removed, so existing Ingress objects keep working, but new features land only in Gateway API.",
+    "Migration path from a retired ingress-nginx: run ingress2gateway against your existing Ingress resources to generate Gateway and HTTPRoute manifests, review the output (annotations rarely map one to one), deploy a Gateway API implementation beside the old controller, shift traffic gradually with DNS or weights, then remove the old controller."
+   ],
+   "key_points": [
+    "GatewayClass, Gateway, HTTPRoute are the core resources",
+    "Role separation between infra and app teams",
+    "Header, query and weighted routing built in",
+    "Less reliance on annotations and better status reporting"
+   ],
+   "table": {
+    "caption": "Classic Ingress versus Gateway API",
+    "headers": [
+     "Feature",
+     "Classic Ingress",
+     "Gateway API"
+    ],
+    "rows": [
+     [
+      "Routing",
+      "Host and path",
+      "Headers, query params, traffic splitting"
+     ],
+     [
+      "Resources",
+      "One Ingress object",
+      "GatewayClass, Gateway, HTTPRoute and more"
+     ],
+     [
+      "Extensibility",
+      "Vendor annotations",
+      "Native, consistent extension points"
+     ],
+     [
+      "Status",
+      "Limited",
+      "Rich per-resource status"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get gatewayclass,gateway,httproute -A",
+     "note": "List all Gateway API resources"
+    },
+    {
+     "cmd": "kubectl describe httproute web",
+     "note": "Read route conditions showing whether it attached"
+    },
+    {
+     "cmd": "ingress2gateway print --providers ingress-nginx",
+     "note": "Convert existing Ingress resources to Gateway and HTTPRoute manifests for review"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch7-gateway-roles.html",
+    "title": "Gateway API resources and owners",
+    "ratio": "1000/304"
+   },
+   "follow_ups": [
+    "How would you do a 90/10 canary with HTTPRoute?",
+    "Can both Ingress and Gateway API coexist?",
+    "How would you migrate a cluster off ingress-nginx with no downtime?"
+   ],
+   "pitfalls": [
+    "Calling it a drop-in rename of Ingress; it is a different resource model"
+   ]
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch7-gateway-roles.html",
+  "diagrams/ch7-ingress-sequence.html",
+  "diagrams/ch7-service-decision.html",
+  "diagrams/ch7-service-layers.html",
+  "diagrams/ch7-clusterip-dns.html",
+  "diagrams/ch7-headless-vs-normal.html",
+  "diagrams/ch7-nodeport-path.html",
+  "diagrams/ch7-loadbalancer-provisioning.html",
+  "diagrams/ch7-externalname-cname.html",
+  "diagrams/ch7-service-to-pod.html",
+  "diagrams/ch7-ingress-front-desk.html",
+  "diagrams/ch7-ingress-controller-roles.html",
+  "diagrams/ch7-controller-internals.html",
+  "diagrams/ch7-ingress-endpoints-503.html"
+ ]
+}

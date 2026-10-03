@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stuck Terminating</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Troubleshooting · Deletion</p>
+    <h1>Stuck Terminating</h1>
+
+    <svg viewBox="0 0 888 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch16-terminating-finalizers-title ch16-terminating-finalizers-desc">
+<title id="ch16-terminating-finalizers-title">Stuck Terminating</title>
+<desc id="ch16-terminating-finalizers-desc">Deletion sets a timestamp, waits out the grace period, then needs every finalizer cleared before the object is removed. An hour of Terminating usually means a finalizer or a volume or node problem.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-ink" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2d3142"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="40" y="48" width="160" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="56" width="48" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="72.0" y="65" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DELETE</text><text x="120.0" y="88" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Delete requested</text><text x="120.0" y="104" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">deletionTimestamp set</text><text x="120.0" y="118" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Pod still listed</text><rect x="256" y="48" width="160" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="264" y="56" width="84" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="306.0" y="65" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GRACE PERIOD</text><text x="336.0" y="88" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">SIGTERM then SIGKILL</text><text x="336.0" y="104" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">default 30 s</text><text x="336.0" y="118" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">app should exit</text><rect x="472" y="48" width="160" height="96" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="480" y="56" width="72" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="516.0" y="65" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FINALIZERS</text><text x="552.0" y="88" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Finalizers clear</text><text x="552.0" y="104" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">each controller removes</text><text x="552.0" y="118" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">its own entry</text><rect x="688" y="48" width="160" height="96" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="696" y="56" width="40" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="716.0" y="65" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DONE</text><text x="768.0" y="88" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Object removed</text><text x="768.0" y="104" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Pod leaves the API</text><text x="768.0" y="118" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">name is free again</text><path d="M200 96 L256 96" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="228" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">start</text><path d="M416 96 L472 96" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="444" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">exited</text><path d="M632 96 L688 96" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="660" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">all clear</text><path d="M552 144 L552 172 Q552 180 544 180 L344 180 Q336 180 336 188 L336 216" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M552 180 L552 216" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M552 180 L760 180 Q768 180 768 188 L768 216" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="564" y="172" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">stuck for an hour?</text><rect x="256" y="216" width="160" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="264" y="224" width="56" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="292.0" y="233" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAUSE 1</text><text x="336.0" y="256" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Controller is gone</text><text x="336.0" y="272" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">finalizer never cleared</text><text x="336.0" y="286" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">patch it to null</text><rect x="472" y="216" width="160" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="480" y="224" width="56" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="508.0" y="233" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAUSE 2</text><text x="552.0" y="256" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Volume stuck</text><text x="552.0" y="272" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">unmount or detach stuck</text><text x="552.0" y="286" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">check the storage</text><rect x="688" y="216" width="160" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="696" y="224" width="56" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="724.0" y="233" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAUSE 3</text><text x="768.0" y="256" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Node unresponsive</text><text x="768.0" y="272" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">kubelet cannot confirm</text><text x="768.0" y="286" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">stop; check the node</text><rect x="40" y="216" width="160" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="224" width="76" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="86.0" y="233" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LAST RESORT</text><text x="120.0" y="256" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Force delete</text><text x="120.0" y="272" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">grace period 0</text><text x="120.0" y="286" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">skips all cleanup</text><path d="M256 260 L200 260" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="228" y="252" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">if safe</text><line x1="32" y1="320" x2="856" y2="320" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="336" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="332" x2="148" y2="332" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="335" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="199" y="328" width="12" height="8" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="219" y="335" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">usual blocker</text>
+    </svg>
+  </div>
+</body>
+</html>

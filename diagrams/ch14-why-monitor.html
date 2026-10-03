@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why monitor Kubernetes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Monitoring · Observability</p>
+    <h1>Why monitor Kubernetes</h1>
+    <svg viewBox="0 0 936 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch14-why-monitor-title ch14-why-monitor-desc">
+      <title id="ch14-why-monitor-title">Why monitor Kubernetes</title>
+      <desc id="ch14-why-monitor-desc">Pods and nodes constantly change; monitoring records their metrics automatically, which supports early detection, right-sizing, troubleshooting history and autoscaling.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M200,188 L308,188" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M484,188 L564,188 Q572,188 572,180 L572,76 Q572,68 580,68 L660,68" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M484,188 L564,188 Q572,188 572,180 L572,156 Q572,148 580,148 L660,148" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M484,188 L564,188 Q572,188 572,196 L572,220 Q572,228 580,228 L660,228" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M484,188 L564,188 Q572,188 572,196 L572,300 Q572,308 580,308 L660,308" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="254" y="182" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EMIT</text>
+<text x="528" y="182" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FEEDS</text>
+<text x="40" y="320" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">A POD THAT MISBEHAVED FIVE MINUTES AGO MAY ALREADY BE REPLACED</text>
+<rect x="40" y="152" width="160" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="152" width="160" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="120.0" y="186.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pods and nodes</text><text x="120.0" y="202.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">start, die, move, rescale</text>
+<rect x="308" y="152" width="176" height="72" rx="6" fill="#f5f5f5"/><rect x="308" y="152" width="176" height="72" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="396.0" y="186.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Monitoring</text><text x="396.0" y="202.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">records it automatically</text>
+<rect x="660" y="40" width="248" height="56" rx="6" fill="#f5f5f5"/><rect x="660" y="40" width="248" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="784.0" y="66.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Detect early</text><text x="784.0" y="82.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">alert before users notice</text>
+<rect x="660" y="120" width="248" height="56" rx="6" fill="#f5f5f5"/><rect x="660" y="120" width="248" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="784.0" y="146.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Right-size</text><text x="784.0" y="162.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">requests, limits, cost</text>
+<rect x="660" y="200" width="248" height="56" rx="6" fill="#f5f5f5"/><rect x="660" y="200" width="248" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="784.0" y="226.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Troubleshoot</text><text x="784.0" y="242.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">history of Pods now gone</text>
+<rect x="660" y="280" width="248" height="56" rx="6" fill="#f5f5f5"/><rect x="660" y="280" width="248" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="784.0" y="306.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Autoscale</text><text x="784.0" y="322.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">live numbers for HPA</text>
+<line x1="30" y1="372" x2="906" y2="372" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="388" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><rect x="120" y="380" width="12" height="12" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="140" y="389" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">FOCAL</text><rect x="205.0" y="380" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="225.0" y="389" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">COMPONENT</text>
+    </svg>
+  </div>
+</body>
+</html>

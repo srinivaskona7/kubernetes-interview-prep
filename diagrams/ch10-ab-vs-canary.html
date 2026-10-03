@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canary checks health, A/B checks value</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Deployment strategy</p>
+    <h1>Canary checks health, A/B checks value</h1>
+
+    <svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch10-ab-vs-canary-title ch10-ab-vs-canary-desc">
+      <title id="ch10-ab-vs-canary-title">Canary checks health, A/B checks value</title>
+      <desc id="ch10-ab-vs-canary-desc">Two columns compare canary and A/B testing by intent, how users are split, and how results are judged.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker></defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect x="60" y="50" width="380" height="64" rx="6" fill="#f5f5f5"/><rect x="60" y="50" width="380" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="68" y="58" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="89" y="67" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">INTENT</text><text x="250" y="84" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Is the build healthy?</text><text x="250" y="100" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">smoke detector, hope for calm</text><rect x="560" y="50" width="380" height="64" rx="6" fill="#f5f5f5"/><rect x="560" y="50" width="380" height="64" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="568" y="58" width="42" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.8" stroke-width="0.8"/><text x="589" y="67" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">INTENT</text><text x="750" y="84" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Is the behaviour better?</text><text x="750" y="100" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">taste test, want a difference</text><path d="M250 114 V160" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M750 114 V160" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="60" y="160" width="380" height="64" rx="6" fill="#f5f5f5"/><rect x="60" y="160" width="380" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="68" y="168" width="37" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="86.5" y="177" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SPLIT</text><text x="250" y="194" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Small share of traffic</text><text x="250" y="210" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">technical trial</text><rect x="560" y="160" width="380" height="64" rx="6" fill="#f5f5f5"/><rect x="560" y="160" width="380" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="568" y="168" width="37" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="586.5" y="177" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SPLIT</text><text x="750" y="194" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Rules: region, header, cohort</text><text x="750" y="210" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">or random buckets</text><path d="M250 224 V270" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M750 224 V270" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="60" y="270" width="380" height="64" rx="6" fill="#f5f5f5"/><rect x="60" y="270" width="380" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="68" y="278" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="89" y="287" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RESULT</text><text x="250" y="304" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">No news is good news</text><text x="250" y="320" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">engineers judge health</text><rect x="560" y="270" width="380" height="64" rx="6" fill="#f5f5f5"/><rect x="560" y="270" width="380" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="568" y="278" width="42" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.8" stroke-width="0.8"/><text x="589" y="287" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RESULT</text><text x="750" y="304" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Measured per variant</text><text x="750" y="320" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">product and marketing care</text><line x1="30" y1="360" x2="970" y2="360" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="376" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="372" x2="148" y2="372" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="375" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="220" y="366" width="28" height="12" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="256" y="375" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">A/B intent</text>
+    </svg>
+  </div>
+</body>
+</html>

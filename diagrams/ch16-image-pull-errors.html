@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image pull errors</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Troubleshooting · Images</p>
+    <h1>Image pull errors</h1>
+
+    <svg viewBox="0 0 736 384" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch16-image-pull-errors-title ch16-image-pull-errors-desc">
+<title id="ch16-image-pull-errors-title">Image pull errors</title>
+<desc id="ch16-image-pull-errors-desc">ErrImagePull is the failed attempt; ImagePullBackOff is the wait before the retry. The Events section of describe names the cause: wrong name or tag, missing credentials, or an unreachable registry.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-ink" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2d3142"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="40" y="72" width="176" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="80" width="56" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="76.0" y="89" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">KUBELET</text><text x="128.0" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pull attempt</text><text x="128.0" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">requests the image</text><text x="128.0" y="142" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">from the registry</text><rect x="280" y="72" width="176" height="88" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><rect x="288" y="80" width="96" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-opacity="0.4" stroke-width="0.8"/><text x="336.0" y="89" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ATTEMPT FAILED</text><text x="368.0" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">ErrImagePull</text><text x="368.0" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">one failed try</text><text x="368.0" y="142" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">the error itself</text><rect x="520" y="72" width="176" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="528" y="80" width="56" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="556.0" y="89" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WAITING</text><text x="608.0" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">ImagePullBackOff</text><text x="608.0" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">delay grows each time</text><text x="608.0" y="142" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">status, not the cause</text><path d="M216 116 L280 116" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="248" y="108" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">fails</text><path d="M456 116 L520 116" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="488" y="108" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">waits</text><path d="M608 72 L608 48 Q608 40 600 40 L136 40 Q128 40 128 48 L128 72" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="368" y="32" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">retry after the delay</text><path d="M368 160 L368 192 Q368 200 360 200 L136 200 Q128 200 128 208 L128 232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><text x="380" y="192" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">kubectl describe pod: Events</text><path d="M368 200 L368 232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M368 200 L600 200 Q608 200 608 208 L608 232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="40" y="232" width="176" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="48" y="240" width="56" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="76.0" y="249" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAUSE 1</text><text x="128.0" y="272" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Wrong name or tag</text><text x="128.0" y="288" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">typo, or tag missing</text><text x="128.0" y="302" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">use a pinned version</text><rect x="280" y="232" width="176" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="288" y="240" width="56" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="316.0" y="249" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAUSE 2</text><text x="368.0" y="272" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Missing credentials</text><text x="368.0" y="288" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">private registry</text><text x="368.0" y="302" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">imagePullSecrets</text><rect x="520" y="232" width="176" height="88" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><rect x="528" y="240" width="56" height="12" rx="2" fill="transparent" stroke="#2d3142" stroke-opacity="0.4" stroke-width="0.8"/><text x="556.0" y="249" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAUSE 3</text><text x="608.0" y="272" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Registry unreachable</text><text x="608.0" y="288" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">timeouts: proxy, firewall</text><text x="608.0" y="302" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">or registry outage</text><line x1="32" y1="344" x2="704" y2="344" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="32" y="360" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><line x1="120" y1="356" x2="148" y2="356" stroke="#4f5d75" stroke-width="1.2"/><text x="156" y="359" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">flow</text><rect x="199" y="352" width="12" height="8" rx="2" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/><text x="219" y="359" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">the failure</text>
+    </svg>
+  </div>
+</body>
+</html>

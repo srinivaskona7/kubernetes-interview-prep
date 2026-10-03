@@ -1,0 +1,799 @@
+{
+ "number": 6,
+ "title": "Essentials of Kubernetes Networking",
+ "part": "Part 3 · Networking, Services, and Security",
+ "tagline": "How Pods find and reach each other: IPs, DNS, CNI plugins and kube-proxy",
+ "overview": "Kubernetes gives every Pod its own IP and expects all Pods to reach each other without NAT. This chapter walks from that basic model through Pod-to-Pod paths, DNS, CNI plugins and overlays, and finishes with kube-proxy, the component that turns a Service address into a real Pod.",
+ "topics": [
+  {
+   "id": "ch6-how-networking-works",
+   "level": "junior",
+   "question": "How does Kubernetes networking work at a high level?",
+   "say_first": "Every Pod gets its own IP and can reach every other Pod directly. On top of that flat network sit Services for stable addresses, DNS for names, kube-proxy for load balancing, network policies for restrictions and a CNI plugin that builds the plumbing.",
+   "explain": [
+    "Picture the cluster as a city. Each Pod is a house with its own street address (its IP). The rule of the city is that any house can send mail to any other house directly, with no address translation in between.",
+    "Houses come and go, so nobody memorises addresses. Services are like a permanent company switchboard number that forwards to whichever houses are currently occupied, and DNS is the phone book that turns names into those numbers.",
+    "Ingress (and the newer Gateway API) is the front gate for traffic coming from outside. Network policies are the locks on the doors. The CNI plugin is the construction crew that laid the roads in the first place."
+   ],
+   "key_points": [
+    "Flat model: every Pod has a unique cluster-wide IP, no NAT between Pods",
+    "Services give a stable virtual IP and load balancing over changing Pods",
+    "DNS (CoreDNS) maps Service names to those virtual IPs",
+    "kube-proxy programs the node rules that make Service IPs work",
+    "Network policies restrict who may talk to whom; CNI plugins build the network",
+    "Ingress or Gateway API handles HTTP traffic entering the cluster"
+   ],
+   "table": {
+    "caption": "The building blocks and the job each one does",
+    "headers": [
+     "Component",
+     "Job",
+     "Analogy"
+    ],
+    "rows": [
+     [
+      "Pod IP",
+      "Unique address for one Pod",
+      "House address"
+     ],
+     [
+      "Service",
+      "Stable virtual IP over a set of Pods",
+      "Company switchboard number"
+     ],
+     [
+      "CoreDNS",
+      "Turns names into Service IPs",
+      "Phone book"
+     ],
+     [
+      "kube-proxy",
+      "Implements Service routing on each node",
+      "Switchboard operator"
+     ],
+     [
+      "CNI plugin",
+      "Creates Pod network interfaces and routes",
+      "Road construction crew"
+     ],
+     [
+      "NetworkPolicy",
+      "Allow or deny Pod-to-Pod traffic",
+      "Door locks"
+     ],
+     [
+      "Ingress / Gateway API",
+      "Brings external HTTP(S) traffic in",
+      "Front gate"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get pods -o wide",
+     "note": "shows each Pod's IP and the node it runs on"
+    },
+    {
+     "cmd": "kubectl get svc,endpoints",
+     "note": "lists Services with their virtual IPs and the Pod IPs behind them"
+    }
+   ],
+   "follow_ups": [
+    "How do Pods on different nodes talk to each other?",
+    "What is the difference between a Pod IP and a Service IP?"
+   ],
+   "pitfalls": [
+    "Saying containers use port mapping on the node like plain Docker; each Pod has its own IP instead"
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-how-networking-works.html",
+    "title": "Pod networking: flat IPs plus Services, DNS and CNI",
+    "ratio": "960/520"
+   }
+  },
+  {
+   "id": "ch6-containers-in-one-pod",
+   "level": "junior",
+   "question": "How do containers inside the same Pod communicate?",
+   "say_first": "They share one network namespace, so they simply talk over localhost (127.0.0.1) on different ports.",
+   "explain": [
+    "Think of one Pod as one small apartment with several roommates. They share a single front door and phone line, so a roommate reaches another just by shouting across the room: localhost.",
+    "Because the namespace is shared, two containers in a Pod cannot both listen on the same port, and the Pod has only one IP that all of them present to the outside world.",
+    "This is why tightly coupled helpers such as a web server in front of an app process, or a logging sidecar, belong in the same Pod."
+   ],
+   "key_points": [
+    "Shared network namespace means shared IP, ports and loopback interface",
+    "Traffic never leaves the Pod, so it is fast and needs no routing",
+    "Port clashes between containers in one Pod are a real failure mode",
+    "Use a single Pod only for tightly coupled processes"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl exec mypod -c sidecar -- wget -qO- http://127.0.0.1:5000",
+     "note": "reaches the app container's port from a sidecar via localhost"
+    },
+    {
+     "cmd": "kubectl get pod mypod -o jsonpath='{.spec.containers[*].name}'",
+     "note": "lists the containers that share this Pod's network"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-containers-in-one-pod.html",
+    "title": "Containers in one Pod talk over localhost",
+    "ratio": "960/432"
+   },
+   "follow_ups": [
+    "What happens if two containers in a Pod use the same port?",
+    "How do two separate Pods on the same node talk?"
+   ],
+   "pitfalls": [
+    "Claiming containers in a Pod need a Service to find one another"
+   ]
+  },
+  {
+   "id": "ch6-pod-to-pod-paths",
+   "level": "junior",
+   "question": "How do Pods communicate on the same node and across different nodes?",
+   "say_first": "Pods always use each other's Pod IPs. On one node traffic stays local on a virtual bridge; across nodes the CNI-built cluster network routes or tunnels the packets to the right node.",
+   "explain": [
+    "Same node: two Pods are like two houses on one street. Each has its own namespace and IP, and a virtual bridge on the node connects them, so packets never leave the machine.",
+    "Different nodes: now it is a trip between towns. The sender uses the destination Pod IP, and the cluster network (set up by the CNI plugin) either routes it directly or wraps it in an overlay tunnel to the other node, which hands it to the Pod.",
+    "From the application's point of view both cases look identical: connect to an IP and port. Usually the app uses a Service or DNS name instead of a raw Pod IP, because Pod IPs change."
+   ],
+   "key_points": [
+    "Each Pod has its own namespace, so same-node traffic still uses Pod IPs, not localhost",
+    "No NAT: the receiver sees the real source Pod IP",
+    "Cross-node reachability is provided by the CNI plugin, not by kube-proxy",
+    "Prefer Services over Pod IPs, since Pods are replaced often"
+   ],
+   "table": {
+    "caption": "Three communication scenarios compared",
+    "headers": [
+     "Scenario",
+     "Address used",
+     "Path"
+    ],
+    "rows": [
+     [
+      "Containers in one Pod",
+      "127.0.0.1",
+      "Shared loopback, no network"
+     ],
+     [
+      "Pods on one node",
+      "Destination Pod IP",
+      "Virtual bridge on the node"
+     ],
+     [
+      "Pods on different nodes",
+      "Destination Pod IP (or Service)",
+      "Routed or tunnelled over the cluster network"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl exec pod-a -- curl -s http://10.244.1.7:80",
+     "note": "calls another Pod directly by IP (replace with a real Pod IP)"
+    },
+    {
+     "cmd": "kubectl get pods -o wide",
+     "note": "check which node each Pod landed on"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-pod-to-pod-paths.html",
+    "title": "Pod to Pod: same node versus another node",
+    "ratio": "960/432"
+   },
+   "follow_ups": [
+    "What is an overlay network?",
+    "Why not hard-code Pod IPs?"
+   ],
+   "pitfalls": [
+    "Saying cross-node traffic goes through kube-proxy; kube-proxy handles Service addresses only"
+   ]
+  },
+  {
+   "id": "ch6-dns-in-cluster",
+   "level": "junior",
+   "question": "How does DNS work inside a Kubernetes cluster?",
+   "say_first": "A built-in DNS service, normally CoreDNS, gives every Service a name like service.namespace.svc.cluster.local, so Pods find each other by name and not by IP.",
+   "explain": [
+    "DNS is the phone book. Each Pod is automatically configured to ask the cluster DNS first, so looking up web-svc just works.",
+    "Names follow a fixed pattern: service name, namespace, then svc and the cluster domain (cluster.local by default). Inside the same namespace the short name is enough; to reach another namespace use service.namespace.",
+    "Anything outside the cluster domain, such as a public website, is forwarded to the upstream resolver the node uses."
+   ],
+   "key_points": [
+    "Service FQDN pattern: <service>.<namespace>.svc.cluster.local",
+    "Short names work inside the same namespace through search domains",
+    "Records are created and removed automatically as Services come and go",
+    "Names outside the cluster domain are forwarded upstream"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default.svc.cluster.local",
+     "note": "resolves the API server Service from a throwaway Pod"
+    },
+    {
+     "cmd": "kubectl exec mypod -- cat /etc/resolv.conf",
+     "note": "shows the cluster DNS IP and search domains the Pod uses"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-dns-in-cluster.html",
+    "title": "How a Pod resolves names in the cluster",
+    "ratio": "960/464"
+   },
+   "follow_ups": [
+    "What is the difference between kube-dns and CoreDNS?",
+    "What are the Pod dnsPolicy options?"
+   ],
+   "pitfalls": [
+    "Forgetting the namespace when calling a Service in another namespace"
+   ]
+  },
+  {
+   "id": "ch6-dns-policies",
+   "level": "mid",
+   "question": "What DNS policies can a Pod use, and when would you change the default?",
+   "say_first": "The Pod field dnsPolicy chooses how DNS is set up: ClusterFirst is the default, Default inherits the node's settings, ClusterFirstWithHostNet is for host-networked Pods, and None lets you define everything yourself with dnsConfig.",
+   "explain": [
+    "Most Pods should keep ClusterFirst: ask cluster DNS first, fall back to the outside world.",
+    "Use Default when a Pod should behave exactly like its node and does not need cluster names.",
+    "A Pod with hostNetwork: true would silently drop to node DNS under ClusterFirst, so give it ClusterFirstWithHostNet to keep cluster name lookup.",
+    "None hands full control to you: supply nameservers, search domains and options in dnsConfig."
+   ],
+   "key_points": [
+    "The name Default is misleading: it is not the default policy, ClusterFirst is",
+    "hostNetwork Pods need ClusterFirstWithHostNet to resolve Services",
+    "None requires dnsConfig, otherwise the Pod has no resolver",
+    "dnsConfig can also be added on top of ClusterFirst for extra options"
+   ],
+   "table": {
+    "caption": "dnsPolicy values",
+    "headers": [
+     "Policy",
+     "Behaviour",
+     "Typical use"
+    ],
+    "rows": [
+     [
+      "ClusterFirst",
+      "Cluster DNS first, then upstream",
+      "Almost all workloads (default)"
+     ],
+     [
+      "Default",
+      "Uses the node's resolver settings",
+      "Pods that need node-like DNS only"
+     ],
+     [
+      "ClusterFirstWithHostNet",
+      "ClusterFirst for hostNetwork Pods",
+      "Node agents that also call Services"
+     ],
+     [
+      "None",
+      "Nothing automatic, use dnsConfig",
+      "Custom DNS servers and search domains"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl explain pod.spec.dnsPolicy",
+     "note": "documents the accepted values"
+    }
+   ],
+   "follow_ups": [
+    "How would you point one Pod at a custom DNS server?",
+    "How do you debug DNS failures in a Pod?"
+   ],
+   "pitfalls": [
+    "Assuming dnsPolicy Default means cluster DNS",
+    "Setting None without any dnsConfig"
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-dns-policies.html",
+    "title": "Choosing a Pod dnsPolicy",
+    "ratio": "960/512"
+   }
+  },
+  {
+   "id": "ch6-coredns-vs-kube-dns",
+   "level": "mid",
+   "question": "What is the role of CoreDNS (and the older kube-dns) in the cluster?",
+   "say_first": "Both are the cluster's DNS server: they create records for Services and Pods and answer lookups. CoreDNS went GA in 1.11 and replaced kube-dns as the default in 1.13 because it is more flexible and plugin based.",
+   "explain": [
+    "kube-dns was the first implementation, built from several containers including a DNS server and a component that watched the API for Services.",
+    "CoreDNS is one general-purpose DNS server whose behaviour is a chain of plugins configured in a Corefile, so you can add caching, rewrites or forwarding rules without a new binary.",
+    "Either way the duties are the same: keep records in step with Services, answer name queries with cluster IPs and append the cluster domain to form full names."
+   ],
+   "key_points": [
+    "CoreDNS runs as a Deployment in kube-system, exposed by a Service named kube-dns",
+    "Its configuration lives in a ConfigMap holding the Corefile",
+    "If CoreDNS is down, name resolution fails even though IP traffic still works",
+    "Some older installs still run kube-dns for legacy reasons"
+   ],
+   "table": {
+    "caption": "kube-dns versus CoreDNS",
+    "headers": [
+     "Aspect",
+     "kube-dns",
+     "CoreDNS"
+    ],
+    "rows": [
+     [
+      "Status",
+      "Original, legacy",
+      "Default since 1.13"
+     ],
+     [
+      "Design",
+      "Several cooperating containers",
+      "Single server with plugins"
+     ],
+     [
+      "Customisation",
+      "Limited",
+      "Corefile with many plugins"
+     ],
+     [
+      "Records",
+      "Services and Pods",
+      "Services and Pods"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl -n kube-system get deploy coredns",
+     "note": "checks that the DNS Deployment is healthy"
+    },
+    {
+     "cmd": "kubectl -n kube-system get configmap coredns -o yaml",
+     "note": "shows the Corefile in use"
+    }
+   ],
+   "follow_ups": [
+    "How would you troubleshoot slow DNS lookups?",
+    "Why is the Service still called kube-dns?"
+   ],
+   "pitfalls": [
+    "Blaming the network when only DNS is broken: test by IP first"
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-coredns-vs-kube-dns.html",
+    "title": "CoreDNS replaced kube-dns as the cluster DNS server",
+    "ratio": "960/552"
+   }
+  },
+  {
+   "id": "ch6-what-is-cni",
+   "level": "mid",
+   "question": "What is the Container Network Interface (CNI) and why does Kubernetes need it?",
+   "say_first": "CNI is a standard that lets the container runtime call a network plugin to give each new Pod an interface, an IP and routes. It keeps Kubernetes independent of any one networking product.",
+   "explain": [
+    "Think of CNI as a standard wall socket. Kubernetes does not care which power company supplies the electricity; any plugin that fits the socket can provide the network.",
+    "When a Pod sandbox is created, the runtime runs the CNI plugin binary. The plugin creates the network namespace plumbing, asks an IPAM (IP address management) component for an address, sets routes and DNS details, and reports back.",
+    "Only after that does the kubelet start the application containers, so the Pod has working networking from its first second.",
+    "Plugins are interchangeable, which is why teams can pick Calico, Cilium, Flannel or a cloud-specific plugin to match their needs."
+   ],
+   "key_points": [
+    "CNI is a specification plus libraries; plugins are executables",
+    "Works the same across runtimes such as containerd and CRI-O",
+    "Handles IP allocation and release, interfaces, routes and namespaces",
+    "Many plugins also enforce NetworkPolicy",
+    "Without a working CNI, nodes stay NotReady and Pods stay in ContainerCreating"
+   ],
+   "commands": [
+    {
+     "cmd": "ls /etc/cni/net.d/",
+     "note": "on a node: CNI configuration files the runtime reads"
+    },
+    {
+     "cmd": "kubectl get pods -n kube-system -o wide",
+     "note": "shows the CNI daemon Pods (for example calico-node or cilium) on every node"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-cni-sequence.html",
+    "title": "What happens when a Pod gets its network",
+    "ratio": "1000/492"
+   },
+   "follow_ups": [
+    "What does IPAM do?",
+    "What happens if the CNI plugin is not installed?"
+   ],
+   "pitfalls": [
+    "Saying CNI is a Kubernetes component that routes traffic itself; it is an interface to external plugins"
+   ]
+  },
+  {
+   "id": "ch6-cni-functions",
+   "level": "mid",
+   "question": "What functions does a CNI plugin provide?",
+   "say_first": "It wires each Pod into the network: a separate network namespace, an interface, an IP from IPAM, routes and DNS settings, plus optional overlay, host-network and policy features.",
+   "explain": [
+    "Core job: give every Pod an isolated network stack and attach it to the node through something like a veth pair and a bridge.",
+    "Address management: hand out a unique IP when the Pod starts and release it when the Pod is deleted so addresses are reused safely.",
+    "Connectivity modes: some plugins build an overlay for cross-node traffic, some use plain routing, and some attach Pods straight to the host network or cloud network.",
+    "Extras: many plugins implement NetworkPolicy, encryption and observability on top of basic connectivity."
+   ],
+   "key_points": [
+    "Per-Pod network namespace gives isolation of ports and interfaces",
+    "IPAM allocates and releases Pod IPs",
+    "Bridge, overlay or routed modes for reaching other nodes",
+    "Plugins can be swapped without changing the runtime",
+    "Policy enforcement is plugin dependent, so check your CNI supports it"
+   ],
+   "table": {
+    "caption": "CNI duties at a glance",
+    "headers": [
+     "Function",
+     "What it means in practice"
+    ],
+    "rows": [
+     [
+      "Namespace setup",
+      "Isolated network stack per Pod"
+     ],
+     [
+      "IP management",
+      "Allocate on start, release on delete"
+     ],
+     [
+      "Routes and DNS",
+      "Reach other Pods, nodes and the outside"
+     ],
+     [
+      "Bridge or overlay",
+      "Same-node and cross-node connectivity"
+     ],
+     [
+      "Host networking",
+      "Optionally share the node's network"
+     ],
+     [
+      "Policy hooks",
+      "Enforce NetworkPolicy where supported"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "How does a plugin enforce a NetworkPolicy?",
+    "What is host networking and when is it used?"
+   ],
+   "pitfalls": [
+    "Creating NetworkPolicy objects on a CNI that does not enforce them and assuming traffic is blocked"
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-cni-functions.html",
+    "title": "What a CNI plugin sets up for a Pod",
+    "ratio": "960/544"
+   }
+  },
+  {
+   "id": "ch6-overlay-network",
+   "level": "mid",
+   "question": "What is an overlay network and why do container clusters use one?",
+   "say_first": "An overlay is a virtual network laid over the physical one: Pod packets are wrapped (encapsulated) inside ordinary node-to-node packets, so Pods can reach each other across hosts using their own virtual IPs.",
+   "explain": [
+    "Imagine putting a letter, addressed to a Pod, inside a bigger envelope addressed to the destination node. The physical network only sees the outer envelope and delivers it; the receiving node opens it and passes the inner letter to the Pod.",
+    "The benefit is independence: Pod IP ranges do not have to be known to the underlying network, and the overlay grows or shrinks as nodes join or leave.",
+    "The cost is a little CPU and header overhead for wrapping and unwrapping, which is why some setups prefer plain routing such as BGP.",
+    "Common encapsulation methods are VXLAN and GRE, used by plugins like Flannel, Calico (optionally) and Weave."
+   ],
+   "key_points": [
+    "Encapsulation and tunnelling carry Pod traffic across the physical network",
+    "Pod IPs are independent of the underlying network addressing",
+    "Scales dynamically with nodes",
+    "Slight overhead compared with direct routing",
+    "VXLAN is the most common encapsulation"
+   ],
+   "table": {
+    "caption": "Overlay versus routed networking",
+    "headers": [
+     "Aspect",
+     "Overlay (VXLAN)",
+     "Routed (for example BGP)"
+    ],
+    "rows": [
+     [
+      "Underlay needs",
+      "Only node-to-node reachability",
+      "Routers must learn Pod routes"
+     ],
+     [
+      "Overhead",
+      "Encapsulation headers",
+      "Minimal"
+     ],
+     [
+      "Setup effort",
+      "Low",
+      "Higher"
+     ],
+     [
+      "Typical plugins",
+      "Flannel, Weave",
+      "Calico in BGP mode"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Which CNI plugins use VXLAN?",
+    "When would you avoid an overlay?"
+   ],
+   "pitfalls": [
+    "Forgetting that encapsulation lowers the effective MTU and can cause odd packet drops"
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-overlay-network.html",
+    "title": "Overlay: a packet inside a packet",
+    "ratio": "960/448"
+   }
+  },
+  {
+   "id": "ch6-cni-implementations",
+   "level": "mid",
+   "question": "Which CNI plugins do you know and how would you choose one for production?",
+   "say_first": "I would start with the one I have run in production, then compare Calico, Flannel and Cilium, plus the cloud-native option such as AWS VPC CNI, on scalability, security features, ease of operation and community support.",
+   "explain": [
+    "Calico: scalable, supports routed networking with BGP and has rich network policy. A strong fit for large clusters, with a steeper learning curve.",
+    "Flannel: very simple, overlay based (often VXLAN). Great for small or simple clusters, but it does not enforce NetworkPolicy by itself.",
+    "Cilium: built on eBPF, offers identity and API-aware security, load balancing and deep visibility. Suited to security-sensitive microservice environments.",
+    "AWS VPC CNI: gives Pods real VPC IP addresses on EKS, so they integrate with VPC tooling. Other clouds offer similar plugins. Weave and Canal (Flannel plus Calico policy) are older alternatives."
+   ],
+   "key_points": [
+    "Be honest about which plugins you have really used",
+    "Selection criteria: scale, security features, operability, community",
+    "On a managed cloud cluster the provider's default is often the safest start",
+    "Check NetworkPolicy support before committing",
+    "Changing CNI later is disruptive, so decide early"
+   ],
+   "table": {
+    "caption": "Calico, Flannel and Cilium compared",
+    "headers": [
+     "CNI",
+     "Strengths",
+     "Trade-offs",
+     "Best fit"
+    ],
+    "rows": [
+     [
+      "Calico",
+      "Scalable, BGP routing, rich policy",
+      "Steeper learning curve",
+      "Large clusters that need performance and policy"
+     ],
+     [
+      "Flannel",
+      "Lightweight, easy, VXLAN overlay",
+      "Basic feature set, no built-in policy",
+      "Small or simple clusters"
+     ],
+     [
+      "Cilium",
+      "eBPF, L7-aware policy, observability, encryption",
+      "More advanced to operate",
+      "Security-focused microservice platforms"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get ds -n kube-system",
+     "note": "the CNI usually runs as a DaemonSet, so this reveals which one the cluster uses"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-cni-choice.html",
+    "title": "Choosing a CNI plugin",
+    "ratio": "700/540"
+   },
+   "follow_ups": [
+    "What makes Cilium different?",
+    "Can you swap the CNI on a running cluster?"
+   ],
+   "pitfalls": [
+    "Naming a plugin without being able to explain its trade-offs",
+    "Picking a plugin only by benchmark numbers"
+   ]
+  },
+  {
+   "id": "ch6-cilium-ebpf",
+   "level": "senior",
+   "question": "What makes Cilium different from other CNI plugins?",
+   "say_first": "Cilium uses eBPF, small programs that run inside the Linux kernel, instead of long iptables chains. That gives faster packet handling plus identity-based, HTTP and API-aware policy, transparent encryption and rich visibility.",
+   "explain": [
+    "iptables is like a long checklist a guard reads top to bottom for every packet, and the list grows with every Service and policy. eBPF is more like a smart turnstile programmed to decide quickly, with lookups instead of linear scans.",
+    "Because eBPF programs hook into the kernel safely without changing it, Cilium can see and filter traffic at layers 3 to 7, so a policy can say only GET /orders is allowed, not just port 8080.",
+    "It also provides built-in load balancing, can encrypt Pod-to-Pod traffic and integrates with service meshes, while generating a live map of which services talk to which.",
+    "If you are not deeply familiar with kernel internals, say so and explain at the level you do know; interviewers value honesty over bluffing."
+   ],
+   "key_points": [
+    "eBPF: sandboxed programs in the kernel, no kernel modification needed",
+    "Avoids long iptables rule chains and scales better with many Services",
+    "L7-aware policy for HTTP and API calls",
+    "Transparent encryption between Pods",
+    "Network flow visibility and service-map style insight"
+   ],
+   "table": {
+    "caption": "iptables-style versus eBPF-based data path",
+    "headers": [
+     "Aspect",
+     "iptables / IPVS",
+     "eBPF (Cilium)"
+    ],
+    "rows": [
+     [
+      "Rule lookup",
+      "Chains scanned in order (iptables) or hash tables (IPVS)",
+      "Kernel maps and programs, direct lookups"
+     ],
+     [
+      "Policy depth",
+      "IP and port level",
+      "Identity, HTTP and API aware"
+     ],
+     [
+      "Scaling with Services",
+      "iptables slows as rules grow",
+      "Stays efficient"
+     ],
+     [
+      "Observability",
+      "Limited",
+      "Flow-level visibility built in"
+     ]
+    ]
+   },
+   "follow_ups": [
+    "Can Cilium replace kube-proxy?",
+    "How is identity-based policy different from IP-based policy?"
+   ],
+   "pitfalls": [
+    "Claiming eBPF always makes everything dramatically faster; the gain is mainly at high load and large rule counts"
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-cilium-ebpf.html",
+    "title": "iptables scan versus eBPF lookup",
+    "ratio": "960/664"
+   }
+  },
+  {
+   "id": "ch6-what-is-kube-proxy",
+   "level": "mid",
+   "question": "What is kube-proxy and what is it responsible for?",
+   "say_first": "kube-proxy runs on every node and turns a Service's virtual IP into real Pod destinations by programming iptables or IPVS rules, which also gives simple load balancing across the Service's endpoints.",
+   "explain": [
+    "A Service IP is not assigned to any real interface. It is like a switchboard extension that only works because each node has been told how to forward it. kube-proxy is the operator that keeps those forwarding instructions up to date.",
+    "It watches the API server for Services and their endpoints. When Pods are added, removed or become unready, it rewrites the node rules so traffic only reaches live Pods.",
+    "For a ClusterIP it makes the virtual address reachable inside the cluster; for NodePort it opens the chosen port on every node; for LoadBalancer the cloud load balancer sends traffic to those node ports.",
+    "It works at layer 4 (TCP, UDP), picks a backend per connection, and can pin a client to one Pod with session affinity."
+   ],
+   "key_points": [
+    "Runs as a DaemonSet on every node",
+    "Watches Services and EndpointSlices, then updates local rules",
+    "Backends: iptables (common default), IPVS (better at large scale), userspace (legacy)",
+    "Layer 4 only: it does not understand HTTP paths or hostnames",
+    "Supports session affinity via ClientIP",
+    "Does not carry the traffic itself in the rule-based modes; the kernel does"
+   ],
+   "table": {
+    "caption": "kube-proxy modes",
+    "headers": [
+     "Mode",
+     "How it works",
+     "Notes"
+    ],
+    "rows": [
+     [
+      "iptables",
+      "NAT rules per Service and endpoint",
+      "Widely used default, rules grow with cluster size"
+     ],
+     [
+      "IPVS",
+      "Kernel load balancer with hash tables",
+      "Better at large scale, more algorithms"
+     ],
+     [
+      "userspace",
+      "Traffic proxied through a process",
+      "Legacy, slow, rarely used now"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl -n kube-system get ds kube-proxy",
+     "note": "confirms kube-proxy runs on each node"
+    },
+    {
+     "cmd": "kubectl get endpointslices -l kubernetes.io/service-name=web-svc",
+     "note": "shows the Pod IPs kube-proxy balances over"
+    },
+    {
+     "cmd": "kubectl -n kube-system get cm kube-proxy -o yaml",
+     "note": "shows the configured proxy mode on kubeadm clusters"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-what-is-kube-proxy.html",
+    "title": "What kube-proxy does on every node",
+    "ratio": "960/464"
+   },
+   "follow_ups": [
+    "How does NodePort traffic reach a Pod?",
+    "What happens to rules when a Pod fails its readiness probe?"
+   ],
+   "pitfalls": [
+    "Saying kube-proxy is an actual proxy that all traffic flows through",
+    "Thinking it provides HTTP routing; that is Ingress or Gateway API"
+   ]
+  },
+  {
+   "id": "ch6-service-request-journey",
+   "level": "senior",
+   "question": "Walk me through everything that happens when one Pod calls another through a Service name.",
+   "say_first": "The Pod resolves the Service name through CoreDNS to a ClusterIP, sends traffic to that IP, a kube-proxy rule on the node rewrites the destination to one healthy backend Pod IP, and the CNI-built network delivers the packet.",
+   "explain": [
+    "Step 1, DNS: the client's resolver (configured with the cluster DNS address and search domains) asks CoreDNS for web-svc. CoreDNS answers with the Service's ClusterIP.",
+    "Step 2, Service routing: the client connects to that ClusterIP. Rules installed by kube-proxy on the client's own node match the address and choose one endpoint, rewriting the destination to a Pod IP.",
+    "Step 3, delivery: the packet follows the Pod network to the backend Pod, on the same node via the bridge or on another node via routing or an overlay, all set up by the CNI plugin.",
+    "Step 4, reply: the response returns along the tracked connection with the source translated back, so the client believes it spoke to the Service IP."
+   ],
+   "key_points": [
+    "Three separate systems cooperate: DNS, kube-proxy rules and the CNI network",
+    "The load-balancing decision happens on the client's node, not at a central box",
+    "Only ready endpoints are in the rule set",
+    "Debug in order: name resolution, Service endpoints, then Pod-to-Pod reachability"
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl exec client -- nslookup web-svc",
+     "note": "step 1: does the name resolve to the ClusterIP?"
+    },
+    {
+     "cmd": "kubectl get endpointslices -l kubernetes.io/service-name=web-svc",
+     "note": "step 2: are there ready Pod IPs behind the Service?"
+    },
+    {
+     "cmd": "kubectl exec client -- curl -s http://web-svc:80",
+     "note": "end-to-end test through the Service"
+    }
+   ],
+   "diagram": {
+    "file": "diagrams/ch6-service-request-journey.html",
+    "title": "One Pod calls another through a Service name",
+    "ratio": "960/464"
+   },
+   "follow_ups": [
+    "The Service has no endpoints. What do you check?",
+    "Where does the load-balancing decision happen?"
+   ],
+   "pitfalls": [
+    "Skipping DNS in the explanation",
+    "Debugging the CNI before checking whether the Service selector matches any Pods"
+   ]
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch6-how-networking-works.html",
+  "diagrams/ch6-containers-in-one-pod.html",
+  "diagrams/ch6-pod-to-pod-paths.html",
+  "diagrams/ch6-dns-in-cluster.html",
+  "diagrams/ch6-dns-policies.html",
+  "diagrams/ch6-coredns-vs-kube-dns.html",
+  "diagrams/ch6-cni-sequence.html",
+  "diagrams/ch6-cni-functions.html",
+  "diagrams/ch6-overlay-network.html",
+  "diagrams/ch6-cni-choice.html",
+  "diagrams/ch6-cilium-ebpf.html",
+  "diagrams/ch6-what-is-kube-proxy.html",
+  "diagrams/ch6-service-request-journey.html"
+ ]
+}

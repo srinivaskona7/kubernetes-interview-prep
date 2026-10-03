@@ -1,0 +1,978 @@
+{
+ "number": 8,
+ "title": "Storage: Persistence and CSI Drivers",
+ "part": "Part 3 · Running Real Workloads",
+ "tagline": "Volumes, claims, StorageClasses and CSI: keeping data alive past a Pod",
+ "overview": "Containers are disposable, but data usually is not. This chapter walks from simple Pod-level volumes up to PersistentVolumes, claims, StorageClasses and CSI drivers, then to StatefulSets, headless Services and the habits that make stateful workloads safe to run.",
+ "topics": [
+  {
+   "id": "ch8-volume-types",
+   "level": "junior",
+   "question": "What types of volumes does Kubernetes offer, and when would you pick each?",
+   "say_first": "A volume is a directory made available to containers in a Pod. The common kinds are emptyDir for scratch space, hostPath for node files, PVC-backed volumes for durable data, network volumes such as NFS, and ConfigMap or Secret volumes for configuration.",
+   "explain": [
+    "Think of a container filesystem as a whiteboard that is wiped whenever the container restarts. A volume is a filing cabinet you roll up next to the whiteboard. What differs between volume types is how long the cabinet lives and where it sits.",
+    "Some volumes live and die with the Pod (emptyDir). Some are just a window onto the node (hostPath, local). Some point at storage outside the node entirely (NFS, iSCSI, cloud disks through a PVC). Secrets and ConfigMaps are not storage in the usual sense, but they reuse the same mount mechanism to deliver files.",
+    "Everything ends up as a path inside the container, which is why the answer to 'where does the data go' is always a mountPath."
+   ],
+   "key_points": [
+    "emptyDir: created empty with the Pod, deleted with the Pod.",
+    "hostPath and local: tied to one specific node.",
+    "PersistentVolumeClaim: the standard way to reach durable, Pod-independent storage.",
+    "NFS and similar network volumes can be shared by Pods on different nodes.",
+    "ConfigMap, Secret and downwardAPI volumes deliver configuration and metadata as files."
+   ],
+   "table": {
+    "caption": "Common volume types at a glance",
+    "headers": [
+     "Type",
+     "Lifetime",
+     "Typical use"
+    ],
+    "rows": [
+     [
+      "emptyDir",
+      "Same as the Pod",
+      "Scratch space, cache, sharing files between containers in one Pod"
+     ],
+     [
+      "hostPath",
+      "Same as the node's directory",
+      "Reading host files, node agents (use with care)"
+     ],
+     [
+      "local",
+      "Same as the node's disk",
+      "Fast node-attached disk with proper scheduling awareness"
+     ],
+     [
+      "PVC-backed volume",
+      "Independent of the Pod",
+      "Databases, queues, anything that must survive restarts"
+     ],
+     [
+      "NFS / iSCSI",
+      "Independent of the Pod",
+      "Shared file storage (NFS) or block storage (iSCSI) from external systems"
+     ],
+     [
+      "ConfigMap / Secret",
+      "Follows the object",
+      "Config files and credentials mounted as files"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl explain pod.spec.volumes",
+     "note": "Lists every volume source the API supports, with field docs"
+    },
+    {
+     "cmd": "kubectl get pod <pod> -o jsonpath='{.spec.volumes[*].name}'",
+     "note": "Shows which volumes a running Pod declares"
+    }
+   ],
+   "follow_ups": [
+    "What is the difference between emptyDir and hostPath?",
+    "How does a Pod get durable storage?"
+   ],
+   "pitfalls": [
+    "Saying emptyDir keeps data across Pod rescheduling. It does not.",
+    "Treating ConfigMaps and Secrets as general-purpose storage."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-volume-types.html",
+    "title": "Volume types and how long each one lives",
+    "ratio": "1000/440"
+   }
+  },
+  {
+   "id": "ch8-emptydir-vs-hostpath",
+   "level": "junior",
+   "question": "What is the difference between emptyDir and hostPath volumes?",
+   "say_first": "emptyDir is a fresh, empty directory that belongs to one Pod and is removed when that Pod goes away. hostPath maps an existing directory from the node into the Pod, so the data stays on that node after the Pod is gone.",
+   "explain": [
+    "emptyDir is a scratch pad handed to the Pod at birth and shredded at death. Every container in that Pod can read and write it, which makes it handy for a sidecar that processes files the main container writes. A container crash does not clear it, but deleting or rescheduling the Pod does.",
+    "hostPath is a door cut into the node's own filesystem. Data outlives the Pod, but it is stuck on one machine: if the Pod lands on another node it sees a different directory. It also lets a Pod touch host files, which is a security risk, so many clusters block it by policy.",
+    "A frequent trap: hostPath is not 'cluster storage'. Pods on other nodes cannot reach it. For shared durable data use a PVC on proper storage instead."
+   ],
+   "key_points": [
+    "emptyDir is scoped to a Pod; hostPath is scoped to a node.",
+    "emptyDir data survives container restarts but not Pod deletion.",
+    "hostPath data survives Pod deletion but is invisible to other nodes.",
+    "emptyDir can be memory-backed with medium: Memory and capped with sizeLimit.",
+    "hostPath widens the attack surface; restrict it with admission policy."
+   ],
+   "table": {
+    "caption": "emptyDir compared with hostPath",
+    "headers": [
+     "Aspect",
+     "emptyDir",
+     "hostPath"
+    ],
+    "rows": [
+     [
+      "Scope",
+      "One Pod",
+      "One node's directory"
+     ],
+     [
+      "Survives container restart",
+      "Yes",
+      "Yes"
+     ],
+     [
+      "Survives Pod deletion",
+      "No",
+      "Yes, left on the node"
+     ],
+     [
+      "Visible to other nodes",
+      "No",
+      "No, each node has its own copy of the path"
+     ],
+     [
+      "Security risk",
+      "Low",
+      "High: exposes host files"
+     ],
+     [
+      "Good for",
+      "Cache, temp files, sidecar hand-off",
+      "Node agents that read host data"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: v1\nkind: Pod\nmetadata:\n  name: scratch\nspec:\n  containers:\n  - name: app\n    image: busybox\n    command: [\"sleep\",\"3600\"]\n    volumeMounts:\n    - name: tmp\n      mountPath: /scratch\n  volumes:\n  - name: tmp\n    emptyDir:\n      sizeLimit: 500Mi\nEOF",
+     "note": "A Pod with a size-capped emptyDir scratch directory"
+    }
+   ],
+   "follow_ups": [
+    "When is hostPath acceptable?",
+    "Can two containers in one Pod share an emptyDir?"
+   ],
+   "pitfalls": [
+    "Claiming hostPath data is shared across the whole cluster.",
+    "Using hostPath for a database because it 'persists'."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-emptydir-vs-hostpath.html",
+    "title": "emptyDir vs hostPath: Pod scope or node scope",
+    "ratio": "1000/420"
+   }
+  },
+  {
+   "id": "ch8-pv-pvc-binding",
+   "level": "junior",
+   "question": "What is a PersistentVolume, and how does a Pod claim one?",
+   "say_first": "A PV is a piece of storage in the cluster that exists independently of any Pod. A Pod does not use it directly: it references a PersistentVolumeClaim, and Kubernetes binds that claim to a PV that satisfies the request.",
+   "explain": [
+    "Think of renting a storage unit. The PV is the unit itself, built by the facility (an admin, or automatically by a provisioner). The PVC is your rental request: 'I need 10 GiB, one writer at a time.' Kubernetes is the clerk who matches request to unit. Your Pod only holds the receipt (the claim name).",
+    "Binding checks capacity (the PV must be at least as big as asked), access mode, storage class, and optional label selectors. Once bound, the pair is exclusive: one claim, one PV.",
+    "Because the claim is separate from the Pod, deleting the Pod does not delete the data. A replacement Pod referencing the same claim finds the same files."
+   ],
+   "key_points": [
+    "PV is a cluster-level resource (not namespaced); PVC is namespaced.",
+    "Matching considers size, access mode, storageClassName and selectors.",
+    "A bound PVC and PV are one-to-one.",
+    "Pods reference the claim by name in spec.volumes.persistentVolumeClaim.",
+    "Pod deletion leaves the claim and data in place."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-pvc-binding.html",
+    "title": "Pod, claim, volume, disk",
+    "ratio": "1000/320"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: data\nspec:\n  accessModes: [\"ReadWriteOnce\"]\n  storageClassName: standard\n  resources:\n    requests:\n      storage: 10Gi\nEOF",
+     "note": "A claim for 10 GiB of single-node read-write storage"
+    },
+    {
+     "cmd": "kubectl get pvc,pv",
+     "note": "Shows claims, volumes and whether each is Bound or Pending"
+    },
+    {
+     "cmd": "kubectl describe pvc data",
+     "note": "Events explain why a claim is stuck in Pending"
+    }
+   ],
+   "follow_ups": [
+    "What happens if no PV matches a claim?",
+    "Is a PV namespaced?"
+   ],
+   "pitfalls": [
+    "Mounting a PV directly in a Pod spec; only claims are referenced.",
+    "Forgetting that a PVC stays Pending until a matching or provisioned PV exists."
+   ]
+  },
+  {
+   "id": "ch8-access-modes-settings",
+   "level": "mid",
+   "question": "Which settings on a PV or PVC matter most, and what do the access modes mean?",
+   "say_first": "The key settings are access modes, capacity, reclaim policy, storage class and volume mode. Access modes say how many nodes or Pods may mount the volume and whether they can write.",
+   "explain": [
+    "Access modes are the most misunderstood. ReadWriteOnce is about nodes, not Pods: several Pods on the same node can still share an RWO volume. ReadWriteOncePod is the strict version that allows just one Pod in the whole cluster.",
+    "ReadOnlyMany and ReadWriteMany let multiple nodes mount at once. Your storage backend must support them: a cloud block disk usually offers only RWO, while NFS-style file systems offer RWX.",
+    "Volume mode chooses how the volume appears. Filesystem (the default) formats it and mounts a directory. Block hands the container a raw device, which some databases use for direct control. Capacity in a claim is a minimum: you may be bound to a bigger volume."
+   ],
+   "key_points": [
+    "A claim's requested access mode must be supported by the volume.",
+    "RWO limits mounting to one node; RWOP limits it to one Pod.",
+    "Cloud block disks are typically RWO only; shared writes need file storage.",
+    "volumeMode: Filesystem is the default; Block exposes a raw device.",
+    "Capacity is a floor, and many backends let you expand a claim later if the class allows it."
+   ],
+   "table": {
+    "caption": "Access modes",
+    "headers": [
+     "Mode",
+     "Short",
+     "Meaning"
+    ],
+    "rows": [
+     [
+      "ReadWriteOnce",
+      "RWO",
+      "Read-write, mounted by a single node"
+     ],
+     [
+      "ReadOnlyMany",
+      "ROX",
+      "Read-only, mounted by many nodes"
+     ],
+     [
+      "ReadWriteMany",
+      "RWX",
+      "Read-write, mounted by many nodes"
+     ],
+     [
+      "ReadWriteOncePod",
+      "RWOP",
+      "Read-write, a single Pod in the cluster"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get pv -o custom-columns=NAME:.metadata.name,MODES:.spec.accessModes,CAP:.spec.capacity.storage,POLICY:.spec.persistentVolumeReclaimPolicy",
+     "note": "Compact view of the main PV settings"
+    }
+   ],
+   "follow_ups": [
+    "Can two Pods write to the same RWO volume?",
+    "How would you share files between Pods on different nodes?"
+   ],
+   "pitfalls": [
+    "Reading RWO as 'one Pod'. It is one node.",
+    "Requesting RWX from storage that cannot provide it, leaving the claim Pending."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-access-modes.html",
+    "title": "PV and PVC access modes",
+    "ratio": "1000/420"
+   }
+  },
+  {
+   "id": "ch8-reclaim-policy",
+   "level": "mid",
+   "question": "What happens to the data when a PVC is deleted? Explain reclaim policies.",
+   "say_first": "It depends on the PV's reclaim policy. Delete removes the PV and the underlying disk with the claim; Retain keeps the PV and its data so an admin can recover or clean it up manually. Recycle is deprecated.",
+   "explain": [
+    "Picture returning a rental car. With Delete, the company scraps the car the moment you hand back the keys. With Retain, the car is parked in a locked lot, off the market, until someone decides what to do with it.",
+    "After the claim is deleted, a Retain volume enters the Released state. It still holds the old data and refuses new claims until an admin cleans it up, removes the claim reference, or deletes the PV and the disk by hand.",
+    "Defaults: dynamically provisioned volumes inherit the StorageClass reclaimPolicy, which defaults to Delete. Manually created PVs default to Retain. For anything valuable, set Retain or take snapshots before deleting claims."
+   ],
+   "key_points": [
+    "Delete: PV and backing disk go away with the claim.",
+    "Retain: PV stays in Released with data intact; manual reclaim needed.",
+    "Recycle (basic scrub) is deprecated; use dynamic provisioning.",
+    "Dynamic volumes follow the StorageClass policy, default Delete.",
+    "Deleting a StatefulSet does not delete its PVCs by default, which protects data."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-pv-lifecycle.html",
+    "title": "Life of a PersistentVolume",
+    "ratio": "1000/340"
+   },
+   "table": {
+    "caption": "Reclaim policies",
+    "headers": [
+     "Policy",
+     "After claim deleted",
+     "Use when"
+    ],
+    "rows": [
+     [
+      "Delete",
+      "PV and cloud disk removed",
+      "Disposable or easily rebuilt data"
+     ],
+     [
+      "Retain",
+      "PV kept in Released, data preserved",
+      "Production data you must not lose by accident"
+     ],
+     [
+      "Recycle",
+      "Basic scrub, then reusable (deprecated)",
+      "Avoid; use dynamic provisioning"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl patch pv <pv-name> -p '{\"spec\":{\"persistentVolumeReclaimPolicy\":\"Retain\"}}'",
+     "note": "Protect an existing volume before deleting its claim"
+    },
+    {
+     "cmd": "kubectl get pv",
+     "note": "RECLAIM POLICY and STATUS columns show Retain/Delete and Released/Bound"
+    }
+   ],
+   "follow_ups": [
+    "How would you reuse a Released volume?",
+    "How do you protect data from accidental claim deletion?"
+   ],
+   "pitfalls": [
+    "Assuming deleting a PVC always keeps the data.",
+    "Expecting a Released PV to bind to a new claim automatically."
+   ]
+  },
+  {
+   "id": "ch8-configmap",
+   "level": "junior",
+   "question": "What is a ConfigMap, and how can a Pod consume it?",
+   "say_first": "A ConfigMap stores non-secret configuration as key-value pairs, separate from the container image. Pods can read it as environment variables, as files in a mounted volume, or as command arguments.",
+   "explain": [
+    "A ConfigMap is a settings sheet pinned beside the app instead of printed inside it. You change the sheet without rebuilding the image, and the same image runs in dev and prod with different sheets.",
+    "Three consumption styles exist. Environment variables suit simple flags. A volume mount suits whole config files such as nginx.conf. Arguments reuse an environment variable inside the container command with the $(VAR) syntax.",
+    "Updates are the classic interview twist. Environment variables are fixed when the container starts, so they never change in a running Pod. Files from a ConfigMap volume are refreshed by the kubelet after a delay, but the app must re-read them, and mounts made with subPath are never refreshed. Most teams simply roll the Deployment, often by hashing the ConfigMap into a Pod annotation."
+   ],
+   "key_points": [
+    "Not for secrets: use Secret objects and proper secret management.",
+    "envFrom imports all keys; configMapKeyRef picks one key.",
+    "An explicit env entry takes precedence over envFrom for the same name.",
+    "immutable: true locks a ConfigMap, which protects against bad edits and eases API load.",
+    "Env var changes need a Pod restart; volume files update eventually, subPath never."
+   ],
+   "table": {
+    "caption": "Ways to consume a ConfigMap",
+    "headers": [
+     "Method",
+     "Picks up edits in a running Pod?",
+     "Best for"
+    ],
+    "rows": [
+     [
+      "Environment variable",
+      "No, needs restart",
+      "A few simple flags"
+     ],
+     [
+      "Mounted volume",
+      "Yes after kubelet sync, app must re-read",
+      "Config files, templates"
+     ],
+     [
+      "Volume with subPath",
+      "No",
+      "Dropping one file into an existing directory"
+     ],
+     [
+      "Command argument",
+      "No, needs restart",
+      "Passing a value to a CLI flag"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl create configmap app-config --from-literal=LOG_LEVEL=debug --from-file=app.properties",
+     "note": "Build a ConfigMap from a literal and a file"
+    },
+    {
+     "cmd": "kubectl rollout restart deployment/<name>",
+     "note": "Recreate Pods so they pick up new ConfigMap values"
+    },
+    {
+     "cmd": "kubectl logs <pod>",
+     "note": "Check what the container actually saw"
+    }
+   ],
+   "follow_ups": [
+    "How do you force Pods to reload a changed ConfigMap?",
+    "ConfigMap versus Secret?"
+   ],
+   "pitfalls": [
+    "Expecting env vars to refresh live.",
+    "Putting passwords in a ConfigMap."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-configmap.html",
+    "title": "Three ways a Pod consumes a ConfigMap",
+    "ratio": "1000/340"
+   }
+  },
+  {
+   "id": "ch8-downward-api",
+   "level": "mid",
+   "question": "What is the Downward API?",
+   "say_first": "The Downward API lets a container read facts about its own Pod, such as name, namespace, IP, labels and resource limits, through environment variables or files, without calling the Kubernetes API.",
+   "explain": [
+    "It is a mirror held up to the Pod: the container can see its own name tag. This avoids giving the app API credentials just so it can learn its own namespace or Pod name.",
+    "Two delivery routes. A fieldRef in env injects one field as a variable when the container starts. A downwardAPI volume writes fields such as labels and annotations to files, and those files are refreshed when labels change.",
+    "Common uses: tagging logs and metrics with the Pod name, choosing a cluster peer ID in a StatefulSet, or sizing a runtime heap from the container memory limit via resourceFieldRef."
+   ],
+   "key_points": [
+    "Exposes Pod fields: name, namespace, IP, node name, labels, annotations, service account.",
+    "resourceFieldRef exposes the container's own CPU and memory requests and limits.",
+    "Env vars are set at start; volume files for labels and annotations can change later.",
+    "No API access or RBAC needed for the app."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: v1\nkind: Pod\nmetadata:\n  name: downward-sample\n  labels:\n    foo: bar\nspec:\n  restartPolicy: Never\n  containers:\n  - name: app\n    image: busybox\n    command: [\"sh\",\"-c\",\"echo NS=$MY_NAMESPACE; cat /etc/pod/labels\"]\n    env:\n    - name: MY_NAMESPACE\n      valueFrom:\n        fieldRef:\n          fieldPath: metadata.namespace\n    volumeMounts:\n    - name: podinfo\n      mountPath: /etc/pod\n  volumes:\n  - name: podinfo\n    downwardAPI:\n      items:\n      - path: labels\n        fieldRef:\n          fieldPath: metadata.labels\nEOF",
+     "note": "Exposes the namespace as an env var and labels as a file"
+    },
+    {
+     "cmd": "kubectl logs downward-sample",
+     "note": "Shows the namespace and the labels file contents"
+    }
+   ],
+   "follow_ups": [
+    "Why not just query the API server?",
+    "Which fields update at runtime?"
+   ],
+   "pitfalls": [
+    "Believing every Pod field is exposed; only a defined subset is.",
+    "Expecting env values to change after the Pod is running."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-downward-api.html",
+    "title": "The Downward API: a Pod reads its own facts",
+    "ratio": "1000/320"
+   }
+  },
+  {
+   "id": "ch8-storageclass",
+   "level": "mid",
+   "question": "What is a StorageClass, and what does the volume binding mode change?",
+   "say_first": "A StorageClass describes a tier of storage and names the provisioner that creates volumes for it on demand. The binding mode decides whether the volume is created as soon as the claim exists (Immediate) or only when a Pod using it is scheduled (WaitForFirstConsumer).",
+   "explain": [
+    "A StorageClass is a menu entry: 'fast-ssd', 'cheap-hdd', 'shared-files'. Each entry carries a provisioner, parameters (disk type, IOPS, encryption), a reclaim policy and whether claims can grow later. Developers just pick a name; they never touch cloud APIs.",
+    "Binding mode matters for zonal storage. With Immediate, a disk may be created in zone A before the scheduler decides the Pod should run in zone B, and the Pod then cannot start. WaitForFirstConsumer waits for the scheduler, then creates the disk where the Pod will run.",
+    "One class can be marked default, so claims that omit storageClassName still get storage. Setting storageClassName to an empty string means 'no dynamic provisioning, match a pre-made PV only'."
+   ],
+   "key_points": [
+    "provisioner is the driver that creates the volume (for example ebs.csi.aws.com).",
+    "parameters are provisioner-specific: disk type, IOPS, encryption.",
+    "reclaimPolicy on the class sets the policy for volumes it creates (default Delete).",
+    "allowVolumeExpansion: true lets you grow a claim later.",
+    "WaitForFirstConsumer avoids zone mismatches between disk and Pod."
+   ],
+   "table": {
+    "caption": "Volume binding modes",
+    "headers": [
+     "Mode",
+     "When the volume is created",
+     "Best for"
+    ],
+    "rows": [
+     [
+      "Immediate (default)",
+      "As soon as the PVC is created",
+      "Storage reachable from every node"
+     ],
+     [
+      "WaitForFirstConsumer",
+      "When a Pod using the PVC is scheduled",
+      "Zonal or node-local storage"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: fast-ssd\nprovisioner: ebs.csi.aws.com\nparameters:\n  type: gp3\nreclaimPolicy: Retain\nvolumeBindingMode: WaitForFirstConsumer\nallowVolumeExpansion: true\nEOF",
+     "note": "An SSD class that waits for the Pod, keeps data on claim deletion and can be expanded"
+    },
+    {
+     "cmd": "kubectl get storageclass",
+     "note": "Lists classes and marks the default"
+    },
+    {
+     "cmd": "kubectl patch storageclass fast-ssd -p '{\"metadata\":{\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'",
+     "note": "Make a class the cluster default"
+    }
+   ],
+   "follow_ups": [
+    "Why can a Pod be stuck Pending with a bound claim in another zone?",
+    "What does an empty storageClassName mean?"
+   ],
+   "pitfalls": [
+    "Using Immediate with zonal disks.",
+    "Leaving two default classes in the cluster."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-storageclass.html",
+    "title": "StorageClass and the volume binding mode",
+    "ratio": "1000/380"
+   }
+  },
+  {
+   "id": "ch8-csi",
+   "level": "mid",
+   "question": "What is CSI, and why was it introduced?",
+   "say_first": "The Container Storage Interface is a standard API between orchestrators and storage systems. It lets vendors ship their own driver and run it in the cluster, instead of having storage code built into the Kubernetes source.",
+   "explain": [
+    "Before CSI, every storage backend had its code compiled into Kubernetes itself. A new feature or bug fix in a vendor driver meant waiting for a Kubernetes release. CSI is a power-socket standard: any appliance (storage vendor) that fits the socket works, and the wall (Kubernetes) never changes.",
+    "A CSI driver usually runs as two parts. A controller component (Deployment) talks to the storage API to create, delete, snapshot and resize volumes, helped by sidecars such as the external-provisioner and external-attacher. A node component (DaemonSet) runs on each node to stage and mount volumes into Pods.",
+    "Through the same interface the cluster gets provisioning, attach and detach, mount, expansion and snapshots for block, file and other backends, from cloud disks to on-premises arrays."
+   ],
+   "key_points": [
+    "Drivers live outside Kubernetes core and are installed like any workload.",
+    "Controller part manages volume lifecycle; node part mounts on each node.",
+    "Capabilities include dynamic provisioning, snapshots and expansion.",
+    "StorageClass.provisioner names the CSI driver to use.",
+    "The old in-tree cloud plugins have been migrated to CSI drivers."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl get csidrivers",
+     "note": "CSI drivers registered in the cluster"
+    },
+    {
+     "cmd": "kubectl get csinodes",
+     "note": "Which drivers are available on each node"
+    },
+    {
+     "cmd": "kubectl get pods -n kube-system | grep csi",
+     "note": "See controller and node driver Pods (names vary by driver)"
+    }
+   ],
+   "follow_ups": [
+    "What are the CSI controller and node components?",
+    "How does a StorageClass reference a CSI driver?"
+   ],
+   "pitfalls": [
+    "Thinking CSI is a storage product rather than an interface.",
+    "Forgetting that the node part must run on every node that mounts volumes."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-csi.html",
+    "title": "CSI: a standard socket between Kubernetes and storage",
+    "ratio": "1000/320"
+   }
+  },
+  {
+   "id": "ch8-dynamic-provisioning",
+   "level": "senior",
+   "question": "Walk me through dynamic provisioning from claim to mounted disk.",
+   "say_first": "A developer creates a PVC naming a StorageClass. The CSI controller sees the pending claim, creates a disk in the cloud, and registers a PV; Kubernetes binds the pair, and when the Pod is scheduled the driver attaches and mounts the disk on its node.",
+   "explain": [
+    "Step 1: the PVC is created. With the Immediate binding mode the process starts now; with WaitForFirstConsumer it starts once the scheduler picks a node for the Pod.",
+    "Step 2: the external-provisioner sidecar of the CSI driver notices an unbound claim for its class and calls the driver to create a volume. The driver calls the storage API, such as the EBS service on AWS, and gets a volume ID back.",
+    "Step 3: the provisioner creates a PV object that references the new disk and binds it to the claim. The claim moves from Pending to Bound.",
+    "Step 4: once the Pod is scheduled, the attach step connects the disk to the node and the node plugin formats if needed and mounts it into the container. Deleting the claim triggers the reverse path according to the reclaim policy."
+   ],
+   "key_points": [
+    "No admin has to pre-create PVs; the StorageClass automates it.",
+    "The PV object is created by the provisioner, not by the user.",
+    "A Pending claim usually means no class, a wrong class name or a failing driver.",
+    "Attach and mount happen later than bind, at Pod start.",
+    "Debug with events on the PVC and logs of the provisioner sidecar."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-dynamic-provisioning.html",
+    "title": "Dynamic provisioning step by step",
+    "ratio": "1000/520"
+   },
+   "commands": [
+    {
+     "cmd": "kubectl describe pvc <name>",
+     "note": "Events show ProvisioningFailed or the volume being created"
+    },
+    {
+     "cmd": "kubectl get events --sort-by=.lastTimestamp",
+     "note": "Recent cluster events in time order"
+    },
+    {
+     "cmd": "kubectl get volumeattachments",
+     "note": "Shows which volumes are attached to which nodes"
+    }
+   ],
+   "follow_ups": [
+    "Why is my PVC stuck in Pending?",
+    "What if the Pod moves to another node?"
+   ],
+   "pitfalls": [
+    "Believing the PV must exist before the PVC in a dynamic setup.",
+    "Debugging the Pod first when the claim is the real blocker."
+   ]
+  },
+  {
+   "id": "ch8-headless-service",
+   "level": "mid",
+   "question": "What is a Headless Service, and when do you use it?",
+   "say_first": "A Headless Service has clusterIP set to None, so it has no virtual IP and no load balancing. DNS returns the individual Pod addresses, which lets clients connect to specific Pods, typically in a StatefulSet.",
+   "explain": [
+    "A normal Service is a receptionist: you call one number and she routes you. A headless Service is a directory of direct extensions: DNS hands you every Pod's own address and you choose.",
+    "Stateful systems need that choice. A database replica has a role and its own data, so a client or peer must reach db-0 specifically, not any random replica. With a StatefulSet pointing at the headless Service, each Pod gets a stable DNS name like db-0.db-headless.default.svc.cluster.local that survives rescheduling even though the IP changes.",
+    "Headless Services also suit client-side load balancing or peer discovery in stateless apps, but they are most associated with StatefulSets."
+   ],
+   "key_points": [
+    "Set clusterIP: None; the selector still picks Pods.",
+    "DNS returns multiple A records, one per ready Pod.",
+    "StatefulSet Pods get stable names of the form pod-N.service.namespace.",
+    "No kube-proxy rules and no virtual IP are involved.",
+    "The StatefulSet references it through serviceName."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-headless-service.html",
+    "title": "Headless Service lookup",
+    "ratio": "1000/460"
+   },
+   "table": {
+    "caption": "ClusterIP Service versus Headless Service",
+    "headers": [
+     "Aspect",
+     "ClusterIP Service",
+     "Headless Service"
+    ],
+    "rows": [
+     [
+      "Virtual IP",
+      "Yes",
+      "None (clusterIP: None)"
+     ],
+     [
+      "DNS answer",
+      "The single Service IP",
+      "All ready Pod IPs"
+     ],
+     [
+      "Load balancing",
+      "By kube-proxy",
+      "None, client chooses"
+     ],
+     [
+      "Addressing one Pod",
+      "Not possible",
+      "Via stable per-Pod DNS name (with StatefulSet)"
+     ],
+     [
+      "Typical user",
+      "Stateless web and API tiers",
+      "Databases, queues, clustered systems"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: v1\nkind: Service\nmetadata:\n  name: db-headless\nspec:\n  clusterIP: None\n  selector:\n    app: db\n  ports:\n  - port: 5432\nEOF",
+     "note": "A headless Service for Pods labelled app=db"
+    },
+    {
+     "cmd": "kubectl run -it --rm dns-test --image=busybox --restart=Never -- nslookup db-headless",
+     "note": "Returns one address per Pod instead of a single Service IP"
+    }
+   ],
+   "follow_ups": [
+    "How does it pair with a StatefulSet?",
+    "Do headless Services work with Ingress?"
+   ],
+   "pitfalls": [
+    "Expecting load balancing from a headless Service.",
+    "Forgetting the selector, which leaves DNS with no records."
+   ]
+  },
+  {
+   "id": "ch8-statefulset-storage",
+   "level": "mid",
+   "question": "How do StatefulSets give each Pod its own storage and identity?",
+   "say_first": "A StatefulSet gives Pods stable ordinal names and uses volumeClaimTemplates to create one PVC per Pod. If a Pod is recreated, it comes back with the same name and re-attaches to its same claim.",
+   "explain": [
+    "In a Deployment, Pods are interchangeable cattle. In a StatefulSet each Pod is a named pet: db-0, db-1, db-2. Name and storage stay paired, so db-1 always wakes up with db-1's data.",
+    "The volumeClaimTemplates section is a stamp. For each replica the controller creates a claim named after the template and Pod, for example data-db-1, and a new one appears when you scale up. Scaling down leaves the claims behind by default so data is not lost; a retention policy can change that.",
+    "Pods are created in order (0, 1, 2) and removed in reverse by default, which suits systems that need a primary first. Pair it with a headless Service for stable DNS."
+   ],
+   "key_points": [
+    "Stable identity: ordinal name and stable network name.",
+    "Per-Pod storage via volumeClaimTemplates.",
+    "Ordered startup, scaling and termination by default (podManagementPolicy: OrderedReady).",
+    "PVCs outlive the Pods and are not deleted on scale-down unless configured.",
+    "Needs a headless Service named in serviceName."
+   ],
+   "commands": [
+    {
+     "cmd": "kubectl apply -f - <<'EOF'\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: db\nspec:\n  serviceName: db-headless\n  replicas: 3\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: redis:7\n        volumeMounts:\n        - name: data\n          mountPath: /data\n  volumeClaimTemplates:\n  - metadata:\n      name: data\n    spec:\n      accessModes: [\"ReadWriteOnce\"]\n      resources:\n        requests:\n          storage: 5Gi\nEOF",
+     "note": "Three replicas, each with its own 5 GiB claim (data-db-0, data-db-1, data-db-2)"
+    },
+    {
+     "cmd": "kubectl get pvc -l app=db",
+     "note": "Claims created from the template; note they remain after scale-down"
+    }
+   ],
+   "follow_ups": [
+    "What happens to PVCs when you scale down?",
+    "Deployment with a shared PVC versus StatefulSet?"
+   ],
+   "pitfalls": [
+    "Using a Deployment with one RWO claim for several replicas.",
+    "Assuming PVCs are removed when the StatefulSet is deleted."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-statefulset-storage.html",
+    "title": "StatefulSet: one stable Pod, one claim",
+    "ratio": "1000/380"
+   }
+  },
+  {
+   "id": "ch8-run-stateful-in-k8s",
+   "level": "senior",
+   "question": "Should you run databases and other stateful apps in Kubernetes?",
+   "say_first": "It can work, but only when the team understands the risks. For business-critical relational databases a managed service or dedicated hosts is usually safer; caches, queues and many NoSQL systems fit well with StatefulSets, PVCs and an operator.",
+   "explain": [
+    "The question is about trade-offs, not a yes or no. Kubernetes reschedules Pods freely, upgrades nodes, and moves workloads, which is great for stateless code and risky for a system whose disk is the product.",
+    "A managed database hands off backups, patching, failover and point-in-time recovery to someone else. Running it yourself means owning all of that, plus volume behaviour, zone failures and node drains.",
+    "If you do run state inside the cluster, lean on the platform: StatefulSets, dynamically provisioned PVCs, a headless Service, and an operator that automates backups, restores and upgrades for that specific system. Good operators encode operational knowledge you would otherwise script by hand."
+   ],
+   "key_points": [
+    "Critical relational data: prefer managed services or dedicated hosts.",
+    "Caches, queues and replicated NoSQL are common in-cluster choices.",
+    "Operators automate backup, restore, upgrade and failover.",
+    "Test restores, not just backups.",
+    "Plan for node drains, zone loss and disk expansion before production."
+   ],
+   "table": {
+    "caption": "Where to run which data",
+    "headers": [
+     "Workload",
+     "In-cluster fit",
+     "Notes"
+    ],
+    "rows": [
+     [
+      "Business-critical relational DB",
+      "Cautious",
+      "Managed service or dedicated hosts usually safer"
+     ],
+     [
+      "Cache (Redis, Memcached)",
+      "Good",
+      "Often safe to lose; StatefulSet optional"
+     ],
+     [
+      "Message broker",
+      "Good with an operator",
+      "Needs stable identity and storage"
+     ],
+     [
+      "Replicated NoSQL",
+      "Good with an operator",
+      "Mind quorum during node drains"
+     ],
+     [
+      "Scratch or batch data",
+      "Good",
+      "emptyDir may be enough"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get statefulset,pvc,pods -l app=<name>",
+     "note": "See the stateful pieces of one application together"
+    }
+   ],
+   "follow_ups": [
+    "What does an operator add over a plain StatefulSet?",
+    "How would you back up a database running in the cluster?"
+   ],
+   "pitfalls": [
+    "Saying Kubernetes cannot run stateful apps at all.",
+    "Treating a StatefulSet as a complete backup and failover solution."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-run-stateful.html",
+    "title": "Should a stateful app run in Kubernetes?",
+    "ratio": "1000/400"
+   }
+  },
+  {
+   "id": "ch8-monitor-stateful",
+   "level": "senior",
+   "question": "What would you monitor for a stateful application in Kubernetes?",
+   "say_first": "I would watch compute usage, Pod health and restarts, volume capacity and I/O, network, logs and events, application-level metrics such as query latency, and security signals, with alerts on the critical ones and long-term trends for capacity planning.",
+   "explain": [
+    "Stateful apps add a new failure family: the disk. A full volume or slow I/O stops a database long before CPU does. So volume usage and latency belong at the top of the dashboard, next to the usual CPU and memory.",
+    "Pod-level signals tell you if the Pods are alive: status, restart count and lifecycle events. Application metrics tell you if they are useful: connections, locks, replication lag, throughput, latency.",
+    "Centralised logs help trace failures that vanish with the Pod, and alerts need clear owners. Historical data feeds capacity planning, so you expand volumes before they fill."
+   ],
+   "key_points": [
+    "Volume: used and free bytes, inodes, I/O latency and throughput.",
+    "Pods: status, restart count, OOM kills, readiness.",
+    "Application: connections, replication lag, query latency, transaction rate.",
+    "Logs through a central stack such as EFK or Loki with Grafana.",
+    "Alert on critical conditions and keep long-term trends for planning."
+   ],
+   "table": {
+    "caption": "Monitoring areas and examples",
+    "headers": [
+     "Area",
+     "Example signals",
+     "Why it matters"
+    ],
+    "rows": [
+     [
+      "Compute",
+      "CPU, memory, throttling",
+      "Spot resource limits being hit"
+     ],
+     [
+      "Pod health",
+      "Restarts, readiness, events",
+      "Detect crash loops and failovers"
+     ],
+     [
+      "Storage",
+      "Volume used percent, I/O latency",
+      "Full or slow disks stall the app"
+     ],
+     [
+      "Application",
+      "Replication lag, locks, query time",
+      "Reveals problems Kubernetes cannot see"
+     ],
+     [
+      "Security",
+      "Auth failures, audit events",
+      "Catch misuse early"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl top pod -l app=db",
+     "note": "Live CPU and memory (needs metrics-server)"
+    },
+    {
+     "cmd": "kubectl exec <pod> -- df -h /data",
+     "note": "Quick check of volume usage inside the Pod"
+    },
+    {
+     "cmd": "kubectl get events --field-selector involvedObject.kind=PersistentVolumeClaim",
+     "note": "Storage-related events"
+    }
+   ],
+   "follow_ups": [
+    "Which volume metrics would trigger a page?",
+    "How do you grow a volume that is nearly full?"
+   ],
+   "pitfalls": [
+    "Only watching CPU and memory.",
+    "Collecting metrics without alert rules or owners."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-monitor-stateful.html",
+    "title": "What to monitor for a stateful app",
+    "ratio": "1000/420"
+   }
+  },
+  {
+   "id": "ch8-stateful-best-practices",
+   "level": "senior",
+   "question": "What are the best practices for stateful applications on Kubernetes?",
+   "say_first": "Use tested StorageClasses with the right reclaim policy, binding mode and disk type; run the app as a StatefulSet with dynamically provisioned claims; add health checks, monitoring, resource limits and security controls; and prefer managed services for the most critical databases.",
+   "explain": [
+    "Start from the storage layer: choose SSD or HDD for the workload, WaitForFirstConsumer for zonal disks, Retain where data loss would hurt, and allow expansion. A well-chosen default StorageClass keeps developers on the safe path.",
+    "Then the workload layer: StatefulSet plus headless Service, probes that reflect real readiness, requests and limits so the database is not starved or evicted, and autoscaling only where the application can actually use more replicas.",
+    "Finally operations and security: monitoring and alerts, backups with tested restores, encryption at rest, access controls on volumes and secrets, and a plan for upgrades and node drains. The aim is not cleverness but no surprises."
+   ],
+   "key_points": [
+    "Standardise StorageClasses and set a sensible default.",
+    "Pick reclaim policy and binding mode on purpose, not by default.",
+    "StatefulSet, dynamic PVCs and a headless Service as the base pattern.",
+    "Probes, resource requests and limits, and PodDisruptionBudgets.",
+    "Backups and restore tests, encryption and access control."
+   ],
+   "table": {
+    "caption": "Practice checklist by layer",
+    "headers": [
+     "Layer",
+     "Practice",
+     "Risk it removes"
+    ],
+    "rows": [
+     [
+      "Storage",
+      "Retain for important data, WaitForFirstConsumer, expansion on",
+      "Accidental loss, zone mismatch, full disks"
+     ],
+     [
+      "Workload",
+      "StatefulSet, probes, requests and limits",
+      "Wrong failover, noisy neighbours"
+     ],
+     [
+      "Availability",
+      "PodDisruptionBudget, anti-affinity",
+      "Quorum loss during drains"
+     ],
+     [
+      "Operations",
+      "Monitoring, alerts, tested restores",
+      "Silent failure, unrecoverable data"
+     ],
+     [
+      "Security",
+      "Encryption at rest, least-privilege access",
+      "Data exposure"
+     ]
+    ]
+   },
+   "commands": [
+    {
+     "cmd": "kubectl get pdb",
+     "note": "PodDisruptionBudgets that limit voluntary disruption"
+    },
+    {
+     "cmd": "kubectl get storageclass -o custom-columns=NAME:.metadata.name,PROVISIONER:.provisioner,RECLAIM:.reclaimPolicy,BINDING:.volumeBindingMode",
+     "note": "Audit the policies your classes apply"
+    }
+   ],
+   "follow_ups": [
+    "How do you test a restore?",
+    "How do you upgrade a StatefulSet safely?"
+   ],
+   "pitfalls": [
+    "Relying on defaults for reclaim policy and binding mode.",
+    "Having backups that were never restored in a test."
+   ],
+   "diagram": {
+    "file": "diagrams/ch8-best-practices.html",
+    "title": "Best practices in three layers",
+    "ratio": "1000/420"
+   }
+  }
+ ],
+ "diagrams": [
+  "diagrams/ch8-volume-types.html",
+  "diagrams/ch8-emptydir-vs-hostpath.html",
+  "diagrams/ch8-pvc-binding.html",
+  "diagrams/ch8-access-modes.html",
+  "diagrams/ch8-pv-lifecycle.html",
+  "diagrams/ch8-configmap.html",
+  "diagrams/ch8-downward-api.html",
+  "diagrams/ch8-storageclass.html",
+  "diagrams/ch8-csi.html",
+  "diagrams/ch8-dynamic-provisioning.html",
+  "diagrams/ch8-headless-service.html",
+  "diagrams/ch8-statefulset-storage.html",
+  "diagrams/ch8-run-stateful.html",
+  "diagrams/ch8-monitor-stateful.html",
+  "diagrams/ch8-best-practices.html"
+ ]
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The four golden signals and how to measure them</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Monitoring · Observability</p>
+    <h1>The four golden signals and how to measure them</h1>
+    <svg viewBox="0 0 936 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch14-golden-signals-measure-title ch14-golden-signals-measure-desc">
+      <title id="ch14-golden-signals-measure-title">The four golden signals and how to measure them</title>
+      <desc id="ch14-golden-signals-measure-desc">A request-driven service is watched through four signals: latency as percentiles, traffic as request rate, errors as a failure ratio, and saturation as how close the scarcest resource is to its limit.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M468,88 L468,104 Q468,112 460,112 L139,112 Q131,112 131,120 L131,136" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M131,208 L131,288" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M468,88 L468,104 Q468,112 460,112 L364,112 Q356,112 356,120 L356,136" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M356,208 L356,288" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M468,88 L468,104 Q468,112 476,112 L573,112 Q581,112 581,120 L581,136" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M581,208 L581,288" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M468,88 L468,104 Q468,112 476,112 L798,112 Q806,112 806,120 L806,136" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M806,208 L806,288" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="139" y="252" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">MEASURE</text>
+<text x="364" y="252" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">MEASURE</text>
+<text x="589" y="252" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">MEASURE</text>
+<text x="814" y="252" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">MEASURE</text>
+<text x="40" y="412" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">RED FOR SERVICES: RATE, ERRORS, DURATION · USE FOR RESOURCES: UTILISATION, SATURATION, ERRORS</text>
+<rect x="370" y="32" width="196" height="56" rx="6" fill="#f5f5f5"/><rect x="370" y="32" width="196" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="468.0" y="58.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Your service</text><text x="468.0" y="74.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">request-driven</text>
+<rect x="40" y="136" width="182" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="136" width="182" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="131.0" y="170.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Latency</text><text x="131.0" y="186.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">how long requests take</text>
+<rect x="40" y="288" width="182" height="72" rx="6" fill="#f5f5f5"/><rect x="40" y="288" width="182" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="131.0" y="316.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">p95 and p99</text><text x="131.0" y="332.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">not averages, from a</text><text x="131.0" y="344.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">duration histogram</text>
+<rect x="265" y="136" width="182" height="72" rx="6" fill="#f5f5f5"/><rect x="265" y="136" width="182" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="356.0" y="170.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Traffic</text><text x="356.0" y="186.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">how much demand there is</text>
+<rect x="265" y="288" width="182" height="72" rx="6" fill="#f5f5f5"/><rect x="265" y="288" width="182" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="356.0" y="316.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Requests per second</text><text x="356.0" y="332.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">rate of the request</text><text x="356.0" y="344.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">counter</text>
+<rect x="490" y="136" width="182" height="72" rx="6" fill="#f5f5f5"/><rect x="490" y="136" width="182" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="581.0" y="170.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Errors</text><text x="581.0" y="186.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">how many requests fail</text>
+<rect x="490" y="288" width="182" height="72" rx="6" fill="#f5f5f5"/><rect x="490" y="288" width="182" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="581.0" y="316.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Error ratio</text><text x="581.0" y="332.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">5xx and timeouts over</text><text x="581.0" y="344.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">total requests</text>
+<rect x="715" y="136" width="182" height="72" rx="6" fill="#f5f5f5"/><rect x="715" y="136" width="182" height="72" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="806.0" y="164.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Saturation</text><text x="806.0" y="180.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">how full the scarcest</text><text x="806.0" y="192.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">resource is</text>
+<rect x="715" y="288" width="182" height="72" rx="6" fill="#f5f5f5"/><rect x="715" y="288" width="182" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="806.0" y="316.0" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Closeness to limit</text><text x="806.0" y="332.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CPU throttling, memory vs</text><text x="806.0" y="344.0" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">limit, pool, disk</text>
+<line x1="30" y1="432" x2="906" y2="432" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="448" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text><rect x="120" y="440" width="12" height="12" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="140" y="449" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">FOCAL: EARLY WARNING</text><rect x="280.0" y="440" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="300.0" y="449" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">COMPONENT</text>
+    </svg>
+  </div>
+</body>
+</html>
