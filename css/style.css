@@ -210,3 +210,4 @@ footer img{height:28px}
 }
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 @media print{.top,.side,.tfoot,.pager,footer{display:none}.topic{break-inside:avoid}}
+.fnav{display:flex;gap:8px;align-items:center;margin-top:14px}.fnav .btn:last-child{margin-left:auto}.fnav .btn[disabled]{opacity:.4;cursor:default}

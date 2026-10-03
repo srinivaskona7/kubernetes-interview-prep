@@ -146,17 +146,21 @@ function flashcards() {
   </div></div>`;
   const draw = () => {
     const t = FC.queue[FC.i], el = $('#card');
-    if (!t) { el.innerHTML = `<div class="flash"><div class="empty"><h2>Deck finished</h2><p>${FC.queue.length} cards reviewed. Cards come back on their own schedule.</p><button class="btn pri" id="again">Review the deck again</button></div></div>`; $('#again').onclick = () => { fcBuild(); flashcards(); }; return; }
+    if (!t) { el.innerHTML = `<div class="flash"><div class="empty"><h2>Deck finished</h2><p>${FC.queue.length} cards reviewed. Cards come back on their own schedule.</p><button class="btn pri" id="again">Review the deck again</button> ${FC.queue.length ? '<button class="btn" data-nav="-1">← Back to last card</button>' : ''}</div></div>`; $('#again').onclick = () => { fcBuild(); flashcards(); }; return; }
     const hint = r => human(after(t, r).gap);
     el.innerHTML = `<div class="flash"><div class="fh"><span class="tag">Card ${FC.i + 1} of ${FC.queue.length}</span><span class="chip mid" style="background:var(--blue-tint);color:var(--blue-ink)">Ch ${t._ch.number}</span>${chip(t.level)}<button class="btn sm" style="margin-left:auto" data-star="${esc(t.id)}">${S.star[t.id] ? '★' : '☆'}</button></div>
       <div class="q">${inline(t.question)}</div>
       ${FC.show ? `<div class="ans"><div class="say"><span class="tag">Say this first</span><p>${inline(t.say_first)}</p></div><ul class="checks">${(t.key_points || []).slice(0, 4).map(k => `<li>${inline(k)}</li>`).join('')}</ul>${t.diagram ? t.diagram.svg : ''}<p style="margin-top:12px"><a href="#/chapter/${t._ch.number}/${esc(t.id)}">Read the full explanation →</a></p></div>
       <div class="rate"><button class="a" data-r="0">Again<small>${hint(0)}</small></button><button class="h" data-r="1">Hard<small>${hint(1)}</small></button><button class="g" data-r="2">Good<small>${hint(2)}</small></button><button class="e" data-r="3">Easy<small>${hint(3)}</small></button></div>` : `<div style="margin-top:auto;padding-top:30px"><button class="btn pri" id="reveal">Reveal answer</button></div>`}
-      <div class="kbds"><kbd>Space</kbd> reveal · <kbd>1</kbd> again · <kbd>2</kbd> hard · <kbd>3</kbd> good · <kbd>4</kbd> easy</div></div>`;
+      <div class="fnav"><button class="btn sm" data-nav="-1" ${FC.i ? '' : 'disabled'}>← Previous</button>${FC.show ? '<button class="btn sm" id="hide">Hide answer</button>' : ''}<button class="btn sm" data-nav="1">Skip →</button></div>
+      <div class="kbds"><kbd>Space</kbd> reveal · <kbd>1</kbd> again · <kbd>2</kbd> hard · <kbd>3</kbd> good · <kbd>4</kbd> easy · <kbd>←</kbd> <kbd>→</kbd> previous / skip</div></div>`;
   };
   const rate = r => { const t = FC.queue[FC.i]; if (!t || !FC.show) return; const a = after(t, r); S.srs[t.id] = {box: a.box, due: Date.now() + a.gap}; FC.stat[['again', 'hard', 'good', 'easy'][r]]++; save(); FC.i++; FC.show = false; flashcards(); };
+  const go = d => { const n = FC.i + d; if (n < 0 || n > FC.queue.length) return; FC.i = n; FC.show = false; draw(); };
   draw();
   app.onclick = e => {
+    const nv = e.target.closest('[data-nav]'); if (nv && !nv.disabled) { go(+nv.dataset.nav); return; }
+    if (e.target.id === 'hide') { FC.show = false; draw(); return; }
     if (e.target.id === 'reveal') { FC.show = true; draw(); return; }
     const r = e.target.closest('[data-r]'); if (r) { rate(+r.dataset.r); return; }
     const st = e.target.closest('[data-star]'); if (st) { const id = st.dataset.star; S.star[id] ? delete S.star[id] : S.star[id] = 1; save(); st.textContent = S.star[id] ? '★' : '☆'; return; }
@@ -167,7 +171,7 @@ function flashcards() {
     if (e.target.id === 'fcRebuild') { fcBuild(); flashcards(); return; }
     globalClicks(e);
   };
-  keyHandler = ev => { if (ev.key === ' ') { ev.preventDefault(); if (!FC.show) { FC.show = true; draw(); } } else if ('1234'.includes(ev.key) && ev.key) rate(+ev.key - 1); };
+  keyHandler = ev => { if (ev.key === ' ') { ev.preventDefault(); if (!FC.show) { FC.show = true; draw(); } } else if (ev.key === 'ArrowLeft') go(-1); else if (ev.key === 'ArrowRight') go(1); else if ('1234'.includes(ev.key) && ev.key) rate(+ev.key - 1); };
 }
 
 /* mock interview */
