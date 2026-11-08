@@ -11,4 +11,4 @@ Push, then Settings → Pages → Deploy from branch → `main` / root. `.nojeky
 ## Edit content
 Edit `data/chN.json` (contract in `data/SCHEMA.md`), add diagrams under `diagrams/`, then run `python3 build.py` to regenerate `js/data.js`.
 
-Per-question animated walkthroughs (symptom → diagnosis → fix → verify) live in `walkthroughs/`; regenerate with `python3 build_walkthroughs.py`.# kubernetes-interview-prep
+Per-question animated walkthroughs (symptom → diagnosis → fix → verify) live in `walkthroughs/`; regenerate with `python3 build_walkthroughs.py`. Each has synced voice-over (Samantha) and subtitles; regenerate audio with `python3 build_audio.py`.# kubernetes-interview-prep

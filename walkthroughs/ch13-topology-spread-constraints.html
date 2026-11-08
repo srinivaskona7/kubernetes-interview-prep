@@ -274,7 +274,7 @@ function renderStep(i){
   if(playing) scheduleAfterRender();
 }
 
-let currentAudio=null; let timer=null;
+let currentAudio=null;
 function voiceOn(){ return localStorage.getItem('kp_voice')!=='off'; }
 function stopAudio(){ if(currentAudio){ currentAudio.pause(); currentAudio=null; } }
 function clearTimer(){ if(timer){clearTimeout(timer);timer=null;} }
