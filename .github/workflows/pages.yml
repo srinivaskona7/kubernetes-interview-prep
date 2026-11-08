@@ -37,6 +37,7 @@ jobs:
         run: |
           mkdir _site
           cp -r index.html css js assets .nojekyll _site/ 2>/dev/null || cp -r index.html css js assets _site/
+          if [ -d walkthroughs ]; then cp -r walkthroughs _site/; fi
           touch _site/.nojekyll
 
       - name: Smoke test
@@ -44,6 +45,7 @@ jobs:
           for f in index.html css/style.css js/app.js js/data.js assets/logo.svg assets/mark.svg; do
             test -s "_site/$f" || { echo "::error::missing $f"; exit 1; }
           done
+          if [ -d walkthroughs ]; then test -s "_site/walkthroughs/index.html" || { echo "::error::missing walkthroughs/index.html"; exit 1; }; fi
           test "$(wc -c < _site/js/data.js)" -gt 200000 || { echo "::error::data.js suspiciously small"; exit 1; }
           grep -q 'js/data.js' _site/index.html
 
