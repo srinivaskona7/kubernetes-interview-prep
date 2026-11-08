@@ -1,35 +1,31 @@
 #!/usr/bin/env python3
-import json, glob, os, subprocess, tempfile
+import json, glob, os, asyncio
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, "walkthroughs", "audio")
 os.makedirs(OUT, exist_ok=True)
 
 import build_walkthroughs as bw
+import edge_tts
 
-VOICE = "Samantha"
-RATE = 185
+VOICE = "en-US-AriaNeural"
+RATE = "+0%"
+CONCURRENCY = 8
 
-def tts(text, outpath):
-    if os.path.exists(outpath):
-        return
-    # write text to temp file
-    fd, txtpath = tempfile.mkstemp(suffix=".txt")
-    with os.fdopen(fd, "w") as f:
-        f.write(text)
-    aiff = outpath.replace(".mp3", ".aiff")
-    try:
-        subprocess.run(["say", "-v", VOICE, "-r", str(RATE), "-f", txtpath, "-o", aiff],
-                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(["ffmpeg", "-y", "-i", aiff, "-q:a", "4", outpath],
-                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    finally:
-        for p in (txtpath, aiff):
-            try: os.remove(p)
-            except OSError: pass
+async def gen_one(text, outpath, sem):
+    async with sem:
+        if os.path.exists(outpath):
+            return
+        text = text.replace("\n", " ").strip()
+        if not text:
+            return
+        comm = edge_tts.Communicate(text, voice=VOICE, rate=RATE)
+        await comm.save(outpath)
 
-def main():
-    count = 0
+async def main_async():
+    sem = asyncio.Semaphore(CONCURRENCY)
+    tasks = []
+    total = 0
     for f in sorted(glob.glob(os.path.join(ROOT, "data", "ch*.json"))):
         data = json.load(open(f))
         chnum = data["number"]
@@ -38,16 +34,15 @@ def main():
             steps, *_ = bw.build_steps(topic, chnum)
             for i, st in enumerate(steps):
                 outpath = os.path.join(OUT, "%s_%d.mp3" % (tid, i))
-                text = st["caption"]
-                # make TTS-friendly: strip weird
-                text = text.replace("\n", " ").strip()
-                if not text:
-                    text = st["title"]
-                tts(text, outpath)
-                count += 1
-                if count % 25 == 0:
-                    print("done", count)
-    print("total audio files:", count)
+                text = st["caption"] or st["title"]
+                tasks.append(gen_one(text, outpath, sem))
+                total += 1
+    print("total audio files:", total)
+    await asyncio.gather(*tasks)
+    print("done")
+
+def main():
+    asyncio.run(main_async())
 
 if __name__ == "__main__":
     main()

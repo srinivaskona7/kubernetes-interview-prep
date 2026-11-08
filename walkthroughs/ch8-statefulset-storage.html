@@ -70,6 +70,11 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn:hover{filter:brightness(1.15)}
 .speed{margin-left:auto;display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.voicepick{display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.voicepick select,.speed select{background:var(--panel2);color:var(--ink);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-family:var(--mono);font-size:11px}
+.caption{line-height:1.6}
+.caption .w{display:inline-block;padding:0 1px;border-radius:3px;transition:background .12s,color .12s}
+.caption .w.active{background:rgba(255,122,69,.25);color:var(--accent);font-weight:600}
 select{background:var(--panel2);color:var(--ink);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-family:var(--mono);font-size:11px}
 .progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:12px}
 .progress .bar{height:100%;background:var(--accent);transition:width .4s}
@@ -150,6 +155,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <button class="btn" id="nextBtn">Next ▶</button>
         <button class="btn" id="resetBtn">↺ Reset</button>
         <button class="btn" id="voiceBtn">🔊 Voice: on</button>
+        <div class="voicepick">voice <select id="voiceSelect"><option value="edge">Edge · Aria (premium)</option></select></div>
         <div class="speed">speed <select id="speed"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="0.5">0.5×</option></select></div>
       </div>
       <div class="progress"><div class="bar" id="pbar" style="width:0%"></div></div>
@@ -282,16 +288,179 @@ const steptitle = document.getElementById('steptitle');
 const pbar = document.getElementById('pbar');
 const podstatus = document.getElementById('podstatus');
 const statusline = document.getElementById('statusline');
+const voiceSelect = document.getElementById('voiceSelect');
 
 function speed(){ return parseFloat(document.getElementById('speed').value); }
+
+// ---- voice preference ----
+function voiceOn(){ return localStorage.getItem('kp_voice')!=='off'; }
+function voiceChoice(){ return localStorage.getItem('kp_voice_choice') || 'edge'; }
+function setVoiceChoice(v){ localStorage.setItem('kp_voice_choice', v); }
+
+// populate browser voices
+function populateVoices(){
+  if(!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  // keep existing edge option, add english voices
+  const eng = voices.filter(v=>/^en/i.test(v.lang));
+  // dedupe by name
+  const seen=new Set(['edge']);
+  eng.forEach(v=>{
+    if(seen.has(v.name)) return;
+    seen.add(v.name);
+    const opt=document.createElement('option');
+    opt.value='browser::'+v.name;
+    opt.textContent=v.name + ' ('+v.lang+')';
+    voiceSelect.appendChild(opt);
+  });
+}
+if('speechSynthesis' in window){
+  populateVoices();
+  window.speechSynthesis.onvoiceschanged = populateVoices;
+}
+// restore selection
+(function(){ const v=voiceChoice(); const opt=Array.from(voiceSelect.options).find(o=>o.value===v); if(opt) voiceSelect.value=v; })();
+
+let currentAudio=null;
+let currentUtterance=null;
+function stopAudio(){
+  if(currentAudio){ currentAudio.pause(); currentAudio=null; }
+  if(currentUtterance){ try{window.speechSynthesis.cancel();}catch(e){} currentUtterance=null; }
+}
+function clearTimer(){ if(timer){clearTimeout(timer);timer=null;} }
+function advance(){ if(!playing) return; if(idx>=STEPS.length-1){ pause(); return; } renderStep(idx+1); }
+
+// ---- word spans for premium subtitles ----
+function wordsOf(text){ return (text||'').split(/\s+/).filter(Boolean); }
+function renderCaption(text){
+  caption.innerHTML='';
+  const words=wordsOf(text);
+  words.forEach((w,i)=>{
+    const span=document.createElement('span');
+    span.className='w';
+    span.dataset.i=i;
+    span.textContent=w+' ';
+    caption.appendChild(span);
+  });
+  document.getElementById('subtitle').textContent=text;
+}
+function highlightWord(i){
+  const spans=caption.querySelectorAll('.w');
+  spans.forEach((sp,k)=>{ sp.classList.toggle('active', k===i); });
+}
+
+// estimated timing (character-weighted) for mp3 mode
+function estimateWordTimes(text, duration){
+  const words=wordsOf(text);
+  const totalChars=words.reduce((a,w)=>a+w.length,0) || 1;
+  const times=[];
+  let acc=0;
+  words.forEach(w=>{
+    const frac=w.length/totalChars;
+    const dur=frac*duration;
+    times.push({start:acc, end:acc+dur});
+    acc+=dur;
+  });
+  return times;
+}
+
+let wordTimes=null;
+let rafId=null;
+function stopRaf(){ if(rafId){cancelAnimationFrame(rafId);rafId=null;} }
+function startKaraokeAudio(audio, text){
+  wordTimes=null;
+  const onMeta=()=>{
+    wordTimes=estimateWordTimes(text, audio.duration||0);
+  };
+  if(audio.readyState>=1) onMeta();
+  else audio.addEventListener('loadedmetadata', onMeta, {once:true});
+  stopRaf();
+  const tick=()=>{
+    if(!playing || !currentAudio) return;
+    const a=currentAudio;
+    if(wordTimes){
+      const t=a.currentTime;
+      let i=wordTimes.findIndex(wt=> t>=wt.start && t<wt.end);
+      if(i<0 && wordTimes.length) i=wordTimes.length-1;
+      if(t>= (wordTimes[wordTimes.length-1].end||0)) i=wordTimes.length-1;
+      highlightWord(i);
+    }
+    rafId=requestAnimationFrame(tick);
+  };
+  rafId=requestAnimationFrame(tick);
+}
+
+function playMp3(s){
+  const a=new Audio(s.audio); currentAudio=a;
+  a.onended=()=>{ if(playing) advance(); };
+  a.onerror=()=>{ clearTimer(); timer=setTimeout(()=>{ if(playing) advance(); }, 4000); };
+  startKaraokeAudio(a, s.caption);
+  a.play().then(()=>{}).catch(()=>{ timer=setTimeout(()=>{ if(playing) advance(); }, Math.max(3500,(s.caption||'').length*55)); });
+}
+
+function playBrowserTTS(s){
+  if(!('speechSynthesis' in window)){ // fallback to timer
+    timer=setTimeout(()=>{ if(playing) advance(); }, Math.max(3500,(s.caption||'').length*55));
+    return;
+  }
+  const u=new SpeechSynthesisUtterance(s.caption);
+  const chosen=voiceChoice();
+  if(chosen.startsWith('browser::')){
+    const name=chosen.slice('browser::'.length);
+    const v=window.speechSynthesis.getVoices().find(x=>x.name===name);
+    if(v) u.voice=v;
+  }
+  u.rate=speed();
+  currentUtterance=u;
+  u.onboundary=(e)=>{
+    if(e.name==='word' || e.charIndex!=null){
+      // map charIndex to word index
+      const text=s.caption;
+      let idx=0, pos=0;
+      const words=wordsOf(text);
+      // find word containing charIndex
+      let ci=e.charIndex;
+      let cumulative=0;
+      let wi=0;
+      for(let k=0;k<words.length;k++){
+        const start=text.indexOf(words[k], cumulative);
+        const end=start+words[k].length;
+        if(ci>=start && ci<end){ wi=k; break; }
+        if(ci>=end){ wi=k; }
+        cumulative=end;
+      }
+      highlightWord(wi);
+    }
+  };
+  u.onend=()=>{ if(playing) advance(); };
+  u.onerror=()=>{ timer=setTimeout(()=>{ if(playing) advance(); }, 4000); };
+  window.speechSynthesis.speak(u);
+}
+
+function scheduleAfterRender(){
+  stopAudio(); clearTimer(); stopRaf();
+  if(!playing) return;
+  const s=STEPS[idx];
+  // reset highlight
+  highlightWord(-1);
+  if(!voiceOn()){
+    timer=setTimeout(()=>{ if(playing) advance(); }, Math.max(3500, (s.caption||'').length*55));
+    return;
+  }
+  const choice=voiceChoice();
+  if(choice==='edge' && s.audio){
+    playMp3(s);
+  } else {
+    playBrowserTTS(s);
+  }
+}
 
 function renderStep(i){
   idx = Math.max(0, Math.min(STEPS.length-1, i));
   const s = STEPS[idx];
   scene.className = 'scene ' + s.visual;
   steptitle.textContent = s.title;
-  caption.textContent = s.caption;
-  document.getElementById('subtitle').textContent = s.caption;
+  renderCaption(s.caption);
   termbody.innerHTML = '';
   const lines = s.terminal || [];
   lines.forEach((ln, k) => {
@@ -310,26 +479,9 @@ function renderStep(i){
   if(playing) scheduleAfterRender();
 }
 
-let currentAudio=null;
-function voiceOn(){ return localStorage.getItem('kp_voice')!=='off'; }
-function stopAudio(){ if(currentAudio){ currentAudio.pause(); currentAudio=null; } }
-function clearTimer(){ if(timer){clearTimeout(timer);timer=null;} }
-function advance(){ if(!playing) return; if(idx>=STEPS.length-1){ pause(); return; } renderStep(idx+1); }
 function play(){ playing=true; document.getElementById('playBtn').textContent='⏸ Pause'; renderStep(idx); }
-function pause(){ playing=false; document.getElementById('playBtn').textContent='▶ Play'; stopAudio(); clearTimer(); }
-function scheduleAfterRender(){
-  stopAudio(); clearTimer();
-  if(!playing) return;
-  const s=STEPS[idx];
-  if(voiceOn() && s.audio){
-    const a=new Audio(s.audio); currentAudio=a;
-    a.onended=()=>{ if(playing) advance(); };
-    a.onerror=()=>{ clearTimer(); timer=setTimeout(()=>{ if(playing) advance(); }, 4000); };
-    a.play().catch(()=>{ timer=setTimeout(()=>{ if(playing) advance(); }, 4000); });
-  } else {
-    timer=setTimeout(()=>{ if(playing) advance(); }, Math.max(3500, (s.caption||'').length*55));
-  }
-}
+function pause(){ playing=false; document.getElementById('playBtn').textContent='▶ Play'; stopAudio(); clearTimer(); stopRaf(); }
+
 document.getElementById('playBtn').addEventListener('click',()=>{ playing?pause():play(); });
 document.getElementById('prevBtn').addEventListener('click',()=>{ pause(); renderStep(idx-1); });
 document.getElementById('nextBtn').addEventListener('click',()=>{ pause(); renderStep(idx+1); });
@@ -338,6 +490,8 @@ const voiceBtn=document.getElementById('voiceBtn');
 function paintVoice(){ voiceBtn.textContent = voiceOn()?'🔊 Voice: on':'🔇 Voice: off'; }
 voiceBtn.addEventListener('click',()=>{ localStorage.setItem('kp_voice', voiceOn()?'off':'on'); paintVoice(); if(playing){ pause(); play(); } });
 paintVoice();
+
+voiceSelect.addEventListener('change',()=>{ setVoiceChoice(voiceSelect.value); if(playing){ pause(); play(); } });
 document.getElementById('speed').addEventListener('change',()=>{ if(playing){pause();play();} });
 document.addEventListener('keydown',e=>{
   if(e.code==='Space'){e.preventDefault(); playing?pause():play();}
