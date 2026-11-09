@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -304,7 +305,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Mixing up 401 and 403", "terminal": [{"type": "cmd", "text": "kubectl auth can-i delete pods -n dev"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "role/app                 0/1     Forbidden          6          4m"}], "audio": "audio/ch9-api-request-gates_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Picture airport security. Passport check proves who you are, the boarding pass check proves you may enter this gate, and the baggage scan checks what you are carrying. Failing any step stops you.", "terminal": [{"type": "cmd", "text": "kubectl auth can-i delete pods -n dev"}, {"type": "out", "text": "pod \"app-7d9f4b6c8-x2kpq\" deleted"}], "audio": "audio/ch9-api-request-gates_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Order matters: authn, then authz, then admission, then persistence", "terminal": [{"type": "cmd", "text": "kubectl auth whoami"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch9-api-request-gates_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "It passes three gates in order: authentication (who are you), authorization (are you allowed, usually RBAC) and admission (is the object acceptable). Only then is it stored in etcd.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch9-api-request-gates_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Mixing up 401 and 403", "terminal": [{"type": "cmd", "text": "kubectl auth can-i delete pods -n dev", "note": "Ask the authorizer whether an action is allowed"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "role/app                 0/1     Forbidden          6          4m"}], "audio": "audio/ch9-api-request-gates_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Picture airport security. Passport check proves who you are, the boarding pass check proves you may enter this gate, and the baggage scan checks what you are carrying. Failing any step stops you.", "terminal": [{"type": "cmd", "text": "kubectl auth can-i delete pods -n dev", "note": "Ask the authorizer whether an action is allowed"}, {"type": "out", "text": "pod \"app-7d9f4b6c8-x2kpq\" deleted"}], "audio": "audio/ch9-api-request-gates_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Order matters: authn, then authz, then admission, then persistence", "terminal": [{"type": "cmd", "text": "kubectl auth whoami", "note": "Show the identity the API server sees for you"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch9-api-request-gates_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "It passes three gates in order: authentication (who are you), authorization (are you allowed, usually RBAC) and admission (is the object acceptable). Only then is it stored in etcd.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A", "note": ""}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch9-api-request-gates_3.mp3"}];
 const NAV = {"id": "ch9-api-request-gates", "prev": "ch9-secure-control-plane", "next": "ch9-rbac-roles-bindings"};
 let idx = 0;
 let playing = false;
@@ -531,6 +532,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Allowed' : (s.visual==='broken' ? 'Forbidden' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

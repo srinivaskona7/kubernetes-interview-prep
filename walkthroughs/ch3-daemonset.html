@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -283,7 +284,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Using a Deployment with anti-affinity to fake a DaemonSet.", "terminal": [{"type": "cmd", "text": "kubectl get ds"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "deployment/app           0/1     Progressing        6          4m"}], "audio": "audio/ch3-daemonset_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Think of a security guard assigned to every building in a campus: build a new building and a guard appears; demolish one and the post disappears.", "terminal": [{"type": "cmd", "text": "kubectl get ds"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl get pods -o wide -l name=logging-agent"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch3-daemonset_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "No replicas field; the node count decides.", "terminal": [{"type": "cmd", "text": "kubectl apply -f logging-agent-ds.yaml"}, {"type": "out", "text": "deployment.apps/app configured"}, {"type": "out", "text": "service/app unchanged"}], "audio": "audio/ch3-daemonset_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A DaemonSet ensures one copy of a Pod runs on every node (or a chosen subset), automatically adding it to new nodes and cleaning up when nodes leave.", "terminal": [{"type": "cmd", "text": "kubectl get ds"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch3-daemonset_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Using a Deployment with anti-affinity to fake a DaemonSet.", "terminal": [{"type": "cmd", "text": "kubectl get ds", "note": "DESIRED equals the number of eligible nodes"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "deployment/app           0/1     Progressing        6          4m"}], "audio": "audio/ch3-daemonset_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Think of a security guard assigned to every building in a campus: build a new building and a guard appears; demolish one and the post disappears.", "terminal": [{"type": "cmd", "text": "kubectl get ds", "note": "DESIRED equals the number of eligible nodes"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl get pods -o wide -l name=logging-agent", "note": "Verify one Pod per node"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch3-daemonset_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "No replicas field; the node count decides.", "terminal": [{"type": "cmd", "text": "kubectl apply -f logging-agent-ds.yaml", "note": "Create the logging-agent DaemonSet"}, {"type": "out", "text": "deployment.apps/app configured"}, {"type": "out", "text": "service/app unchanged"}], "audio": "audio/ch3-daemonset_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A DaemonSet ensures one copy of a Pod runs on every node (or a chosen subset), automatically adding it to new nodes and cleaning up when nodes leave.", "terminal": [{"type": "cmd", "text": "kubectl get ds", "note": "DESIRED equals the number of eligible nodes"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch3-daemonset_3.mp3"}];
 const NAV = {"id": "ch3-daemonset", "prev": "ch3-statefulset-vs-deployment", "next": "ch3-jobs-cronjobs"};
 let idx = 0;
 let playing = false;
@@ -510,6 +511,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Available' : (s.visual==='broken' ? 'Progressing' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

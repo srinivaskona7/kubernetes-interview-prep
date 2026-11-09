@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -251,7 +252,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Listing tools without explaining what the Operator automates.", "terminal": [{"type": "cmd", "text": "kubectl get crd | grep -i monitoring.coreos.com"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "crd/app                  0/1     NotEstablished     6          4m"}], "audio": "audio/ch12-operator-examples_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Naming real operators shows you have worked beyond theory. For each, say what CRDs it adds and which pain it removes.", "terminal": [{"type": "cmd", "text": "kubectl get crd | grep -i monitoring.coreos.com"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch12-operator-examples_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Each ships its own CRDs such as Prometheus, Kafka, Elasticsearch or MongoDBCommunity.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch12-operator-examples_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Common ones are the Prometheus Operator, Strimzi for Kafka, Elastic Cloud on Kubernetes, and database operators for MySQL and MongoDB.", "terminal": [{"type": "cmd", "text": "kubectl get crd | grep -i monitoring.coreos.com"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch12-operator-examples_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Listing tools without explaining what the Operator automates.", "terminal": [{"type": "cmd", "text": "kubectl get crd | grep -i monitoring.coreos.com", "note": "See CRDs added by the Prometheus Operator"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "crd/app                  0/1     NotEstablished     6          4m"}], "audio": "audio/ch12-operator-examples_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Naming real operators shows you have worked beyond theory. For each, say what CRDs it adds and which pain it removes.", "terminal": [{"type": "cmd", "text": "kubectl get crd | grep -i monitoring.coreos.com", "note": "See CRDs added by the Prometheus Operator"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch12-operator-examples_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Each ships its own CRDs such as Prometheus, Kafka, Elasticsearch or MongoDBCommunity.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app", "note": ""}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch12-operator-examples_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Common ones are the Prometheus Operator, Strimzi for Kafka, Elastic Cloud on Kubernetes, and database operators for MySQL and MongoDB.", "terminal": [{"type": "cmd", "text": "kubectl get crd | grep -i monitoring.coreos.com", "note": "See CRDs added by the Prometheus Operator"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch12-operator-examples_3.mp3"}];
 const NAV = {"id": "ch12-operator-examples", "prev": "ch12-what-is-an-operator", "next": "ch12-operator-components"};
 let idx = 0;
 let playing = false;
@@ -478,6 +479,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Established' : (s.visual==='broken' ? 'NotEstablished' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

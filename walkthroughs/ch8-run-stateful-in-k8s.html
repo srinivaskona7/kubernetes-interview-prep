@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -281,7 +282,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Saying Kubernetes cannot run stateful apps at all.", "terminal": [{"type": "cmd", "text": "kubectl get statefulset,pvc,pods -l app=<name>"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pvc/data                 0/1     Pending            6          4m"}], "audio": "audio/ch8-run-stateful-in-k8s_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "The question is about trade-offs, not a yes or no. Kubernetes reschedules Pods freely, upgrades nodes, and moves workloads, which is great for stateless code and risky for a system whose disk is the product.", "terminal": [{"type": "cmd", "text": "kubectl get statefulset,pvc,pods -l app=<name>"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch8-run-stateful-in-k8s_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Critical relational data: prefer managed services or dedicated hosts.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch8-run-stateful-in-k8s_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "It can work, but only when the team understands the risks. For business-critical relational databases a managed service or dedicated hosts is usually safer; caches, queues and many NoSQL systems fit well with StatefulSets, PVCs and an operator.", "terminal": [{"type": "cmd", "text": "kubectl get statefulset,pvc,pods -l app=<name>"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch8-run-stateful-in-k8s_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Saying Kubernetes cannot run stateful apps at all.", "terminal": [{"type": "cmd", "text": "kubectl get statefulset,pvc,pods -l app=<name>", "note": "See the stateful pieces of one application together"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pvc/data                 0/1     Pending            6          4m"}], "audio": "audio/ch8-run-stateful-in-k8s_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "The question is about trade-offs, not a yes or no. Kubernetes reschedules Pods freely, upgrades nodes, and moves workloads, which is great for stateless code and risky for a system whose disk is the product.", "terminal": [{"type": "cmd", "text": "kubectl get statefulset,pvc,pods -l app=<name>", "note": "See the stateful pieces of one application together"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch8-run-stateful-in-k8s_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Critical relational data: prefer managed services or dedicated hosts.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app", "note": ""}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch8-run-stateful-in-k8s_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "It can work, but only when the team understands the risks. For business-critical relational databases a managed service or dedicated hosts is usually safer; caches, queues and many NoSQL systems fit well with StatefulSets, PVCs and an operator.", "terminal": [{"type": "cmd", "text": "kubectl get statefulset,pvc,pods -l app=<name>", "note": "See the stateful pieces of one application together"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch8-run-stateful-in-k8s_3.mp3"}];
 const NAV = {"id": "ch8-run-stateful-in-k8s", "prev": "ch8-statefulset-storage", "next": "ch8-monitor-stateful"};
 let idx = 0;
 let playing = false;
@@ -508,6 +509,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Bound' : (s.visual==='broken' ? 'Pending' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

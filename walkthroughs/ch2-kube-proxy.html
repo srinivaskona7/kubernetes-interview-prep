@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -282,7 +283,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Calling it a proxy that carries traffic in the data path; in iptables mode it only programs rules.", "terminal": [{"type": "cmd", "text": "kubectl get svc,endpointslices"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "kube-apiserver           0/1     NotReady           6          4m"}], "audio": "audio/ch2-kube-proxy_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "A Service IP is virtual: no machine owns it. kube-proxy writes rules (iptables, IPVS or nftables) that rewrite the destination to a real Pod IP.", "terminal": [{"type": "cmd", "text": "kubectl get svc,endpointslices"}, {"type": "out", "text": "NAME   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE"}, {"type": "out", "text": "app    ClusterIP   10.96.42.10    <none>        80/TCP    2m"}, {"type": "cmd", "text": "kubectl -n kube-system get ds kube-proxy"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch2-kube-proxy_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "ClusterIP: internal virtual IP only.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch2-kube-proxy_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "kube-proxy runs on every node, watches Services and EndpointSlices, and programs kernel rules so traffic to a Service's virtual IP reaches one of its healthy backing Pods.", "terminal": [{"type": "cmd", "text": "kubectl get svc,endpointslices"}, {"type": "out", "text": "NAME   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE"}, {"type": "out", "text": "app    ClusterIP   10.96.42.10    <none>        80/TCP    2m"}], "audio": "audio/ch2-kube-proxy_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Calling it a proxy that carries traffic in the data path; in iptables mode it only programs rules.", "terminal": [{"type": "cmd", "text": "kubectl get svc,endpointslices", "note": "Shows Services and the Pod IPs behind them"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "kube-apiserver           0/1     NotReady           6          4m"}], "audio": "audio/ch2-kube-proxy_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "A Service IP is virtual: no machine owns it. kube-proxy writes rules (iptables, IPVS or nftables) that rewrite the destination to a real Pod IP.", "terminal": [{"type": "cmd", "text": "kubectl get svc,endpointslices", "note": "Shows Services and the Pod IPs behind them"}, {"type": "out", "text": "NAME   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE"}, {"type": "out", "text": "app    ClusterIP   10.96.42.10    <none>        80/TCP    2m"}, {"type": "cmd", "text": "kubectl -n kube-system get ds kube-proxy", "note": "kube-proxy usually runs as a DaemonSet"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch2-kube-proxy_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "ClusterIP: internal virtual IP only.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app", "note": ""}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch2-kube-proxy_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "kube-proxy runs on every node, watches Services and EndpointSlices, and programs kernel rules so traffic to a Service's virtual IP reaches one of its healthy backing Pods.", "terminal": [{"type": "cmd", "text": "kubectl get svc,endpointslices", "note": "Shows Services and the Pod IPs behind them"}, {"type": "out", "text": "NAME   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE"}, {"type": "out", "text": "app    ClusterIP   10.96.42.10    <none>        80/TCP    2m"}], "audio": "audio/ch2-kube-proxy_3.mp3"}];
 const NAV = {"id": "ch2-kube-proxy", "prev": "ch2-kubelet", "next": "ch2-runtime-vs-cri"};
 let idx = 0;
 let playing = false;
@@ -509,6 +510,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Ready' : (s.visual==='broken' ? 'NotReady' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

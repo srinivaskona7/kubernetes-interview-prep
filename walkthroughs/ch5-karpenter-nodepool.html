@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -293,7 +294,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Creating overlapping NodePools without weights.", "terminal": [{"type": "cmd", "text": "kubectl get nodepools"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "hpa/app                  0/1     Unknown            6          4m"}], "audio": "audio/ch5-karpenter-nodepool_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Karpenter needs at least one NodePool before it will create anything. When Pods are Pending, it finds NodePools whose rules allow them, filters instance types by the requirements, and launches one.", "terminal": [{"type": "cmd", "text": "kubectl get nodepools"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl get nodeclaims"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch5-karpenter-nodepool_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "At least one NodePool must exist.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch5-karpenter-nodepool_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A NodePool is the rulebook for the nodes Karpenter may create: allowed zones, instance types, architectures, taints, limits and expiry, plus a link to a NodeClass for cloud-specific details.", "terminal": [{"type": "cmd", "text": "kubectl get nodepools"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch5-karpenter-nodepool_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Creating overlapping NodePools without weights.", "terminal": [{"type": "cmd", "text": "kubectl get nodepools", "note": "Lists NodePools in the cluster"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "hpa/app                  0/1     Unknown            6          4m"}], "audio": "audio/ch5-karpenter-nodepool_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Karpenter needs at least one NodePool before it will create anything. When Pods are Pending, it finds NodePools whose rules allow them, filters instance types by the requirements, and launches one.", "terminal": [{"type": "cmd", "text": "kubectl get nodepools", "note": "Lists NodePools in the cluster"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl get nodeclaims", "note": "Shows the machines Karpenter has requested"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch5-karpenter-nodepool_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "At least one NodePool must exist.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app", "note": ""}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch5-karpenter-nodepool_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A NodePool is the rulebook for the nodes Karpenter may create: allowed zones, instance types, architectures, taints, limits and expiry, plus a link to a NodeClass for cloud-specific details.", "terminal": [{"type": "cmd", "text": "kubectl get nodepools", "note": "Lists NodePools in the cluster"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch5-karpenter-nodepool_3.mp3"}];
 const NAV = {"id": "ch5-karpenter-nodepool", "prev": "ch5-karpenter-vs-ca", "next": "ch5-karpenter-consolidation-budgets"};
 let idx = 0;
 let playing = false;
@@ -520,6 +521,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Healthy' : (s.visual==='broken' ? 'Unknown' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

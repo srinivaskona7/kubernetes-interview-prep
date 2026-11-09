@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -268,7 +269,7 @@ spec:
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Setting minAvailable equal to replicas, which makes nodes impossible to drain.", "terminal": [{"type": "cmd", "text": "kubectl get pdb"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "node/cp-1                0/1     NotReady           6          4m"}], "audio": "audio/ch13-pod-disruption-budgets_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Voluntary disruptions are the ones you or the platform cause on purpose: draining a node, upgrading a node pool, or the autoscaler removing a node. A PDB makes those operations wait rather than evicting every replica together.", "terminal": [{"type": "cmd", "text": "kubectl get pdb"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch13-pod-disruption-budgets_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Covers voluntary disruptions only: drain, upgrade, eviction API.", "terminal": [{"type": "cmd", "text": "apiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata:\n  name: my-app-pdb\nspec:\n  minAvailable: 2\n  selector:\n    matchLabels:\n      app: my-app"}, {"type": "out", "text": "# command completed"}, {"type": "cmd", "text": "kubectl create pdb my-app-pdb --selector=app=my-app --min-available=2"}, {"type": "out", "text": "deployment.apps/app created"}], "audio": "audio/ch13-pod-disruption-budgets_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A PDB limits how many Pods of an application may be taken down at once by voluntary disruptions such as node drains and upgrades, so a minimum stays available.", "terminal": [{"type": "cmd", "text": "kubectl get pdb"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch13-pod-disruption-budgets_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Setting minAvailable equal to replicas, which makes nodes impossible to drain.", "terminal": [{"type": "cmd", "text": "kubectl get pdb", "note": "Shows allowed disruptions right now"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "node/cp-1                0/1     NotReady           6          4m"}], "audio": "audio/ch13-pod-disruption-budgets_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Voluntary disruptions are the ones you or the platform cause on purpose: draining a node, upgrading a node pool, or the autoscaler removing a node. A PDB makes those operations wait rather than evicting every replica together.", "terminal": [{"type": "cmd", "text": "kubectl get pdb", "note": "Shows allowed disruptions right now"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch13-pod-disruption-budgets_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Covers voluntary disruptions only: drain, upgrade, eviction API.", "terminal": [{"type": "cmd", "text": "apiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata:\n  name: my-app-pdb\nspec:\n  minAvailable: 2\n  selector:\n    matchLabels:\n      app: my-app", "note": "PDB keeping at least two my-app Pods up"}, {"type": "out", "text": "# command completed"}, {"type": "cmd", "text": "kubectl create pdb my-app-pdb --selector=app=my-app --min-available=2", "note": "Create the same budget from the CLI"}, {"type": "out", "text": "deployment.apps/app created"}], "audio": "audio/ch13-pod-disruption-budgets_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A PDB limits how many Pods of an application may be taken down at once by voluntary disruptions such as node drains and upgrades, so a minimum stays available.", "terminal": [{"type": "cmd", "text": "kubectl get pdb", "note": "Shows allowed disruptions right now"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch13-pod-disruption-budgets_3.mp3"}];
 const NAV = {"id": "ch13-pod-disruption-budgets", "prev": "ch13-spread-vs-anti-affinity", "next": "ch13-safe-node-maintenance"};
 let idx = 0;
 let playing = false;
@@ -495,6 +496,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Ready' : (s.visual==='broken' ? 'NotReady' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

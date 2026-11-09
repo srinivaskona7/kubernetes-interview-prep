@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -248,7 +249,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Testing only the final version jump in a clean cluster, not the real upgrade path.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/my-app"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "volume/snap              0/1     Failed             6          4m"}], "audio": "audio/ch15-app-and-addons_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Add-ons are the plumbing. An incompatible CNI or ingress controller can break networking or routing even when all nodes are Ready, so upgrade each to the version recommended for the new Kubernetes release.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/my-app"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch15-app-and-addons_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Check add-on compatibility before and after.", "terminal": [{"type": "cmd", "text": "kubectl set image deployment/my-app my-container=my-app:v2"}, {"type": "out", "text": "# command completed"}, {"type": "cmd", "text": "kubectl rollout restart deployment/my-app"}, {"type": "out", "text": "deployment.apps/app rolled out"}, {"type": "cmd", "text": "kubectl rollout undo deployment/my-app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch15-app-and-addons_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Add-ons such as the CNI, DNS and ingress controller, your Helm charts and application dependencies, all validated in staging first.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/my-app"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch15-app-and-addons_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Testing only the final version jump in a clean cluster, not the real upgrade path.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/my-app", "note": "Wait for it to finish"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "volume/snap              0/1     Failed             6          4m"}], "audio": "audio/ch15-app-and-addons_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Add-ons are the plumbing. An incompatible CNI or ingress controller can break networking or routing even when all nodes are Ready, so upgrade each to the version recommended for the new Kubernetes release.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/my-app", "note": "Wait for it to finish"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch15-app-and-addons_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Check add-on compatibility before and after.", "terminal": [{"type": "cmd", "text": "kubectl set image deployment/my-app my-container=my-app:v2", "note": "Trigger a rolling update"}, {"type": "out", "text": "# command completed"}, {"type": "cmd", "text": "kubectl rollout restart deployment/my-app", "note": "Pick up changed ConfigMap or Secret values"}, {"type": "out", "text": "deployment.apps/app rolled out"}, {"type": "cmd", "text": "kubectl rollout undo deployment/my-app", "note": "Roll back"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch15-app-and-addons_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Add-ons such as the CNI, DNS and ingress controller, your Helm charts and application dependencies, all validated in staging first.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/my-app", "note": "Wait for it to finish"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch15-app-and-addons_3.mp3"}];
 const NAV = {"id": "ch15-app-and-addons", "prev": "ch15-pdb", "next": "ch15-rto-rpo"};
 let idx = 0;
 let playing = false;
@@ -475,6 +476,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Ready' : (s.visual==='broken' ? 'Failed' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

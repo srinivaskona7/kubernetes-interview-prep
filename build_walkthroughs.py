@@ -111,6 +111,7 @@ def build_steps(topic, chnum):
     cloud, pod, broken_status, healthy_status = SCENE.get(chnum, ("cluster", "pod/app", "Failing", "Healthy"))
     steps = []
     cmds = topic.get("commands") or []
+    cmd_notes = {c["cmd"]: c.get("note", "") for c in cmds}
     diag_cmds = [c for c in cmds if classify(c["cmd"]) == "diag"]
     fix_cmds = [c for c in cmds if classify(c["cmd"]) == "fix"]
     # Step 1 symptom
@@ -119,20 +120,20 @@ def build_steps(topic, chnum):
         "title": "1. Symptom — what went wrong",
         "visual": "broken",
         "caption": synth_symptom(topic),
-        "terminal": [{"type": "cmd", "text": first_diag}] + [{"type": "err", "text": t} for t in broken_output(cloud, pod, broken_status)],
+        "terminal": [{"type": "cmd", "text": first_diag, "note": cmd_notes.get(first_diag, "")}] + [{"type": "err", "text": t} for t in broken_output(cloud, pod, broken_status)],
     })
     # Step 2 diagnose
     if diag_cmds:
         diag_lines = []
         for c in diag_cmds[:3]:
-            diag_lines.append({"type": "cmd", "text": c["cmd"]})
+            diag_lines.append({"type": "cmd", "text": c["cmd"], "note": c.get("note", "")})
             for ln in sample_output(c["cmd"]):
                 diag_lines.append({"type": "out", "text": ln})
     else:
-        diag_lines = [{"type": "cmd", "text": "kubectl describe " + pod}]
+        diag_lines = [{"type": "cmd", "text": "kubectl describe " + pod, "note": ""}]
         for ln in sample_output("kubectl describe x"):
             diag_lines.append({"type": "out", "text": ln})
-        diag_lines.append({"type": "cmd", "text": "kubectl logs " + pod + " --previous"})
+        diag_lines.append({"type": "cmd", "text": "kubectl logs " + pod + " --previous", "note": ""})
         for ln in sample_output("kubectl logs x"):
             diag_lines.append({"type": "out", "text": ln})
     # flatten nested (none now)
@@ -147,12 +148,12 @@ def build_steps(topic, chnum):
     if fix_cmds:
         fix_lines = []
         for c in fix_cmds[:4]:
-            fix_lines.append({"type": "cmd", "text": c["cmd"]})
+            fix_lines.append({"type": "cmd", "text": c["cmd"], "note": c.get("note", "")})
             for ln in sample_output(c["cmd"]):
                 fix_lines.append({"type": "out", "text": ln})
     else:
         fc = "kubectl rollout restart deployment/app"
-        fix_lines = [{"type": "cmd", "text": fc}] + [{"type": "out", "text": ln} for ln in sample_output(fc)]
+        fix_lines = [{"type": "cmd", "text": fc, "note": ""}] + [{"type": "out", "text": ln} for ln in sample_output(fc)]
     steps.append({
         "title": "3. Fix — apply the change",
         "visual": "fix",
@@ -169,7 +170,7 @@ def build_steps(topic, chnum):
         "title": "4. Verify — confirm recovery",
         "visual": "healthy",
         "caption": topic.get("say_first") or "Confirm the workload returns to a healthy state.",
-        "terminal": [{"type": "cmd", "text": verify_cmd}] + [{"type": "out", "text": ln.replace(broken_status, healthy_status) if broken_status in ln else ln} for ln in sample_output(verify_cmd)],
+        "terminal": [{"type": "cmd", "text": verify_cmd, "note": cmd_notes.get(verify_cmd, "")}] + [{"type": "out", "text": ln.replace(broken_status, healthy_status) if broken_status in ln else ln} for ln in sample_output(verify_cmd)],
     })
     # diagram svg for concept-accurate visual
     diag_svg = ""
@@ -309,6 +310,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -693,6 +695,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? '__HEALTHY__' : (s.visual==='broken' ? '__BROKEN__' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

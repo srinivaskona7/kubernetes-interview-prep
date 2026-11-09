@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -318,7 +319,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Saying the refresh deploys changes. It only detects them.", "terminal": [{"type": "cmd", "text": "argocd app get web --refresh"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "application/app          0/1     OutOfSync          6          4m"}], "audio": "audio/ch11-argocd-concepts-sync_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "An application in Argo CD is a group of Kubernetes resources treated as one unit. Target state is the desired condition from Git (image versions, replicas, config). Live state is the real condition in the cluster. A refresh fetches the latest target and compares it with live; it finds differences but does not change anything. A sync actually applies them.", "terminal": [{"type": "cmd", "text": "argocd app get web --refresh"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch11-argocd-concepts-sync_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Refresh = compare, sync = apply", "terminal": [{"type": "cmd", "text": "argocd app diff web"}, {"type": "out", "text": "# command completed"}, {"type": "cmd", "text": "argocd app sync web"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch11-argocd-concepts-sync_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Target state is what Git says, live state is what the cluster has, refresh compares them, and sync applies the difference. After a merge nothing is pushed; Argo CD notices, renders, compares and, if auto-sync is on, applies.", "terminal": [{"type": "cmd", "text": "argocd app get web --refresh"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch11-argocd-concepts-sync_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Saying the refresh deploys changes. It only detects them.", "terminal": [{"type": "cmd", "text": "argocd app get web --refresh", "note": "Force a refresh and show sync and health status"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "application/app          0/1     OutOfSync          6          4m"}], "audio": "audio/ch11-argocd-concepts-sync_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "An application in Argo CD is a group of Kubernetes resources treated as one unit. Target state is the desired condition from Git (image versions, replicas, config). Live state is the real condition in the cluster. A refresh fetches the latest target and compares it with live; it finds differences but does not change anything. A sync actually applies them.", "terminal": [{"type": "cmd", "text": "argocd app get web --refresh", "note": "Force a refresh and show sync and health status"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch11-argocd-concepts-sync_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Refresh = compare, sync = apply", "terminal": [{"type": "cmd", "text": "argocd app diff web", "note": "Show the difference between live and target state"}, {"type": "out", "text": "# command completed"}, {"type": "cmd", "text": "argocd app sync web", "note": "Apply the target state manually"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch11-argocd-concepts-sync_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Target state is what Git says, live state is what the cluster has, refresh compares them, and sync applies the difference. After a merge nothing is pushed; Argo CD notices, renders, compares and, if auto-sync is on, applies.", "terminal": [{"type": "cmd", "text": "argocd app get web --refresh", "note": "Force a refresh and show sync and health status"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch11-argocd-concepts-sync_3.mp3"}];
 const NAV = {"id": "ch11-argocd-concepts-sync", "prev": "ch11-argocd-architecture", "next": "ch11-argocd-features-security"};
 let idx = 0;
 let playing = false;
@@ -545,6 +546,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Synced' : (s.visual==='broken' ? 'OutOfSync' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));

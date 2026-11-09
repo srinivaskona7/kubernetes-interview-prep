@@ -85,6 +85,7 @@ body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--mute
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+.tnote{font-family:var(--sans);font-size:11px;color:var(--muted);padding:0 0 6px 14px;font-style:italic;opacity:0;animation:fadeIn .35s ease forwards}
 @keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -276,7 +277,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Saying DNS load balances across Pods; it returns the Service IP and the data path spreads traffic.", "terminal": [{"type": "cmd", "text": "kubectl -n kube-system get pods -l k8s-app=kube-dns"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "kube-apiserver           0/1     NotReady           6          4m"}], "audio": "audio/ch2-dns-coredns_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Pod IPs change constantly, so applications use names. Think of a phone book that updates itself whenever someone moves.", "terminal": [{"type": "cmd", "text": "kubectl -n kube-system get pods -l k8s-app=kube-dns"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch2-dns-coredns_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Stable name, changing IPs behind it.", "terminal": [{"type": "cmd", "text": "kubectl run -it --rm dnstest --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch2-dns-coredns_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "CoreDNS runs as Pods behind a cluster service; every Pod is configured to send DNS queries to it, so a Service name resolves to its stable ClusterIP regardless of Pod churn.", "terminal": [{"type": "cmd", "text": "kubectl -n kube-system get pods -l k8s-app=kube-dns"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch2-dns-coredns_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Saying DNS load balances across Pods; it returns the Service IP and the data path spreads traffic.", "terminal": [{"type": "cmd", "text": "kubectl -n kube-system get pods -l k8s-app=kube-dns", "note": "CoreDNS Pods keep the kube-dns label"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "kube-apiserver           0/1     NotReady           6          4m"}], "audio": "audio/ch2-dns-coredns_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Pod IPs change constantly, so applications use names. Think of a phone book that updates itself whenever someone moves.", "terminal": [{"type": "cmd", "text": "kubectl -n kube-system get pods -l k8s-app=kube-dns", "note": "CoreDNS Pods keep the kube-dns label"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch2-dns-coredns_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Stable name, changing IPs behind it.", "terminal": [{"type": "cmd", "text": "kubectl run -it --rm dnstest --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default", "note": "Resolves the API Service from inside a Pod"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch2-dns-coredns_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "CoreDNS runs as Pods behind a cluster service; every Pod is configured to send DNS queries to it, so a Service name resolves to its stable ClusterIP regardless of Pod churn.", "terminal": [{"type": "cmd", "text": "kubectl -n kube-system get pods -l k8s-app=kube-dns", "note": "CoreDNS Pods keep the kube-dns label"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch2-dns-coredns_3.mp3"}];
 const NAV = {"id": "ch2-dns-coredns", "prev": "ch2-static-pods", "next": "ch2-cni"};
 let idx = 0;
 let playing = false;
@@ -503,6 +504,13 @@ function renderStep(i){
     d.textContent = ln.text;
     d.style.animationDelay = (k*0.22/speed()) + 's';
     termbody.appendChild(d);
+    if(ln.note){
+      const n = document.createElement('div');
+      n.className = 'tnote';
+      n.textContent = '↳ ' + ln.note;
+      n.style.animationDelay = (k*0.22/speed()+0.1) + 's';
+      termbody.appendChild(n);
+    }
   });
   const statusMap = {broken:'state: BROKEN', diagnose:'state: DIAGNOSING', fix:'state: APPLYING FIX', healthy:'state: HEALTHY'};
   podstatus.textContent = s.visual==='healthy' ? 'Ready' : (s.visual==='broken' ? 'NotReady' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));
