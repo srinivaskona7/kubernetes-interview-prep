@@ -159,15 +159,28 @@ def build_steps(topic, chnum):
         "caption": (topic.get("key_points") or ["Apply the smallest correct change, then verify."])[0],
         "terminal": fix_lines,
     })
-    # Step 4 verify
+    # Step 4 verify: prefer a topic command that checks status, else a relevant get
     verify_cmd = "kubectl get pods -A"
+    for c in (topic.get("commands") or []):
+        cl = c["cmd"].lower()
+        if "get " in cl or "status" in cl or "rollout status" in cl:
+            verify_cmd = c["cmd"]; break
     steps.append({
         "title": "4. Verify — confirm recovery",
         "visual": "healthy",
         "caption": topic.get("say_first") or "Confirm the workload returns to a healthy state.",
-        "terminal": [{"type": "cmd", "text": verify_cmd}] + [{"type": "out", "text": ln.replace(broken_status, healthy_status) if broken_status in ln else ln} for ln in sample_output("kubectl get pods")],
+        "terminal": [{"type": "cmd", "text": verify_cmd}] + [{"type": "out", "text": ln.replace(broken_status, healthy_status) if broken_status in ln else ln} for ln in sample_output(verify_cmd)],
     })
-    return steps, cloud, pod, broken_status, healthy_status
+    # diagram svg for concept-accurate visual
+    diag_svg = ""
+    d = topic.get("diagram")
+    if d and d.get("file"):
+        dp = os.path.join(ROOT, d["file"])
+        if os.path.exists(dp):
+            import re as _re
+            m = _re.search(r"<svg\b.*?</svg>", open(dp).read(), _re.S)
+            if m: diag_svg = m.group(0)
+    return steps, cloud, pod, broken_status, healthy_status, diag_svg
 
 def li_items(items):
     return "".join("<li>" + esc(x) + "</li>" for x in items)
@@ -248,6 +261,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -357,6 +373,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">__POD__</span><span class="s" id="podstatus">__BROKEN__</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox">__DIAGRAM__</div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -699,7 +716,7 @@ def main():
         chnum = data["number"]
         for topic in data["topics"]:
             tid = topic["id"]
-            steps, cloud, pod, broken_status, healthy_status = build_steps(topic, chnum)
+            steps, cloud, pod, broken_status, healthy_status, diag_svg = build_steps(topic, chnum)
             for i, st in enumerate(steps):
                 st["audio"] = "audio/%s_%d.mp3" % (tid, i)
             predict_items = []
@@ -768,6 +785,7 @@ def main():
                 .replace("__POD__", esc(pod))
                 .replace("__BROKEN__", esc(broken_status))
                 .replace("__HEALTHY__", esc(healthy_status))
+                .replace("__DIAGRAM__", diag_svg if diag_svg else "")
                 .replace("__PREV__", prev_id or "")
                 .replace("__NEXT__", next_id or "")
                 .replace("__STEPS__", json.dumps(steps))

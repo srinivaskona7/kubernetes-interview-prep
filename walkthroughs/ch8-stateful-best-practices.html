@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,43 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">pvc/data</span><span class="s" id="podstatus">Pending</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch8-best-practices-title ch8-best-practices-desc">
+<title id="ch8-best-practices-title">Best practices in three layers</title>
+<desc id="ch8-best-practices-desc">Stateful apps are built in layers: tested StorageClasses first, then the StatefulSet workload with probes and limits, then monitoring, backups and security.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<polyline points="240,64 380,64" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="240,176 380,176" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="240,288 380,288" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="670,88 670,152" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="670,200 670,264" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="40" y="40" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="40" width="200" height="48" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="140" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Storage layer</text>
+<text x="140" y="80" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">StorageClass</text>
+<rect x="380" y="40" width="580" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="40" width="580" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="670" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">SSD or HDD, WaitForFirstConsumer, Retain, expansion</text>
+<rect x="40" y="152" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="152" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="140" y="176" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Workload layer</text>
+<text x="140" y="192" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">StatefulSet</text>
+<rect x="380" y="152" width="580" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="152" width="580" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="670" y="176" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Headless Service, probes, requests and limits, PDB</text>
+<rect x="40" y="264" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="264" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="140" y="288" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Operations layer</text>
+<text x="140" y="304" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">monitor and protect</text>
+<rect x="380" y="264" width="580" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="264" width="580" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="670" y="288" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Alerts, backups with restore tests, encryption, access</text>
+<text x="40" y="396" fill="#4f5d75" font-size="16" font-style="italic" font-family="'Instrument Serif', serif">The aim is no surprises: each layer rests on the one above it.</text>
+    </svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -216,7 +256,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Relying on defaults for reclaim policy and binding mode.", "terminal": [{"type": "cmd", "text": "kubectl get pdb"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pvc/data                 0/1     Pending            6          4m"}], "audio": "audio/ch8-stateful-best-practices_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Start from the storage layer: choose SSD or HDD for the workload, WaitForFirstConsumer for zonal disks, Retain where data loss would hurt, and allow expansion. A well-chosen default StorageClass keeps developers on the safe path.", "terminal": [{"type": "cmd", "text": "kubectl get pdb"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl get storageclass -o custom-columns=NAME:.metadata.name,PROVISIONER:.provisioner,RECLAIM:.reclaimPolicy,BINDING:.volumeBindingMode"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch8-stateful-best-practices_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Standardise StorageClasses and set a sensible default.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch8-stateful-best-practices_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Use tested StorageClasses with the right reclaim policy, binding mode and disk type; run the app as a StatefulSet with dynamically provisioned claims; add health checks, monitoring, resource limits and security controls; and prefer managed services for the most critical databases.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch8-stateful-best-practices_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Relying on defaults for reclaim policy and binding mode.", "terminal": [{"type": "cmd", "text": "kubectl get pdb"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pvc/data                 0/1     Pending            6          4m"}], "audio": "audio/ch8-stateful-best-practices_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Start from the storage layer: choose SSD or HDD for the workload, WaitForFirstConsumer for zonal disks, Retain where data loss would hurt, and allow expansion. A well-chosen default StorageClass keeps developers on the safe path.", "terminal": [{"type": "cmd", "text": "kubectl get pdb"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl get storageclass -o custom-columns=NAME:.metadata.name,PROVISIONER:.provisioner,RECLAIM:.reclaimPolicy,BINDING:.volumeBindingMode"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch8-stateful-best-practices_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Standardise StorageClasses and set a sensible default.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch8-stateful-best-practices_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Use tested StorageClasses with the right reclaim policy, binding mode and disk type; run the app as a StatefulSet with dynamically provisioned claims; add health checks, monitoring, resource limits and security controls; and prefer managed services for the most critical databases.", "terminal": [{"type": "cmd", "text": "kubectl get pdb"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch8-stateful-best-practices_3.mp3"}];
 const NAV = {"id": "ch8-stateful-best-practices", "prev": "ch8-monitor-stateful", "next": "ch9-security-layers"};
 let idx = 0;
 let playing = false;

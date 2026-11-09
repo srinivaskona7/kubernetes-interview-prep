@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,69 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">pod/app</span><span class="s" id="podstatus">CrashLoopBackOff</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch1-minimum-cluster-title ch1-minimum-cluster-desc">
+<title id="ch1-minimum-cluster-title">The smallest valid cluster</title>
+<desc id="ch1-minimum-cluster-desc">A control plane alone runs but leaves Pods Pending; adding a worker node lets them run; managed services take over only control plane operations.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        </defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M300 92 L380 92" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="324" y="82" width="32" height="12" rx="2" fill="#f5f5f5"/>
+<text x="340" y="91" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NONE</text>
+<path d="M620 92 L700 92" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="638" y="82" width="44" height="12" rx="2" fill="#f5f5f5"/>
+<text x="660" y="91" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RESULT</text>
+<path d="M300 222 L380 222" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="327" y="212" width="26" height="12" rx="2" fill="#f5f5f5"/>
+<text x="340" y="221" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ADD</text>
+<path d="M620 222 L700 222" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="638" y="212" width="44" height="12" rx="2" fill="#f5f5f5"/>
+<text x="660" y="221" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RESULT</text>
+<path d="M300 352 L380 352" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="318" y="342" width="44" height="12" rx="2" fill="#f5f5f5"/>
+<text x="340" y="351" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">OFFERS</text>
+<path d="M620 352 L700 352" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="638" y="342" width="44" height="12" rx="2" fill="#f5f5f5"/>
+<text x="660" y="351" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LEAVES</text>
+<rect x="60" y="60" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="60" y="60" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="180" y="92" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Control plane</text>
+<text x="180" y="108" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">API server, scheduler</text>
+<rect x="380" y="60" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="60" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="500" y="92" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">No worker node</text>
+<text x="500" y="108" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">cluster is valid but empty</text>
+<rect x="700" y="60" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="700" y="60" width="240" height="64" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="820" y="92" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod: Pending</text>
+<text x="820" y="108" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">nowhere to run</text>
+<rect x="60" y="190" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="60" y="190" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="180" y="222" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Control plane</text>
+<text x="180" y="238" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">API server, scheduler</text>
+<rect x="380" y="190" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="190" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="500" y="222" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Worker node</text>
+<text x="500" y="238" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">added to the cluster</text>
+<rect x="700" y="190" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="700" y="190" width="240" height="64" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="820" y="222" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod: Running</text>
+<text x="820" y="238" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">scheduled onto the node</text>
+<rect x="60" y="320" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="60" y="320" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="180" y="352" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Managed service</text>
+<text x="180" y="368" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">provider-run offering</text>
+<rect x="380" y="320" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="320" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="500" y="352" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Takes over</text>
+<text x="500" y="368" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">control plane operations</text>
+<rect x="700" y="320" width="240" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="700" y="320" width="240" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="820" y="352" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Still yours</text>
+<text x="820" y="368" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">workloads and worker nodes</text>
+    </svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -216,7 +282,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Believing managed Kubernetes means you no longer manage anything.", "terminal": [{"type": "cmd", "text": "kubectl get nodes"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pod/app                  0/1     CrashLoopBackOff   6          4m"}], "audio": "audio/ch1-minimum-cluster_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "The control plane alone is a working cluster in the sense that the API answers. But Pods need a node to run on, so applications stay Pending until a worker joins. Single-node dev clusters get around this by letting the control plane node also run workloads.", "terminal": [{"type": "cmd", "text": "kubectl get nodes"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}, {"type": "cmd", "text": "kubectl describe pod <pod-name>"}, {"type": "out", "text": "Name:         app-7d9f4b6c8-x2kpq"}, {"type": "out", "text": "Namespace:    default"}, {"type": "out", "text": "Status:       Running"}, {"type": "out", "text": "Events:       Normal  Pulled  Successfully pulled image"}, {"type": "out", "text": "              Normal  Created Created container app"}, {"type": "out", "text": "              Normal  Started Started container app"}], "audio": "audio/ch1-minimum-cluster_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Control plane required; workers needed to run apps.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch1-minimum-cluster_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A cluster needs at least a control plane; with zero workers it runs, but cannot host ordinary workloads. Managed services run and patch the control plane for you.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch1-minimum-cluster_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Believing managed Kubernetes means you no longer manage anything.", "terminal": [{"type": "cmd", "text": "kubectl get nodes"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pod/app                  0/1     CrashLoopBackOff   6          4m"}], "audio": "audio/ch1-minimum-cluster_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "The control plane alone is a working cluster in the sense that the API answers. But Pods need a node to run on, so applications stay Pending until a worker joins. Single-node dev clusters get around this by letting the control plane node also run workloads.", "terminal": [{"type": "cmd", "text": "kubectl get nodes"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}, {"type": "cmd", "text": "kubectl describe pod <pod-name>"}, {"type": "out", "text": "Name:         app-7d9f4b6c8-x2kpq"}, {"type": "out", "text": "Namespace:    default"}, {"type": "out", "text": "Status:       Running"}, {"type": "out", "text": "Events:       Normal  Pulled  Successfully pulled image"}, {"type": "out", "text": "              Normal  Created Created container app"}, {"type": "out", "text": "              Normal  Started Started container app"}], "audio": "audio/ch1-minimum-cluster_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Control plane required; workers needed to run apps.", "terminal": [{"type": "cmd", "text": "kubectl rollout restart deployment/app"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch1-minimum-cluster_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A cluster needs at least a control plane; with zero workers it runs, but cannot host ordinary workloads. Managed services run and patch the control plane for you.", "terminal": [{"type": "cmd", "text": "kubectl get nodes"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}], "audio": "audio/ch1-minimum-cluster_3.mp3"}];
 const NAV = {"id": "ch1-minimum-cluster", "prev": "ch1-cri-containerd", "next": "ch10-recreate-strategy"};
 let idx = 0;
 let playing = false;

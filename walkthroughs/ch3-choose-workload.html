@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,78 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">deployment/app</span><span class="s" id="podstatus">Progressing</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 1240 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="workload-chooser-title workload-chooser-desc">
+<title id="workload-chooser-title">Which workload controller fits?</title>
+<desc id="workload-chooser-desc">Flowchart that routes a workload to Job, CronJob, DaemonSet, StatefulSet or Deployment based on four yes or no questions.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M400,100 H520" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="448" y="80" width="24" height="12" rx="2" fill="#f5f5f5"/>
+<text x="460" y="89" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+<path d="M680,100 H800" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="728" y="80" width="24" height="12" rx="2" fill="#f5f5f5"/>
+<text x="740" y="89" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+<path d="M960,100 H1060" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<rect x="1000" y="80" width="24" height="12" rx="2" fill="#f5f5f5"/>
+<text x="1012" y="89" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+<path d="M320,148 V212" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="332" y="172" width="32" height="12" rx="2" fill="#f5f5f5"/>
+<text x="348" y="181" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text>
+<path d="M600,148 V232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="612" y="184" width="32" height="12" rx="2" fill="#f5f5f5"/>
+<text x="628" y="193" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text>
+<path d="M880,148 V232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="892" y="184" width="32" height="12" rx="2" fill="#f5f5f5"/>
+<text x="908" y="193" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text>
+<path d="M320,308 V364" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="332" y="328" width="32" height="12" rx="2" fill="#f5f5f5"/>
+<text x="348" y="337" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text>
+<path d="M240,260 H180" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="200" y="240" width="24" height="12" rx="2" fill="#f5f5f5"/>
+<text x="212" y="249" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+<polygon points="320,52 400,100 320,148 240,100" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="320" y="98" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Runs to</text>
+<text x="320" y="114" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">completion?</text>
+<polygon points="320,212 400,260 320,308 240,260" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="320" y="258" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">On a</text>
+<text x="320" y="274" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">schedule?</text>
+<polygon points="600,52 680,100 600,148 520,100" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="600" y="98" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">One Pod</text>
+<text x="600" y="114" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">per node?</text>
+<polygon points="880,52 960,100 880,148 800,100" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="880" y="98" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Needs stable</text>
+<text x="880" y="114" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">identity?</text>
+<rect x="250" y="364" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="250" y="364" width="140" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="320" y="390" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CronJob</text>
+<text x="320" y="406" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">timer-driven</text>
+<rect x="40" y="232" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="232" width="140" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="110" y="258" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Job</text>
+<text x="110" y="274" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">run once</text>
+<rect x="530" y="232" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="530" y="232" width="140" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="600" y="258" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">DaemonSet</text>
+<text x="600" y="274" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">agent per node</text>
+<rect x="810" y="232" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="810" y="232" width="140" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="880" y="258" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">StatefulSet</text>
+<text x="880" y="274" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ordered, own disk</text>
+<rect x="1060" y="72" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="1060" y="72" width="140" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="1130" y="98" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Deployment</text>
+<text x="1130" y="114" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">default: stateless</text>
+<line x1="30" y1="444" x2="1210" y2="444" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="30" y="460" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="452" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="144" y="461" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">WORKLOAD TYPE</text>
+<rect x="248" y="452" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="272" y="461" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">DEFAULT ANSWER</text>
+</svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>

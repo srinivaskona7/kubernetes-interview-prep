@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,49 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">pod/app</span><span class="s" id="podstatus">CrashLoopBackOff</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch1-key-features-title ch1-key-features-desc">
+<title id="ch1-key-features-title">Kubernetes key features</title>
+<desc id="ch1-key-features-desc">A desired state continuously enforced by Kubernetes leads to self-healing, load balancing, rollouts, autoscaling, persistent storage and operators.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        </defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M380 72 L280 72" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M380 210 L280 210" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M380 348 L280 348" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M620 72 L720 72" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M620 210 L720 210" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M620 348 L720 348" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="380" y="40" width="240" height="340" rx="6" fill="#f5f5f5"/>
+<rect x="380" y="40" width="240" height="340" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="500" y="210" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Desired state</text>
+<text x="500" y="226" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">continuously enforced</text>
+<rect x="40" y="44" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="44" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="160" y="72" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Self-healing</text>
+<text x="160" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">replaces failed containers</text>
+<rect x="40" y="182" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="182" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="160" y="210" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Load balancing</text>
+<text x="160" y="226" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">spreads traffic</text>
+<rect x="40" y="320" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="40" y="320" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="160" y="348" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Rollouts and rollbacks</text>
+<text x="160" y="364" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">pause, resume, undo</text>
+<rect x="720" y="44" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="44" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="840" y="72" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Autoscaling</text>
+<text x="840" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">horizontal, by metrics such as CPU</text>
+<rect x="720" y="182" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="182" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="840" y="210" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Persistent volumes</text>
+<text x="840" y="226" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">data outlives the container</text>
+<rect x="720" y="320" width="240" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="320" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="840" y="348" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Operators</text>
+<text x="840" y="364" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">controllers that encode app knowledge</text>
+    </svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -216,7 +262,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Listing features without tying each to a problem.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/web"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pod/app                  0/1     CrashLoopBackOff   6          4m"}], "audio": "audio/ch1-key-features_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Self-healing: failed containers are restarted and Pods are replaced, with no human paged for routine failures.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/web"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch1-key-features_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Declarative desired state continuously enforced.", "terminal": [{"type": "cmd", "text": "kubectl rollout undo deployment/web"}, {"type": "out", "text": "deployment.apps/app rolled out"}, {"type": "cmd", "text": "kubectl autoscale deployment web --min=2 --max=10 --cpu-percent=70"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch1-key-features_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Self-healing, load balancing, automated rollouts and rollbacks, autoscaling, a declarative model, persistent storage and extensibility through operators.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch1-key-features_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Listing features without tying each to a problem.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/web"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pod/app                  0/1     CrashLoopBackOff   6          4m"}], "audio": "audio/ch1-key-features_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Self-healing: failed containers are restarted and Pods are replaced, with no human paged for routine failures.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/web"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch1-key-features_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Declarative desired state continuously enforced.", "terminal": [{"type": "cmd", "text": "kubectl rollout undo deployment/web"}, {"type": "out", "text": "deployment.apps/app rolled out"}, {"type": "cmd", "text": "kubectl autoscale deployment web --min=2 --max=10 --cpu-percent=70"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch1-key-features_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Self-healing, load balancing, automated rollouts and rollbacks, autoscaling, a declarative model, persistent storage and extensibility through operators.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/web"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch1-key-features_3.mp3"}];
 const NAV = {"id": "ch1-key-features", "prev": "ch1-what-is-kubernetes", "next": "ch1-self-healing-loop"};
 let idx = 0;
 let playing = false;

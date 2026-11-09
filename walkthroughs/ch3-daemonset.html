@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,48 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">deployment/app</span><span class="s" id="podstatus">Progressing</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 880 348" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="daemonset-title daemonset-desc">
+<title id="daemonset-title">DaemonSet: one Pod per node</title>
+<desc id="daemonset-desc">A DaemonSet places one Pod on every node and adds one automatically when a new node joins.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="60" y="100" width="760" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="60" y="100" width="760" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="440" y="126" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">DaemonSet</text>
+<text x="440" y="142" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">one Pod per node; no replicas field</text>
+<rect x="60" y="220" width="160" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="60" y="220" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="140" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod on node 1</text>
+<text x="140" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">log or monitoring agent</text>
+<path d="M140,156 V220" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="260" y="220" width="160" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="260" y="220" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="340" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod on node 2</text>
+<text x="340" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">log or monitoring agent</text>
+<path d="M340,156 V220" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="460" y="220" width="160" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="460" y="220" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="540" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pod on node 3</text>
+<text x="540" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">log or monitoring agent</text>
+<path d="M540,156 V220" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="660" y="220" width="160" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="660" y="220" width="160" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="740" y="246" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">New node joins</text>
+<text x="740" y="262" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Pod added automatically</text>
+<path d="M740,156 V220" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<rect x="746" y="185" width="32" height="12" rx="2" fill="#f5f5f5"/>
+<text x="750" y="194" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">AUTO</text>
+<line x1="30" y1="312" x2="850" y2="312" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="30" y="328" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="320" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="144" y="329" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">CONTROLLER</text>
+<rect x="228" y="320" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="252" y="329" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">ONE PER NODE</text>
+</svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -216,7 +261,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Using a Deployment with anti-affinity to fake a DaemonSet.", "terminal": [{"type": "cmd", "text": "kubectl get ds"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "deployment/app           0/1     Progressing        6          4m"}], "audio": "audio/ch3-daemonset_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Think of a security guard assigned to every building in a campus: build a new building and a guard appears; demolish one and the post disappears.", "terminal": [{"type": "cmd", "text": "kubectl get ds"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl get pods -o wide -l name=logging-agent"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch3-daemonset_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "No replicas field; the node count decides.", "terminal": [{"type": "cmd", "text": "kubectl apply -f logging-agent-ds.yaml"}, {"type": "out", "text": "deployment.apps/app configured"}, {"type": "out", "text": "service/app unchanged"}], "audio": "audio/ch3-daemonset_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A DaemonSet ensures one copy of a Pod runs on every node (or a chosen subset), automatically adding it to new nodes and cleaning up when nodes leave.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch3-daemonset_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Using a Deployment with anti-affinity to fake a DaemonSet.", "terminal": [{"type": "cmd", "text": "kubectl get ds"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "deployment/app           0/1     Progressing        6          4m"}], "audio": "audio/ch3-daemonset_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Think of a security guard assigned to every building in a campus: build a new building and a guard appears; demolish one and the post disappears.", "terminal": [{"type": "cmd", "text": "kubectl get ds"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl get pods -o wide -l name=logging-agent"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch3-daemonset_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "No replicas field; the node count decides.", "terminal": [{"type": "cmd", "text": "kubectl apply -f logging-agent-ds.yaml"}, {"type": "out", "text": "deployment.apps/app configured"}, {"type": "out", "text": "service/app unchanged"}], "audio": "audio/ch3-daemonset_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A DaemonSet ensures one copy of a Pod runs on every node (or a chosen subset), automatically adding it to new nodes and cleaning up when nodes leave.", "terminal": [{"type": "cmd", "text": "kubectl get ds"}, {"type": "out", "text": "NAME   READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app    1/1     Running   0          2m"}], "audio": "audio/ch3-daemonset_3.mp3"}];
 const NAV = {"id": "ch3-daemonset", "prev": "ch3-statefulset-vs-deployment", "next": "ch3-jobs-cronjobs"};
 let idx = 0;
 let playing = false;

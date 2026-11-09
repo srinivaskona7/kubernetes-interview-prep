@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,56 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">deployment/app</span><span class="s" id="podstatus">Progressing</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 780 396" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="rollouts-title rollouts-desc">
+<title id="rollouts-title">Rollout and rollback</title>
+<desc id="rollouts-desc">Changing the image creates a new ReplicaSet, rollout status watches it, and rollout undo scales the old ReplicaSet back up.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="60" y="132" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="60" y="132" width="140" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="130" y="158" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">kubectl set image</text>
+<text x="130" y="174" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Pod template changes</text>
+<rect x="320" y="132" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="320" y="132" width="140" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="390" y="158" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">New ReplicaSet</text>
+<text x="390" y="174" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">new revision scales up</text>
+<rect x="580" y="132" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="580" y="132" width="140" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="650" y="158" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">rollout status</text>
+<text x="650" y="174" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">blocks until done</text>
+<rect x="580" y="268" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="580" y="268" width="140" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="650" y="294" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">rollout undo</text>
+<text x="650" y="310" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">or --to-revision N</text>
+<rect x="320" y="268" width="140" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="320" y="268" width="140" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="390" y="294" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Old ReplicaSet</text>
+<text x="390" y="310" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">still exists, scales up</text>
+<path d="M200,160 H320" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="236" y="140" width="48" height="12" rx="2" fill="#f5f5f5"/>
+<text x="260" y="149" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CREATES</text>
+<path d="M460,160 H580" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="496" y="140" width="48" height="12" rx="2" fill="#f5f5f5"/>
+<text x="520" y="149" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WATCHES</text>
+<path d="M650,188 V268" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="656" y="223" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="660" y="232" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">IF IT FAILS</text>
+<path d="M580,296 H460" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="490" y="276" width="60" height="12" rx="2" fill="#f5f5f5"/>
+<text x="520" y="285" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SCALES UP</text>
+<line x1="30" y1="360" x2="750" y2="360" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="30" y="376" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="368" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="144" y="377" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">COMMAND</text>
+<rect x="212" y="368" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="236" y="377" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">FOCAL</text>
+<rect x="292" y="368" width="16" height="12" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="316" y="377" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">WATCH</text>
+</svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -216,7 +269,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Rolling back with undo but leaving the bad change in Git, so the next apply re-breaks it.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/nginx-deployment"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "deployment/app           0/1     Progressing        6          4m"}], "audio": "audio/ch3-rollouts-rollbacks_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Changing the image triggers a new ReplicaSet and a rolling update governed by the strategy.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/nginx-deployment"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch3-rollouts-rollbacks_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Only Pod template changes create a new revision; scaling does not.", "terminal": [{"type": "cmd", "text": "kubectl set image deployment/nginx-deployment nginx=nginx:1.19.2"}, {"type": "out", "text": "# command completed"}, {"type": "cmd", "text": "kubectl rollout history deployment/nginx-deployment"}, {"type": "out", "text": "deployment.apps/app rolled out"}, {"type": "cmd", "text": "kubectl rollout undo deployment/nginx-deployment"}, {"type": "out", "text": "deployment.apps/app rolled out"}, {"type": "cmd", "text": "kubectl rollout undo deployment/nginx-deployment --to-revision=2"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch3-rollouts-rollbacks_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Change the Pod template (for example with kubectl set image), watch it with kubectl rollout status, and revert with kubectl rollout undo, which scales the previous ReplicaSet back up.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch3-rollouts-rollbacks_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Rolling back with undo but leaving the bad change in Git, so the next apply re-breaks it.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/nginx-deployment"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "deployment/app           0/1     Progressing        6          4m"}], "audio": "audio/ch3-rollouts-rollbacks_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Changing the image triggers a new ReplicaSet and a rolling update governed by the strategy.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/nginx-deployment"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch3-rollouts-rollbacks_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Only Pod template changes create a new revision; scaling does not.", "terminal": [{"type": "cmd", "text": "kubectl set image deployment/nginx-deployment nginx=nginx:1.19.2"}, {"type": "out", "text": "# command completed"}, {"type": "cmd", "text": "kubectl rollout history deployment/nginx-deployment"}, {"type": "out", "text": "deployment.apps/app rolled out"}, {"type": "cmd", "text": "kubectl rollout undo deployment/nginx-deployment"}, {"type": "out", "text": "deployment.apps/app rolled out"}, {"type": "cmd", "text": "kubectl rollout undo deployment/nginx-deployment --to-revision=2"}, {"type": "out", "text": "deployment.apps/app rolled out"}], "audio": "audio/ch3-rollouts-rollbacks_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Change the Pod template (for example with kubectl set image), watch it with kubectl rollout status, and revert with kubectl rollout undo, which scales the previous ReplicaSet back up.", "terminal": [{"type": "cmd", "text": "kubectl rollout status deployment/nginx-deployment"}, {"type": "out", "text": "deployment \"app\" successfully rolled out"}], "audio": "audio/ch3-rollouts-rollbacks_3.mp3"}];
 const NAV = {"id": "ch3-rollouts-rollbacks", "prev": "ch3-rolling-vs-recreate", "next": "ch3-statefulset-vs-deployment"};
 let idx = 0;
 let playing = false;

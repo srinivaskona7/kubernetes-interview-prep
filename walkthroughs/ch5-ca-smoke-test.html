@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,79 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">hpa/app</span><span class="s" id="podstatus">Unknown</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 1000 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch5-smoke-test-both-ways-title ch5-smoke-test-both-ways-desc">
+      <title id="ch5-smoke-test-both-ways-title">Proving scale up and scale down</title>
+      <desc id="ch5-smoke-test-both-ways-desc">Row one creates demand and watches new nodes appear. Row two removes the load and watches empty nodes terminate.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M176,132 H232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="184" y="112" width="40" height="12" rx="2" fill="#f5f5f5"/>
+<text x="204" y="121" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DEMAND</text>
+<path d="M372,132 H428" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="386" y="112" width="29" height="12" rx="2" fill="#f5f5f5"/>
+<text x="400" y="121" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SEES</text>
+<path d="M568,132 H624" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="582" y="112" width="29" height="12" rx="2" fill="#f5f5f5"/>
+<text x="596" y="121" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ADDS</text>
+<path d="M764,132 H820" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="775" y="112" width="35" height="12" rx="2" fill="#f5f5f5"/>
+<text x="792" y="121" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SCHED</text>
+<path d="M890,168 V272" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+<rect x="898" y="214" width="35" height="12" rx="2" fill="#f5f5f5"/>
+<text x="915" y="223" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CLEAN</text>
+<path d="M820,308 H764" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+<rect x="778" y="288" width="29" height="12" rx="2" fill="#f5f5f5"/>
+<text x="792" y="297" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">IDLE</text>
+<path d="M624,308 H568" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+<rect x="579" y="288" width="35" height="12" rx="2" fill="#f5f5f5"/>
+<text x="596" y="297" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DRAIN</text>
+<text x="36" y="84" fill="rgba(45,49,66,0.45)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.14em">SCALE UP</text>
+<text x="36" y="260" fill="rgba(45,49,66,0.45)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.14em">SCALE DOWN</text>
+<rect x="36" y="96" width="140" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="36" y="96" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="106" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Deploy load</text>
+<text x="106" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">20 Pods x 200m</text>
+<rect x="232" y="96" width="140" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="232" y="96" width="140" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="302" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pods Pending</text>
+<text x="302" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">exceed node CPU</text>
+<rect x="428" y="96" width="140" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="428" y="96" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="498" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CA logs</text>
+<text x="498" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">node group expanded</text>
+<rect x="624" y="96" width="140" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="624" y="96" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="694" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Nodes Ready</text>
+<text x="694" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">new machines join</text>
+<rect x="820" y="96" width="140" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="820" y="96" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="890" y="130" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pods Running</text>
+<text x="890" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">scale up proven</text>
+<rect x="820" y="272" width="140" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="820" y="272" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="890" y="306" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Delete load</text>
+<text x="890" y="322" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">remove deployment</text>
+<rect x="624" y="272" width="140" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="624" y="272" width="140" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="694" y="306" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Wait unneeded</text>
+<text x="694" y="322" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">about five minutes</text>
+<rect x="428" y="272" width="140" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="428" y="272" width="140" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+<text x="498" y="306" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Nodes removed</text>
+<text x="498" y="322" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">scale down proven</text>
+<line x1="30" y1="376" x2="970" y2="376" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="30" y="392" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text>
+<line x1="120" y1="389" x2="144" y2="389" stroke="#4f5d75" stroke-width="1.2"/>
+<text x="152" y="393" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">scale up</text>
+<line x1="248" y1="389" x2="272" y2="389" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="4,3"/>
+<text x="280" y="393" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">scale down</text>
+<rect x="420" y="384" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36"/>
+<text x="452" y="393" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">focal node</text>
+    </svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -216,7 +292,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Declaring success after helm install without generating any load.", "terminal": [{"type": "cmd", "text": "kubectl get pods -l app=scale-test"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "hpa/app                  0/1     Unknown            6          4m"}], "audio": "audio/ch5-ca-smoke-test_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Deploy something that asks for more CPU than the current node offers. A t3.medium has 2 vCPU, so twenty replicas each requesting 200m will leave several Pods Pending. That Pending state is the trigger.", "terminal": [{"type": "cmd", "text": "kubectl get pods -l app=scale-test"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl -n kube-system logs -f deploy/cluster-autoscaler-aws-cluster-autoscaler"}, {"type": "out", "text": "2026-... INFO  server listening on :8080"}, {"type": "out", "text": "2026-... INFO  ready to accept connections"}, {"type": "cmd", "text": "kubectl get nodes -w"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}], "audio": "audio/ch5-ca-smoke-test_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Use resource requests, not a CPU burner, to create demand.", "terminal": [{"type": "cmd", "text": "kubectl apply -f ./scale-test.yaml"}, {"type": "out", "text": "deployment.apps/app configured"}, {"type": "out", "text": "service/app unchanged"}, {"type": "cmd", "text": "kubectl delete -f ./scale-test.yaml"}, {"type": "out", "text": "pod \"app-7d9f4b6c8-x2kpq\" deleted"}], "audio": "audio/ch5-ca-smoke-test_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Create demand that cannot fit, watch the Pending Pods trigger a scale up in the logs and new nodes appear, then delete the load and watch the nodes go away.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch5-ca-smoke-test_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Declaring success after helm install without generating any load.", "terminal": [{"type": "cmd", "text": "kubectl get pods -l app=scale-test"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "hpa/app                  0/1     Unknown            6          4m"}], "audio": "audio/ch5-ca-smoke-test_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Deploy something that asks for more CPU than the current node offers. A t3.medium has 2 vCPU, so twenty replicas each requesting 200m will leave several Pods Pending. That Pending state is the trigger.", "terminal": [{"type": "cmd", "text": "kubectl get pods -l app=scale-test"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}, {"type": "cmd", "text": "kubectl -n kube-system logs -f deploy/cluster-autoscaler-aws-cluster-autoscaler"}, {"type": "out", "text": "2026-... INFO  server listening on :8080"}, {"type": "out", "text": "2026-... INFO  ready to accept connections"}, {"type": "cmd", "text": "kubectl get nodes -w"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}], "audio": "audio/ch5-ca-smoke-test_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Use resource requests, not a CPU burner, to create demand.", "terminal": [{"type": "cmd", "text": "kubectl apply -f ./scale-test.yaml"}, {"type": "out", "text": "deployment.apps/app configured"}, {"type": "out", "text": "service/app unchanged"}, {"type": "cmd", "text": "kubectl delete -f ./scale-test.yaml"}, {"type": "out", "text": "pod \"app-7d9f4b6c8-x2kpq\" deleted"}], "audio": "audio/ch5-ca-smoke-test_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "Create demand that cannot fit, watch the Pending Pods trigger a scale up in the logs and new nodes appear, then delete the load and watch the nodes go away.", "terminal": [{"type": "cmd", "text": "kubectl get pods -l app=scale-test"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch5-ca-smoke-test_3.mp3"}];
 const NAV = {"id": "ch5-ca-smoke-test", "prev": "ch5-ca-helm-install", "next": "ch5-ca-troubleshooting"};
 let idx = 0;
 let playing = false;

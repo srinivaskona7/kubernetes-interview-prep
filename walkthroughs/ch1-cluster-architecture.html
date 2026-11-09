@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,69 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">pod/app</span><span class="s" id="podstatus">CrashLoopBackOff</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 1000 472" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch1-architecture-title ch1-architecture-desc">
+<title id="ch1-architecture-title">Kubernetes control plane and worker node</title>
+<desc id="ch1-architecture-desc">Architecture of a cluster: control plane components talk through the API server, which stores state in etcd and directs the kubelet and kube-proxy on each worker node.</desc>
+<defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+
+        </defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="20" y="40" width="960" height="220" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<rect x="32" y="44" width="107" height="12" rx="2" fill="#f5f5f5"/>
+<text x="40" y="53" fill="rgba(45,49,66,0.55)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">CONTROL PLANE</text>
+<rect x="20" y="312" width="960" height="128" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<rect x="32" y="316" width="184" height="12" rx="2" fill="#f5f5f5"/>
+<text x="40" y="325" fill="rgba(45,49,66,0.55)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">WORKER NODE (DATA PLANE)</text>
+<line x1="500" y1="172" x2="500" y2="132" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="508" y="146" width="52" height="12" rx="2" fill="#f5f5f5"/>
+<text x="534" y="155" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PERSIST</text>
+<line x1="240" y1="204" x2="420" y2="204" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="302" y="184" width="56" height="12" rx="2" fill="#f5f5f5"/>
+<text x="330" y="193" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BIND POD</text>
+<line x1="760" y1="204" x2="580" y2="204" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="639" y="184" width="62" height="12" rx="2" fill="#f5f5f5"/>
+<text x="670" y="193" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RECONCILE</text>
+<path d="M460,236 V276 Q460,284 452,284 H168 Q160,284 160,292 V352" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="265" y="264" width="90" height="12" rx="2" fill="#f5f5f5"/>
+<text x="310" y="273" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WATCH SERVICES</text>
+<line x1="540" y1="236" x2="540" y2="352" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="548" y="268" width="62" height="12" rx="2" fill="#f5f5f5"/>
+<text x="579" y="277" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">POD SPECS</text>
+<line x1="580" y1="384" x2="760" y2="384" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="656" y="364" width="28" height="12" rx="2" fill="#f5f5f5"/>
+<text x="670" y="373" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CRI</text>
+<rect x="420" y="76" width="160" height="56" rx="6" fill="#f5f5f5"/>
+<rect x="420" y="76" width="160" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="500" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">etcd</text>
+<text x="500" y="120" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">cluster state store</text>
+<rect x="420" y="172" width="160" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="420" y="172" width="160" height="64" rx="6" fill="#fdeee7" stroke="#eb6c36" stroke-width="1"/>
+<text x="500" y="204" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">API server</text>
+<text x="500" y="220" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">front door, validates</text>
+<rect x="80" y="172" width="160" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="80" y="172" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="160" y="204" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Scheduler</text>
+<text x="160" y="220" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">picks a node</text>
+<rect x="760" y="172" width="160" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="760" y="172" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="840" y="204" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Controller manager</text>
+<text x="840" y="220" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">drives desired state</text>
+<rect x="80" y="352" width="160" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="80" y="352" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="160" y="384" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kube-proxy</text>
+<text x="160" y="400" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Service network rules</text>
+<rect x="420" y="352" width="160" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="420" y="352" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="500" y="384" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kubelet</text>
+<text x="500" y="400" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">runs and reports Pods</text>
+<rect x="760" y="352" width="160" height="64" rx="6" fill="#f5f5f5"/>
+<rect x="760" y="352" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="840" y="384" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Container runtime</text>
+<text x="840" y="400" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">containerd, CRI-O</text>
+    </svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -216,7 +282,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Putting kubelet in the control plane.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o wide"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pod/app                  0/1     CrashLoopBackOff   6          4m"}], "audio": "audio/ch1-cluster-architecture_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Imagine a restaurant. The control plane is the front-of-house manager and kitchen board: it takes orders, decides who cooks what and remembers everything. Worker nodes are the cooking stations that actually prepare the dishes.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o wide"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}, {"type": "cmd", "text": "kubectl get pods -n kube-system"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch1-cluster-architecture_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Control plane = brain; worker nodes = muscle.", "terminal": [{"type": "cmd", "text": "kubectl cluster-info"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch1-cluster-architecture_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A cluster has a control plane that decides (API server, scheduler, controller manager, etcd) and worker nodes that run workloads (kubelet, kube-proxy, container runtime).", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch1-cluster-architecture_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Putting kubelet in the control plane.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o wide"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "pod/app                  0/1     CrashLoopBackOff   6          4m"}], "audio": "audio/ch1-cluster-architecture_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Imagine a restaurant. The control plane is the front-of-house manager and kitchen board: it takes orders, decides who cooks what and remembers everything. Worker nodes are the cooking stations that actually prepare the dishes.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o wide"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}, {"type": "cmd", "text": "kubectl get pods -n kube-system"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch1-cluster-architecture_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Control plane = brain; worker nodes = muscle.", "terminal": [{"type": "cmd", "text": "kubectl cluster-info"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch1-cluster-architecture_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "A cluster has a control plane that decides (API server, scheduler, controller manager, etcd) and worker nodes that run workloads (kubelet, kube-proxy, container runtime).", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o wide"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}], "audio": "audio/ch1-cluster-architecture_3.mp3"}];
 const NAV = {"id": "ch1-cluster-architecture", "prev": "ch1-swarm-vs-k8s", "next": "ch1-cri-containerd"};
 let idx = 0;
 let playing = false;

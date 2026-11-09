@@ -37,6 +37,9 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
 .card h3{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .visual{min-height:260px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.diagrambox{margin-top:10px;max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:8px}
+.diagrambox svg{width:100%;height:auto;display:block}
+.diagrambox:empty{display:none}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -146,6 +149,47 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <div class="pod"><span class="t" id="podlbl">kube-apiserver</span><span class="s" id="podstatus">NotReady</span></div>
         <div class="statusline" id="statusline">state: BROKEN</div>
       </div>
+      <div class="diagrambox" id="diagrambox"><svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ch2-rt-title ch2-rt-desc">
+      <title id="ch2-rt-title">Runtime versus CRI</title>
+      <desc id="ch2-rt-desc">The kubelet calls the CRI contract, which containerd or CRI-O implement; either hands the container to an OCI runtime such as runc.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="500" y="56" width="200" height="288" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/><text x="512" y="72" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">RUNTIME: DOES THE WORK</text>
+
+<rect x="32" y="168" width="140" height="64" rx="6" fill="#f5f5f5"/><rect x="32" y="168" width="140" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="102" y="196" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kubelet</text>
+<text x="102" y="212" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CRI client</text>
+<rect x="244" y="168" width="160" height="64" rx="6" fill="#f5f5f5"/><rect x="244" y="168" width="160" height="64" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="324" y="196" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CRI</text>
+<text x="324" y="212" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">the contract: gRPC API</text>
+<rect x="528" y="96" width="144" height="64" rx="6" fill="#f5f5f5"/><rect x="528" y="96" width="144" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="600" y="124" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">containerd</text>
+<text x="600" y="140" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">pulls images, runs</text>
+<rect x="528" y="240" width="144" height="64" rx="6" fill="#f5f5f5"/><rect x="528" y="240" width="144" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="600" y="268" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CRI-O</text>
+<text x="600" y="284" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Kubernetes-only runtime</text>
+<rect x="780" y="168" width="136" height="64" rx="6" fill="#f5f5f5"/><rect x="780" y="168" width="136" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="848" y="196" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">runc</text>
+<text x="848" y="212" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">creates the process</text>
+<path d="M172,200 H244" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="208" y="190" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CALLS</text>
+<path d="M404,200 H446 Q454,200 454,192 V136 Q454,128 462,128 H528" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M404,200 H446 Q454,200 454,208 V264 Q454,272 462,272 H528" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M672,128 H724 Q732,128 732,136 V192 Q732,200 740,200 H780" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M672,272 H724 Q732,272 732,264 V208 Q732,200 740,200 H780" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="244" y="256" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">RUNTIMESERVICE + IMAGESERVICE</text>
+<text x="244" y="288" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">ONE SOCKET SHAPE,</text>
+<text x="244" y="302" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">ANY MATCHING RUNTIME</text>
+<text x="780" y="256" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">OCI RUNTIME: LOW-LEVEL</text>
+<line x1="30" y1="364" x2="930" y2="364" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="30" y="380" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="372" width="12" height="12" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/><text x="140" y="381" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">CONTRACT (API SPEC)</text>
+<rect x="310" y="372" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="330" y="381" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">SOFTWARE</text>
+
+    </svg></div>
     </div>
     <div class="card">
       <h3>Terminal</h3>
@@ -216,7 +260,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
 </div>
 <footer>KubePrep · walkthrough · progress stored in your browser</footer>
 <script>
-const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Calling CRI a runtime, or Docker a CRI.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o jsonpath='{.items[*].status.nodeInfo.containerRuntimeVersion}'"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "kube-apiserver           0/1     NotReady           6          4m"}], "audio": "audio/ch2-runtime-vs-cri_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Think of a wall socket standard. The CRI is the socket shape; runtimes are appliances with a matching plug. The kubelet only knows the socket.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o jsonpath='{.items[*].status.nodeInfo.containerRuntimeVersion}'"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}], "audio": "audio/ch2-runtime-vs-cri_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Runtime does the work; CRI defines the conversation.", "terminal": [{"type": "cmd", "text": "crictl ps"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch2-runtime-vs-cri_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "The runtime (containerd, CRI-O) is the software that pulls images and runs containers; the CRI is the standard gRPC API the kubelet uses to talk to any such runtime.", "terminal": [{"type": "cmd", "text": "kubectl get pods -A"}, {"type": "out", "text": "NAME                     READY   STATUS    RESTARTS   AGE"}, {"type": "out", "text": "app-7d9f4b6c8-x2kpq      1/1     Running   0          2m"}, {"type": "out", "text": "app-7d9f4b6c8-9qz1v      1/1     Running   0          2m"}], "audio": "audio/ch2-runtime-vs-cri_3.mp3"}];
+const STEPS = [{"title": "1. Symptom \u2014 what went wrong", "visual": "broken", "caption": "Calling CRI a runtime, or Docker a CRI.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o jsonpath='{.items[*].status.nodeInfo.containerRuntimeVersion}'"}, {"type": "err", "text": "NAME                     READY   STATUS             RESTARTS   AGE"}, {"type": "err", "text": "kube-apiserver           0/1     NotReady           6          4m"}], "audio": "audio/ch2-runtime-vs-cri_0.mp3"}, {"title": "2. Diagnose \u2014 inspect evidence", "visual": "diagnose", "caption": "Think of a wall socket standard. The CRI is the socket shape; runtimes are appliances with a matching plug. The kubelet only knows the socket.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o jsonpath='{.items[*].status.nodeInfo.containerRuntimeVersion}'"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}], "audio": "audio/ch2-runtime-vs-cri_1.mp3"}, {"title": "3. Fix \u2014 apply the change", "visual": "fix", "caption": "Runtime does the work; CRI defines the conversation.", "terminal": [{"type": "cmd", "text": "crictl ps"}, {"type": "out", "text": "# command completed"}], "audio": "audio/ch2-runtime-vs-cri_2.mp3"}, {"title": "4. Verify \u2014 confirm recovery", "visual": "healthy", "caption": "The runtime (containerd, CRI-O) is the software that pulls images and runs containers; the CRI is the standard gRPC API the kubelet uses to talk to any such runtime.", "terminal": [{"type": "cmd", "text": "kubectl get nodes -o jsonpath='{.items[*].status.nodeInfo.containerRuntimeVersion}'"}, {"type": "out", "text": "NAME       STATUS   ROLES           AGE   VERSION"}, {"type": "out", "text": "cp-1       Ready    control-plane   10d   v1.30.0"}, {"type": "out", "text": "worker-1   Ready    <none>          10d   v1.30.0"}, {"type": "out", "text": "worker-2   Ready    <none>          10d   v1.30.0"}], "audio": "audio/ch2-runtime-vs-cri_3.mp3"}];
 const NAV = {"id": "ch2-runtime-vs-cri", "prev": "ch2-kube-proxy", "next": "ch2-dockershim"};
 let idx = 0;
 let playing = false;
