@@ -47,6 +47,16 @@ h1{font-family:var(--display);font-size:clamp(1.4rem,2.4vw+1rem,2rem);font-weigh
 @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
 .scene.healthy .pod{animation:pulse .6s ease}
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  .tline{animation:none !important;opacity:1 !important}
+}
+/* fullscreen stage */
+body.fs .wrap{max-width:100%;padding:8px}
+body.fs .stage{grid-template-columns:1fr 1fr}
+body.fs .scene{height:360px}
+body.fs .diagrambox{max-height:300px}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -196,6 +206,8 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <button class="btn" id="nextBtn">Next ▶</button>
         <button class="btn" id="resetBtn">↺ Reset</button>
         <button class="btn" id="voiceBtn">🔊 Voice: on</button>
+        <button class="btn" id="fsBtn" title="Fullscreen"> ( ) Fullscreen</button>
+        <button class="btn" id="copyLinkBtn" title="Copy link to this step">🔗 Link</button>
         <div class="voicepick">voice <select id="voiceSelect"><option value="edge">Edge · Aria (premium)</option></select></div>
         <div class="speed">speed <select id="speed"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="0.5">0.5×</option></select></div>
       </div>
@@ -455,6 +467,7 @@ function renderStep(i){
   podstatus.textContent = s.visual==='healthy' ? 'Pulled' : (s.visual==='broken' ? 'ImagePullBackOff' : (s.visual==='diagnose' ? 'Investigating' : 'Updating'));
   statusline.textContent = statusMap[s.visual] || '';
   pbar.style.width = ((idx+1)/STEPS.length*100) + '%';
+  try{ const u=new URL(location.href); u.searchParams.set('step', idx+1); history.replaceState(null,'',u); }catch(e){}
   document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
   termbody.scrollTop = termbody.scrollHeight;
   if(playing) scheduleAfterRender();
@@ -467,6 +480,8 @@ document.getElementById('playBtn').addEventListener('click',()=>{ playing?pause(
 document.getElementById('prevBtn').addEventListener('click',()=>{ pause(); renderStep(idx-1); });
 document.getElementById('nextBtn').addEventListener('click',()=>{ pause(); renderStep(idx+1); });
 document.getElementById('resetBtn').addEventListener('click',()=>{ pause(); renderStep(0); });
+document.getElementById('fsBtn').addEventListener('click',()=>{ document.body.classList.toggle('fs'); document.getElementById('fsBtn').textContent = document.body.classList.contains('fs') ? ' ( ) Exit' : ' ( ) Fullscreen'; });
+document.getElementById('copyLinkBtn').addEventListener('click',()=>{ const u = new URL(location.href); u.searchParams.set('step', idx+1); navigator.clipboard.writeText(u.toString()); const b=document.getElementById('copyLinkBtn'); b.textContent='✓ copied'; setTimeout(()=>b.textContent='🔗 Link',1200); });
 const voiceBtn=document.getElementById('voiceBtn');
 function paintVoice(){ voiceBtn.textContent = voiceOn()?'🔊 Voice: on':'🔇 Voice: off'; }
 voiceBtn.addEventListener('click',()=>{ localStorage.setItem('kp_voice', voiceOn()?'off':'on'); paintVoice(); if(playing){ pause(); play(); } });
@@ -505,7 +520,7 @@ else pl.href=NAV.prev+'.html';
 if(!NAV.next){ nl.style.opacity='.3'; nl.style.pointerEvents='none'; nl.textContent='(last) →'; }
 else nl.href=NAV.next+'.html';
 
-renderStep(0);
+(function(){ const p=new URLSearchParams(location.search); const s=parseInt(p.get('step')||'1',10); const start=Math.max(1,Math.min(STEPS.length, isNaN(s)?1:s))-1; renderStep(start); })();
 </script>
 </body>
 </html>
