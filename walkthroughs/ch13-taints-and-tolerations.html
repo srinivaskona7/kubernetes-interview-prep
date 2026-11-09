@@ -57,6 +57,7 @@ body.fs .wrap{max-width:100%;padding:8px}
 body.fs .stage{grid-template-columns:1fr 1fr}
 body.fs .scene{height:360px}
 body.fs .diagrambox{max-height:300px}
+body.light{--paper:#f6f8fa;--panel:#ffffff;--panel2:#f0f2f5;--ink:#24292f;--muted:#57606a;--accent:#d94a1a;--green:#1a7f37;--red:#cf222e;--blue:#0969da;--border:#d0d7de}
 .scene{position:relative;width:100%;height:260px}
 .cloud{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:220px;height:90px;border:2px solid var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;background:rgba(88,166,255,.06)}
 .cloud .t{font-family:var(--mono);font-size:12px;color:var(--blue)}
@@ -79,11 +80,12 @@ body.fs .diagrambox{max-height:300px}
 .dot{width:10px;height:10px;border-radius:50%;background:#30363d}
 .dot.r{background:#f85149}.dot.y{background:#d29922}.dot.g{background:#3fb950}
 .terminal .body{padding:12px;min-height:220px;max-height:320px;overflow:auto;line-height:1.6}
-.tline{opacity:0;animation:fadeIn .35s ease forwards}
+.tline{opacity:0;animation:typeline .5s steps(30,end) forwards}
 .tline.cmd{color:var(--blue)}
 .tline.cmd::before{content:"$ ";color:var(--accent)}
 .tline.out{color:#c9d1d9}
 .tline.err{color:var(--red)}
+@keyframes typeline{from{clip-path:inset(0 100% 0 0);opacity:1}to{clip-path:inset(0 0 0 0);opacity:1}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
 .btn{background:var(--panel2);border:1px solid var(--border);color:var(--ink);padding:7px 14px;border-radius:7px;font-family:var(--mono);font-size:12px;cursor:pointer}
@@ -189,6 +191,7 @@ footer{padding:30px 24px;text-align:center;color:var(--muted);font-family:var(--
         <button class="btn" id="voiceBtn">🔊 Voice: on</button>
         <button class="btn" id="fsBtn" title="Fullscreen"> ( ) Fullscreen</button>
         <button class="btn" id="copyLinkBtn" title="Copy link to this step">🔗 Link</button>
+        <button class="btn" id="themeBtn" title="Toggle theme"> ( ) Theme</button>
         <div class="voicepick">voice <select id="voiceSelect"><option value="edge">Edge · Aria (premium)</option></select></div>
         <div class="speed">speed <select id="speed"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="0.5">0.5×</option></select></div>
       </div>
@@ -305,6 +308,40 @@ if('speechSynthesis' in window){
 
 let currentAudio=null;
 let currentUtterance=null;
+// confetti canvas
+let confettiCanvas=null, confettiCtx=null, confettiParts=[];
+function ensureConfetti(){
+  if(confettiCanvas) return;
+  confettiCanvas=document.createElement('canvas');
+  confettiCanvas.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:9999';
+  document.body.appendChild(confettiCanvas);
+  confettiCtx=confettiCanvas.getContext('2d');
+  const resize=()=>{confettiCanvas.width=innerWidth;confettiCanvas.height=innerHeight;};
+  resize(); addEventListener('resize',resize);
+}
+function fireConfetti(){
+  ensureConfetti();
+  const colors=['#ff7a45','#3fb950','#58a6ff','#a371f7','#d29922'];
+  for(let i=0;i<90;i++){
+    confettiParts.push({x:innerWidth/2,y:innerHeight/3,vx:(Math.random()-0.5)*12,vy:Math.random()*-14-4,r:Math.random()*6+2,c:colors[Math.floor(Math.random()*colors.length)],life:0,max:80+Math.random()*40});
+  }
+  if(!confettiRaf) confettiRaf=requestAnimationFrame(confettiTick);
+}
+let confettiRaf=null;
+function confettiTick(){
+  if(!confettiCtx) return;
+  confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  confettiParts=confettiParts.filter(p=>p.life<p.max);
+  confettiParts.forEach(p=>{
+    p.life++; p.x+=p.vx; p.vy+=0.35; p.y+=p.vy; p.vx*=0.99;
+    confettiCtx.globalAlpha=Math.max(0,1-p.life/p.max);
+    confettiCtx.fillStyle=p.c;
+    confettiCtx.beginPath(); confettiCtx.arc(p.x,p.y,p.r,0,Math.PI*2); confettiCtx.fill();
+  });
+  confettiCtx.globalAlpha=1;
+  if(confettiParts.length){ confettiRaf=requestAnimationFrame(confettiTick); }
+  else { confettiRaf=null; confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); }
+}
 function stopAudio(){
   if(currentAudio){ currentAudio.pause(); currentAudio=null; }
   if(currentUtterance){ try{window.speechSynthesis.cancel();}catch(e){} currentUtterance=null; }
@@ -457,6 +494,7 @@ function renderStep(i){
   statusline.textContent = statusMap[s.visual] || '';
   pbar.style.width = ((idx+1)/STEPS.length*100) + '%';
   try{ const u=new URL(location.href); u.searchParams.set('step', idx+1); history.replaceState(null,'',u); }catch(e){}
+  if(s.visual==='healthy'){ setTimeout(fireConfetti, 120); }
   document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
   termbody.scrollTop = termbody.scrollHeight;
   if(playing) scheduleAfterRender();
@@ -509,6 +547,10 @@ else pl.href=NAV.prev+'.html';
 if(!NAV.next){ nl.style.opacity='.3'; nl.style.pointerEvents='none'; nl.textContent='(last) →'; }
 else nl.href=NAV.next+'.html';
 
+// restore theme
+(function(){ if(localStorage.getItem('kp_theme')==='light') document.body.classList.add('light'); })();
+document.getElementById('themeBtn').addEventListener('click',()=>{ document.body.classList.toggle('light'); localStorage.setItem('kp_theme', document.body.classList.contains('light')?'light':'dark'); document.getElementById('themeBtn').textContent = document.body.classList.contains('light') ? ' ( ) Dark' : ' ( ) Theme'; });
+if(document.body.classList.contains('light')) document.getElementById('themeBtn').textContent=' ( ) Dark';
 (function(){ const p=new URLSearchParams(location.search); const s=parseInt(p.get('step')||'1',10); const start=Math.max(1,Math.min(STEPS.length, isNaN(s)?1:s))-1; renderStep(start); })();
 </script>
 </body>
